@@ -62,7 +62,7 @@
     "graphql": "^16.0.0"
   },
   "dependencies": {
-    "constant-case": "^3.0.4",
+    "constant-case": "^4.0.0",
     "debug": "4.3.4",
     "json5": "^2.2.3",
     "lodash.sortby": "^4.7.0"
