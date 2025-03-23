@@ -13,7 +13,7 @@
     "url": "https://the-guild.dev"
   },
   "license": "MIT",
-  "packageManager": "pnpm@8.7.4",
+  "packageManager": "pnpm@8.15.9",
   "engines": {
     "node": ">=18",
     "pnpm": ">=8.6.3"
