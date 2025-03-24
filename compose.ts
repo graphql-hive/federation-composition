@@ -10,6 +10,22 @@ const args = process.argv.slice(2);
 const isApollo = args.includes('apollo');
 const composeServices = isApollo ? apolloComposeServices : guildComposeServices;
 
+function fromJsonFile(filepath: string) {
+  const raw = readFileSync(filepath, 'utf-8');
+
+  const data = JSON.parse(raw) as Array<{
+    name: string;
+    sdl: string;
+  }>;
+
+  return data.map(d => {
+    return {
+      name: d.name,
+      typeDefs: parse(d.sdl),
+    };
+  });
+}
+
 function fromDirectory(directoryName: string) {
   const filepaths = readdirSync(directoryName);
   return filepaths
@@ -57,7 +73,13 @@ if (typeof gc === 'function') {
 debugger;
 
 console.time('Total');
-console.log('Composing', services.length, 'services');
+console.log(
+  'Composing',
+  services.length,
+  'services using',
+  isApollo ? 'Apollo' : 'Guild',
+  'composition',
+);
 const result = composeServices(services);
 console.timeEnd('Total');
 
@@ -71,4 +93,6 @@ console.log(hasErrors ? '❌ Failed' : '✅ Succeeded');
 
 if (hasErrors) {
   console.log(result.errors.map(e => (e.extensions.code ?? '') + ' ' + e.message).join('\n\n'));
+} else if (args.includes('--print-supergraph')) {
+  console.log(result.supergraphSdl);
 }

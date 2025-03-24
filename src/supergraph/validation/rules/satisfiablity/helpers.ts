@@ -24,8 +24,13 @@ export function scoreKeyFields(keyFields: string) {
   return fields + innerSelectionSets;
 }
 
-export function lazy(factory: () => string) {
-  let value: string | undefined;
+export type Lazy<T> = {
+  get(): T;
+  invalidate(): void;
+};
+
+export function lazy<T>(factory: () => T) {
+  let value: T | undefined;
 
   return {
     get() {

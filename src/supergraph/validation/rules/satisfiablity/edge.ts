@@ -1,5 +1,5 @@
 import { SatisfiabilityError } from './errors.js';
-import { lazy } from './helpers.js';
+import { lazy, type Lazy } from './helpers.js';
 import { AbstractMove, EntityMove, FieldMove, Move } from './moves.js';
 import { Node } from './node.js';
 
@@ -10,7 +10,7 @@ type EdgeResolvabilityResult =
     }
   | {
       success: false;
-      error: SatisfiabilityError;
+      error: Lazy<SatisfiabilityError>;
     };
 
 export function isEntityEdge(edge: Edge): edge is Edge<EntityMove> {
@@ -63,7 +63,9 @@ export class Edge<T = Move> {
 
   getResolvability(graphNames: string[]) {
     return this.resolvable.find(([checkedGraphNames]) => {
-      return checkedGraphNames.every(name => graphNames.includes(name));
+      return checkedGraphNames.every(name => {
+        return graphNames.includes(name);
+      });
     })?.[1];
   }
 
@@ -71,12 +73,12 @@ export class Edge<T = Move> {
   setResolvable(
     success: false,
     graphNames: string[],
-    error: SatisfiabilityError,
+    error: Lazy<SatisfiabilityError>,
   ): EdgeResolvabilityResult;
   setResolvable(
     success: boolean,
     graphNames: string[],
-    error?: SatisfiabilityError,
+    error?: Lazy<SatisfiabilityError>,
   ): EdgeResolvabilityResult {
     const result = success ? { success, error: undefined } : { success, error: error! };
     this.resolvable.push([graphNames, result]);

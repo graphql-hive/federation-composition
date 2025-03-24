@@ -4,12 +4,13 @@ import { isAbstractEdge, isFieldEdge, type Edge } from './edge.js';
 import { SatisfiabilityError } from './errors.js';
 import { PathFinder } from './finder.js';
 import type { Graph } from './graph.js';
+import { type Lazy } from './helpers.js';
 import type { MoveValidator } from './move-validator.js';
 import type { Node } from './node.js';
 import { OperationPath, type Step } from './operation-path.js';
 
 export class WalkTracker {
-  private errors: SatisfiabilityError[] = [];
+  private errors: Lazy<SatisfiabilityError>[] = [];
 
   constructor(
     public superPath: OperationPath,
@@ -29,7 +30,7 @@ export class WalkTracker {
     this.errors = [];
   }
 
-  addError(error: SatisfiabilityError) {
+  addError(error: Lazy<SatisfiabilityError>) {
     this.errors.push(error);
   }
 
@@ -50,6 +51,7 @@ export class WalkTracker {
 
   listErrors() {
     return this.errors
+      .map(error => error.get())
       .filter((error, i, all) => all.findIndex(e => e.toString() === error.toString()) === i)
       .filter(error => {
         if (error.kind !== 'KEY') {

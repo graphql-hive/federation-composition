@@ -2,6 +2,7 @@ import type { Logger } from '../../../../utils/logger.js';
 import { Edge, isAbstractEdge, isEntityEdge, isFieldEdge } from './edge.js';
 import { SatisfiabilityError } from './errors.js';
 import type { Graph } from './graph.js';
+import { lazy, type Lazy } from './helpers.js';
 import type { MoveValidator } from './move-validator.js';
 import type { OperationPath } from './operation-path.js';
 import { Selection } from './selection.js';
@@ -31,7 +32,7 @@ type PathFinderResult =
   | {
       success: false;
       paths: undefined;
-      errors: SatisfiabilityError[];
+      errors: Lazy<SatisfiabilityError>[];
     };
 
 export class PathFinder {
@@ -48,7 +49,7 @@ export class PathFinder {
     visitedEdges: Edge[],
   ): PathFinderResult {
     const nextPaths: OperationPath[] = [];
-    const errors: SatisfiabilityError[] = [];
+    const errors: Lazy<SatisfiabilityError>[] = [];
     const tail = path.tail() ?? path.rootNode();
     const isFieldTarget = fieldName !== null;
     const id = isFieldTarget ? `${typeName}.${fieldName}` : `... on ${typeName}`;
@@ -64,6 +65,12 @@ export class PathFinder {
     let i = 0;
     for (const edge of edges) {
       this.logger.group(() => 'Checking #' + i++ + ' ' + edge);
+
+      if (nextPaths.some(p => p.tail() === edge.tail)) {
+        this.logger.groupEnd(() => 'Already resolvable tail: ' + edge);
+        continue;
+      }
+
       if (edge.isCrossGraphEdge()) {
         this.logger.groupEnd(() => 'Cross graph edge: ' + edge);
         continue;
@@ -126,7 +133,9 @@ export class PathFinder {
           // no subgraph can be reached to resolve the implementation type of @interfaceObject type
           return {
             success: false,
-            errors: [SatisfiabilityError.forNoImplementation(tail.graphName, tail.typeName)],
+            errors: [
+              lazy(() => SatisfiabilityError.forNoImplementation(tail.graphName, tail.typeName)),
+            ],
             paths: undefined,
           };
         }
@@ -142,7 +151,9 @@ export class PathFinder {
     }
 
     // In case of no errors, we know that there were no edges matching the field name.
-    errors.push(SatisfiabilityError.forMissingField(tail.graphName, typeName, fieldName));
+    errors.push(
+      lazy(() => SatisfiabilityError.forMissingField(tail.graphName, typeName, fieldName)),
+    );
 
     // find graphs with the same type and field name, but no @key defined
     const typeNodes = this.graph.nodesOf(typeName);
@@ -163,11 +174,13 @@ export class PathFinder {
 
           if (keys.length === 0) {
             errors.push(
-              SatisfiabilityError.forNoKey(
-                tail.graphName,
-                edge.tail.graphName,
-                typeName,
-                fieldName,
+              lazy(() =>
+                SatisfiabilityError.forNoKey(
+                  tail.graphName,
+                  edge.tail.graphName,
+                  typeName,
+                  fieldName,
+                ),
               ),
             );
           }
@@ -189,10 +202,10 @@ export class PathFinder {
     visitedEdges: Edge[],
     visitedGraphs: string[],
     visitedFields: Selection[],
-    errors: SatisfiabilityError[],
+    errors: Lazy<SatisfiabilityError>[],
     finalPaths: OperationPath[],
     queue: [string[], Selection[], OperationPath][],
-    shortestPathPerGraph: Map<string, OperationPath>,
+    resolvedGraphs: string[],
     edge: Edge,
   ) {
     if (!isEntityEdge(edge) && !isAbstractEdge(edge)) {
@@ -200,9 +213,8 @@ export class PathFinder {
       return;
     }
 
-    const shortestPathToThisGraph = shortestPathPerGraph.get(edge.tail.graphName);
-    if (shortestPathToThisGraph && shortestPathToThisGraph.depth() <= path.depth()) {
-      this.logger.groupEnd(() => 'Already found a shorter path to ' + edge.tail);
+    if (resolvedGraphs.includes(edge.tail.graphName)) {
+      this.logger.groupEnd(() => 'Ignore: already resolved this graph');
       return;
     }
 
@@ -271,12 +283,13 @@ export class PathFinder {
       this.logger.groupEnd(() => 'Resolvable: ' + edge + ' with ' + direct.paths.length + ' paths');
 
       finalPaths.push(...direct.paths);
+      resolvedGraphs.push(newPath.edge()!.tail.graphName);
       return;
     }
 
     errors.push(...direct.errors);
 
-    setShortest(newPath, shortestPathPerGraph);
+    resolvedGraphs.push(newPath.edge()!.tail.graphName);
 
     queue.push([
       concatIfNotExistsString(visitedGraphs, edge.tail.graphName),
@@ -296,7 +309,7 @@ export class PathFinder {
     visitedFields: Selection[],
     finalPaths: OperationPath[],
     queue: [string[], Selection[], OperationPath][],
-    shortestPathPerGraph: Map<string, OperationPath>,
+    resolvedGraphs: string[],
     edge: Edge,
   ) {
     if (!isAbstractEdge(edge)) {
@@ -304,8 +317,8 @@ export class PathFinder {
       return;
     }
 
-    if (shortestPathPerGraph.has(edge.tail.graphName)) {
-      this.logger.groupEnd(() => 'Already found a shorter path to ' + edge.tail);
+    if (resolvedGraphs.includes(edge.tail.graphName)) {
+      this.logger.groupEnd(() => 'Already resolved the graph');
       return;
     }
 
@@ -318,7 +331,7 @@ export class PathFinder {
 
     // If the target is the tail of this edge, we have found a path
     if (edge.tail.typeName === typeName) {
-      setShortest(newPath, shortestPathPerGraph);
+      resolvedGraphs.push(edge.tail.graphName);
       finalPaths.push(newPath);
     } else {
       // Otherwise, we need to continue searching for the target
@@ -341,7 +354,7 @@ export class PathFinder {
     visitedGraphs: string[],
     visitedFields: Selection[],
   ): PathFinderResult {
-    const errors: SatisfiabilityError[] = [];
+    const errors: Lazy<SatisfiabilityError>[] = [];
     const tail = path.tail() ?? path.rootNode();
     const sourceGraphName = tail.graphName;
     const isFieldTarget = fieldName !== null;
@@ -351,7 +364,7 @@ export class PathFinder {
 
     const queue: [string[], Selection[], OperationPath][] = [[visitedGraphs, visitedFields, path]];
     const finalPaths: OperationPath[] = [];
-    const shortestPathPerGraph = new Map<string, OperationPath>();
+    const resolvedGraphs: string[] = [];
 
     while (queue.length > 0) {
       const item = queue.pop();
@@ -399,7 +412,7 @@ export class PathFinder {
             errors,
             finalPaths,
             queue,
-            shortestPathPerGraph,
+            resolvedGraphs,
             edge,
           );
         } else {
@@ -410,7 +423,7 @@ export class PathFinder {
             visitedFields,
             finalPaths,
             queue,
-            shortestPathPerGraph,
+            resolvedGraphs,
             edge,
           );
         }
@@ -432,19 +445,5 @@ export class PathFinder {
       paths: finalPaths,
       errors: undefined,
     };
-  }
-}
-
-function setShortest(path: OperationPath, shortestPathPerGraph: Map<string, OperationPath>) {
-  const edge = path.edge();
-
-  if (!edge) {
-    throw new Error('Unexpected end of path');
-  }
-
-  const shortest = shortestPathPerGraph.get(edge.tail.graphName);
-
-  if (!shortest || shortest.depth() > path.depth()) {
-    shortestPathPerGraph.set(edge.tail.graphName, path);
   }
 }

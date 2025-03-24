@@ -47,7 +47,7 @@
     "graphql-federation"
   ],
   "scripts": {
-    "bench": "tsx ./benchmark.ts",
+    "bench": "tsx --expose-gc ./benchmark.ts",
     "build": "rimraf dist && bob build && bob check",
     "compose": "tsx --expose-gc ./compose.ts",
     "compose:apollo": "pnpm compose apollo",
@@ -79,7 +79,7 @@
     "bob-the-bundler": "7.0.1",
     "graphql": "16.8.1",
     "lodash.sortby": "4.7.0",
-    "mitata": "0.1.14",
+    "mitata": "1.0.34",
     "prettier": "3.2.5",
     "rimraf": "5.0.5",
     "strip-indent": "4.0.0",
@@ -94,12 +94,12 @@
     "directory": "dist",
     "access": "public"
   },
-  "typescript": {
-    "definition": "dist/typings/index.d.ts"
-  },
   "pnpm": {
     "onlyBuiltDependencies": [
       "esbuild"
     ]
+  },
+  "typescript": {
+    "definition": "dist/typings/index.d.ts"
   }
 }

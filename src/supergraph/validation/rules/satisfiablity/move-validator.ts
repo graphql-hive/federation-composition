@@ -3,6 +3,7 @@ import { Edge, isAbstractEdge, isEntityEdge, isFieldEdge } from './edge.js';
 import { SatisfiabilityError } from './errors.js';
 import { concatIfNotExistsFields, concatIfNotExistsString, PathFinder } from './finder.js';
 import type { Graph } from './graph.js';
+import { lazy, type Lazy } from './helpers.js';
 import { OperationPath } from './operation-path.js';
 import type { Field, Fragment, Selection, SelectionNode } from './selection.js';
 
@@ -28,7 +29,7 @@ type RequirementResult =
     }
   | {
       success: false;
-      errors: SatisfiabilityError[];
+      errors: Lazy<SatisfiabilityError>[];
     };
 
 export class MoveValidator {
@@ -98,7 +99,7 @@ export class MoveValidator {
     this.logger.log(() => 'Validating: ... on ' + requirement.selection.typeName);
 
     const nextPaths: OperationPath[] = [];
-    const errors: SatisfiabilityError[] = [];
+    const errors: Lazy<SatisfiabilityError>[] = [];
 
     // Looks like we hit a fragment spread that matches the current type.
     // It means that it's a fragment spread on an object type, not a union or interface.
@@ -200,7 +201,7 @@ export class MoveValidator {
     this.logger.log(() => 'Validating: ' + typeName + '.' + fieldName);
 
     const nextPaths: OperationPath[] = [];
-    const errors: SatisfiabilityError[] = [];
+    const errors: Lazy<SatisfiabilityError>[] = [];
 
     for (const path of requirement.paths) {
       const directPathsResult = this.pathFinder.findDirectPaths(
@@ -257,7 +258,7 @@ export class MoveValidator {
       // cannot advance
       return {
         success: false,
-        errors: errors.filter(e => e.isMatchingField(typeName, fieldName)),
+        errors: errors.filter(e => () => e.get().isMatchingField(typeName, fieldName)),
       };
     }
 
@@ -387,7 +388,7 @@ export class MoveValidator {
       }
     | {
         success: false;
-        error: SatisfiabilityError;
+        error: Lazy<SatisfiabilityError>;
       } {
     this.logger.group(() => 'Checking resolvability of ' + edge);
     this.logger.log(() => 'Visited graphs: ' + visitedGraphs.join(','));
@@ -399,7 +400,7 @@ export class MoveValidator {
       this.logger.groupEnd(() =>
         resolvability.success
           ? `Can move to ${edge}`
-          : `Cannot move to ${edge} (already visited: ${resolvability.error.kind})`,
+          : `Cannot move to ${edge} (already visited: ${resolvability.error.get().kind})`,
       );
 
       return resolvability;
@@ -411,10 +412,12 @@ export class MoveValidator {
         return edge.setResolvable(
           false,
           visitedGraphs,
-          SatisfiabilityError.forMissingField(
-            edge.tail.graphName,
-            edge.move.typeName,
-            edge.move.fieldName,
+          lazy(() =>
+            SatisfiabilityError.forMissingField(
+              edge.tail.graphName,
+              edge.move.typeName,
+              edge.move.fieldName,
+            ),
           ),
         );
       }
@@ -426,10 +429,12 @@ export class MoveValidator {
         return edge.setResolvable(
           false,
           visitedGraphs,
-          SatisfiabilityError.forExternal(
-            edge.head.graphName,
-            edge.move.typeName,
-            edge.move.fieldName,
+          lazy(() =>
+            SatisfiabilityError.forExternal(
+              edge.head.graphName,
+              edge.move.typeName,
+              edge.move.fieldName,
+            ),
           ),
         );
       }
@@ -461,10 +466,12 @@ export class MoveValidator {
 
         return {
           success: false,
-          error: SatisfiabilityError.forRequire(
-            edge.head.graphName,
-            edge.move.typeName,
-            edge.move.fieldName,
+          error: lazy(() =>
+            SatisfiabilityError.forRequire(
+              edge.head.graphName,
+              edge.move.typeName,
+              edge.move.fieldName,
+            ),
           ),
         };
       }
@@ -506,11 +513,13 @@ export class MoveValidator {
     return edge.setResolvable(
       false,
       newVisitedGraphs,
-      SatisfiabilityError.forKey(
-        edge.head.graphName,
-        edge.tail.graphName,
-        edge.head.typeName,
-        keyFields.toString(),
+      lazy(() =>
+        SatisfiabilityError.forKey(
+          edge.head.graphName,
+          edge.tail.graphName,
+          edge.head.typeName,
+          keyFields.toString(),
+        ),
       ),
     );
   }

@@ -50,21 +50,21 @@ const hugeSchema = await getSubgraphs();
 group('basic schema', () => {
   bench('apollo', () => {
     assertCompositionSuccess(apolloComposeServices(basicServices));
-  });
+  }).gc('inner');
 
   bench('guild', () => {
     assertCompositionSuccess(guildComposeServices(basicServices));
-  });
+  }).gc('inner');
 });
 
 group('huge schema', () => {
   bench('apollo', () => {
     assertCompositionSuccess(apolloComposeServices(hugeSchema));
-  });
+  }).gc('inner');
 
   bench('guild', () => {
     assertCompositionSuccess(guildComposeServices(hugeSchema));
-  });
+  }).gc('inner');
 });
 
 await run();
