@@ -80,7 +80,7 @@
     "graphql": "16.8.1",
     "lodash.sortby": "4.7.0",
     "mitata": "1.0.34",
-    "prettier": "3.2.5",
+    "prettier": "3.5.3",
     "rimraf": "5.0.5",
     "strip-indent": "4.0.0",
     "tsx": "4.19.3",
