@@ -39,6 +39,23 @@ export function OverrideRules(context: SubgraphValidationContext): ASTVisitor {
         return;
       }
 
+      const labelArg = node.arguments?.find(arg => arg.name.value === 'label');
+      if (labelArg && context.satisfiesVersionRange('>= v2.7')) {
+        context.reportError(
+          new GraphQLError(
+            [
+              `Progressive @override labels are not yet supported.`,
+              `Attempted to override field "${typeDef.name.value}.${fieldDef.name.value}".`,
+            ].join(' '),
+            {
+              extensions: {
+                code: 'UNSUPPORTED_FEATURE',
+              },
+            },
+          ),
+        );
+      }
+
       const fromArg = node.arguments?.find(arg => arg.name.value === 'from');
 
       if (!fromArg || fromArg.value.kind !== Kind.STRING) {
