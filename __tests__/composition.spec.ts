@@ -7,6 +7,7 @@ import { directive as tagDirective } from '../src/specifications/tag.js';
 import {
   assertCompositionFailure,
   assertCompositionSuccess,
+  federationVersionToJoinSpecVersion,
   satisfiesVersionRange,
   testImplementations,
   versions,
@@ -1900,7 +1901,7 @@ testImplementations(api => {
       expect(result.supergraphSdl).toContainGraphQL(/* GraphQL */ `
         schema
           @link(url: "https://specs.apollo.dev/link/v1.0")
-          @link(url: "https://specs.apollo.dev/join/v0.3", for: EXECUTION)
+          @link(url: "https://specs.apollo.dev/join/${federationVersionToJoinSpecVersion[version]}", for: EXECUTION)
           @link(url: "https://myspecs.dev/lowercase/v1.0", import: ["@lowercase"]) {
           query: Query
         }
@@ -1979,7 +1980,7 @@ testImplementations(api => {
       expect(result.supergraphSdl).toContainGraphQL(/* GraphQL */ `
         schema
           @link(url: "https://specs.apollo.dev/link/v1.0")
-          @link(url: "https://specs.apollo.dev/join/v0.3", for: EXECUTION)
+          @link(url: "https://specs.apollo.dev/join/${federationVersionToJoinSpecVersion[version]}", for: EXECUTION)
           @link(url: "https://myspecs.dev/lowercase/v1.0", import: ["@lowercase"]) {
           query: Query
         }
@@ -2053,7 +2054,7 @@ testImplementations(api => {
       expect(result.supergraphSdl).toContainGraphQL(/* GraphQL */ `
         schema
           @link(url: "https://specs.apollo.dev/link/v1.0")
-          @link(url: "https://specs.apollo.dev/join/v0.3", for: EXECUTION)
+          @link(url: "https://specs.apollo.dev/join/${federationVersionToJoinSpecVersion[version]}", for: EXECUTION)
           @link(url: "https://specs.community.graphql.org/lowercase/v1.0", import: ["@lowercase"]) {
           query: Query
         }
@@ -2185,7 +2186,7 @@ testImplementations(api => {
       expect(result.supergraphSdl).toContainGraphQL(/* GraphQL */ `
         schema
           @link(url: "https://specs.apollo.dev/link/v1.0")
-          @link(url: "https://specs.apollo.dev/join/v0.3", for: EXECUTION)
+          @link(url: "https://specs.apollo.dev/join/${federationVersionToJoinSpecVersion[version]}", for: EXECUTION)
           @link(url: "https://myspecs.dev/lowercase/v1.0", import: ["@lowercase"]) {
           query: Query
         }
@@ -2269,7 +2270,7 @@ testImplementations(api => {
       expect(result.supergraphSdl).toContainGraphQL(/* GraphQL */ `
         schema
           @link(url: "https://specs.apollo.dev/link/v1.0")
-          @link(url: "https://specs.apollo.dev/join/v0.3", for: EXECUTION)
+          @link(url: "https://specs.apollo.dev/join/${federationVersionToJoinSpecVersion[version]}", for: EXECUTION)
           @link(url: "https://myspecs.dev/lowercase/v1.0", import: ["@lowercase"]) {
           query: Query
         }
@@ -2671,7 +2672,7 @@ testImplementations(api => {
       expect(result.supergraphSdl).toContainGraphQL(/* GraphQL */ `
         schema
           @link(url: "https://specs.apollo.dev/link/v1.0")
-          @link(url: "https://specs.apollo.dev/join/v0.3", for: EXECUTION)
+          @link(url: "https://specs.apollo.dev/join/${federationVersionToJoinSpecVersion[version]}", for: EXECUTION)
           @link(url: "https://myspecs.dev/lowercase/v1.3", import: ["@lowercase"]) {
           query: Query
         }
@@ -2748,7 +2749,7 @@ testImplementations(api => {
       expect(result.supergraphSdl).toContainGraphQL(/* GraphQL */ `
         schema
           @link(url: "https://specs.apollo.dev/link/v1.0")
-          @link(url: "https://specs.apollo.dev/join/v0.3", for: EXECUTION) {
+          @link(url: "https://specs.apollo.dev/join/${federationVersionToJoinSpecVersion[version]}", for: EXECUTION) {
           query: Query
         }
       `);
@@ -2824,7 +2825,7 @@ testImplementations(api => {
       expect(result.supergraphSdl).toContainGraphQL(/* GraphQL */ `
         schema
           @link(url: "https://specs.apollo.dev/link/v1.0")
-          @link(url: "https://specs.apollo.dev/join/v0.3", for: EXECUTION) {
+          @link(url: "https://specs.apollo.dev/join/${federationVersionToJoinSpecVersion[version]}", for: EXECUTION) {
           query: Query
         }
       `);
@@ -4713,13 +4714,13 @@ testImplementations(api => {
                   url: "https://specs.apollo.dev/federation/${version}"
                   import: ["@key", "@requires", "@external"]
                 )
-    
+
               type User @key(fields: "id") {
                 id: ID!
                 name: String! @external
                 aName: String! @requires(fields: "name")
               }
-    
+
               type Query {
                 userA: User
               }
@@ -4730,12 +4731,12 @@ testImplementations(api => {
             typeDefs: parse(/* GraphQL */ `
               extend schema
                 @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@key", "@override"])
-    
+
               type User @key(fields: "id") {
                 id: ID!
                 name: String! @override(from: "c")
               }
-    
+
               type Query {
                 userB: User
               }
@@ -4797,7 +4798,7 @@ testImplementations(api => {
                   url: "https://specs.apollo.dev/federation/${version}"
                   import: ["@shareable", "@override", "@key"]
                 )
-    
+
               type User @shareable {
                 id: ID!
                 name: String! @override(from: "b")
@@ -4807,7 +4808,7 @@ testImplementations(api => {
                 id: ID!
                 owner: User @shareable
               }
-    
+
               type Query {
                 organizationA: Organization
               }
@@ -4818,7 +4819,7 @@ testImplementations(api => {
             typeDefs: parse(/* GraphQL */ `
               extend schema
                 @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@shareable", "@key"])
-    
+
               type User @shareable {
                 id: ID! @shareable
                 """should be preserved"""
@@ -4829,7 +4830,7 @@ testImplementations(api => {
                 id: ID!
                 owner: User @shareable
               }
-    
+
               type Query {
                 organizationB: Organization
               }
@@ -6055,7 +6056,8 @@ testImplementations(api => {
         assertCompositionSuccess(result);
 
         parse(linkSDL)
-          .definitions.concat(parse(joinSDL).definitions)
+          .definitions.concat(parse(joinSDL(version)).definitions)
+          // .filter(def => def.kind === Kind.DIRECTIVE_DEFINITION && def.name.value !== 'join__directive')
           .forEach(def => {
             expect(result.supergraphSdl).toContainGraphQL(print(def));
           });
@@ -6092,7 +6094,7 @@ testImplementations(api => {
         assertCompositionSuccess(result);
 
         parse(linkSDL)
-          .definitions.concat(parse(joinSDL).definitions)
+          .definitions.concat(parse(joinSDL('v1.0')).definitions)
           .forEach(def => {
             expect(result.supergraphSdl).toContainGraphQL(print(def));
           });

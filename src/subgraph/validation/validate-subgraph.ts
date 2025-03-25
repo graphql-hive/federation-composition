@@ -283,7 +283,7 @@ const availableFeatures: Record<string, string[]> = {
   link: ['v1.0'],
   tag: ['v0.1', 'v0.2'],
   kotlin_labs: ['v0.1', 'v0.2'],
-  join: ['v0.1', 'v0.2', 'v0.3'],
+  join: ['v0.1', 'v0.2', 'v0.3', 'v0.4', 'v0.5'],
   inaccessible: ['v0.1', 'v0.2'],
   core: ['v0.1', 'v0.2'],
 };

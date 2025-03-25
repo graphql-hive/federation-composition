@@ -3,6 +3,7 @@ import { print } from './graphql/printer.js';
 import { transformSupergraphToPublicSchema } from './graphql/transform-supergraph-to-public-schema.js';
 import { sdl as authenticatedSDL } from './specifications/authenticated.js';
 import { sdl as costSDL } from './specifications/cost.js';
+import { FederationVersion } from './specifications/federation.js';
 import { sdl as inaccessibleSDL } from './specifications/inaccessible.js';
 import { sdl as joinSDL } from './specifications/join.js';
 import { sdl as linkSDL, printLink } from './specifications/link.js';
@@ -10,6 +11,7 @@ import { sdl as policySDL } from './specifications/policy.js';
 import { sdl as requiresScopesSDL } from './specifications/requires-scopes.js';
 import { sdl as tagSDL } from './specifications/tag.js';
 import { ServiceDefinition } from './types.js';
+import { satisfiesVersionRange } from './utils/version.js';
 import { validate } from './validate.js';
 
 export function composeServices(
@@ -81,11 +83,25 @@ export function composeServices(
     }
   }
 
+  const federationVersionToJoinVersion: Record<FederationVersion, string> = {
+    'v1.0': 'v0.3',
+    'v2.0': 'v0.3',
+    'v2.1': 'v0.3',
+    'v2.2': 'v0.3',
+    'v2.3': 'v0.3',
+    'v2.4': 'v0.3',
+    'v2.5': 'v0.3',
+    'v2.6': 'v0.3',
+    // 'v2.7': 'v0.4',
+    // 'v2.8': 'v0.5',
+    'v2.9': 'v0.5',
+  };
+
   return {
     supergraphSdl: `
 schema
   @link(url: "https://specs.apollo.dev/link/v1.0")
-  @link(url: "https://specs.apollo.dev/join/v0.5", for: EXECUTION)
+  @link(url: "https://specs.apollo.dev/join/${federationVersionToJoinVersion[validationResult.federationVersion]}", for: EXECUTION)
   ${usedTagSpec ? '@link(url: "https://specs.apollo.dev/tag/v0.3")' : ''}
   ${usedCostSpec.used ? `@link(url: "https://specs.apollo.dev/cost/v0.1"${costLinkImports})` : ''}
   ${
@@ -111,7 +127,7 @@ schema
   ${rootTypes.subscription ? 'subscription: Subscription' : ''}
 }
 
-${joinSDL}
+${joinSDL(validationResult.federationVersion)}
 ${linkSDL}
 ${usedTagSpec ? tagSDL : ''}
 ${

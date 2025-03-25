@@ -1,7 +1,11 @@
 import { constantCase } from 'constant-case';
 import { DocumentNode, GraphQLError } from 'graphql';
 import { moveSchemaAndDirectiveDefinitionsToTop } from './graphql/helpers.js';
-import { detectFederationVersion } from './specifications/federation.js';
+import {
+  detectFederationVersion,
+  FederationVersion,
+  isFederationVersion,
+} from './specifications/federation.js';
 import {
   cleanSubgraphStateFromFederationSpec,
   cleanSubgraphStateFromLinkSpec,
@@ -247,10 +251,29 @@ export function validate(
 
   const nodes = state.build();
 
+  let maxFederationVersion: FederationVersion = 'v1.0';
+
+  for (let [_, { version }] of detectedFederationSpec) {
+    if (isVersionHigher(version, maxFederationVersion)) {
+      maxFederationVersion = version;
+    }
+  }
+
   return {
     success: true,
     supergraph: nodes,
     links: state.links(),
     specs: state.getSupergraphState().specs,
+    federationVersion: maxFederationVersion,
   } as const;
+}
+
+function isVersionHigher<
+  $Ver1 extends `v${number}.${number}`,
+  $Ver2 extends `v${number}.${number}`,
+>(sourceVersion: $Ver1, targetVersion: $Ver2): boolean {
+  const sourceVersionParts = Number(sourceVersion.replace('v', ''));
+  const targetVersionParts = Number(targetVersion.replace('v', ''));
+
+  return sourceVersionParts > targetVersionParts;
 }

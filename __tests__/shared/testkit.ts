@@ -86,7 +86,31 @@ const both = [
     composeServices: composeServicesFactory(guildComposeServices),
   },
 ];
-export const versions = ['v2.0', 'v2.1', 'v2.2', 'v2.3', 'v2.4', 'v2.5', 'v2.6'] as const;
+export const versions = [
+  'v2.0',
+  'v2.1',
+  'v2.2',
+  'v2.3',
+  'v2.4',
+  'v2.5',
+  'v2.6',
+  // 'v2.7',
+  // 'v2.8',
+  'v2.9',
+] as const;
+
+export const federationVersionToJoinSpecVersion: Record<FederationVersion, string> = {
+  'v2.0': 'v0.3',
+  'v2.1': 'v0.3',
+  'v2.2': 'v0.3',
+  'v2.3': 'v0.3',
+  'v2.4': 'v0.3',
+  'v2.5': 'v0.3',
+  'v2.6': 'v0.3',
+  // 'v2.7': 'v0.4',
+  // 'v2.8': 'v0.5',
+  'v2.9': 'v0.5',
+};
 
 type TestAPI = (typeof both)[number];
 
