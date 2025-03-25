@@ -66,6 +66,7 @@ export function directiveBuilder(): TypeBuilder<Directive, DirectiveState> {
           name: arg.name,
           type: arg.type,
           kind: arg.kind,
+          cost: null,
           tags: Array.from(arg.tags),
           inaccessible: arg.inaccessible,
           defaultValue: arg.defaultValue,
