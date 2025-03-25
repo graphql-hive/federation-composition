@@ -11,7 +11,6 @@ import { sdl as policySDL } from './specifications/policy.js';
 import { sdl as requiresScopesSDL } from './specifications/requires-scopes.js';
 import { sdl as tagSDL } from './specifications/tag.js';
 import { ServiceDefinition } from './types.js';
-import { satisfiesVersionRange } from './utils/version.js';
 import { validate } from './validate.js';
 
 export function composeServices(
@@ -74,8 +73,13 @@ export function composeServices(
       imports.push(createLinkImportValue('@cost', `@${usedCostSpec.names.cost}`));
     }
 
-    if (usedCostSpec.names.listSize && usedCostSpec.names.listSize !== 'listSize') {
-      imports.push(createLinkImportValue('@listSize', `@${usedCostSpec.names.listSize}`));
+    if (usedCostSpec.names.listSize) {
+      imports.push(
+        createLinkImportValue(
+          '@listSize',
+          usedCostSpec.names.listSize !== 'listSize' ? `@${usedCostSpec.names.listSize}` : null,
+        ),
+      );
     }
 
     if (imports.length) {
