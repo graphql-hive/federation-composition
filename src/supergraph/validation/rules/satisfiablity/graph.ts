@@ -1019,7 +1019,8 @@ export class Graph {
     if (this.isSupergraph() && field.byGraph.size === 1) {
       const graphId = Array.from(field.byGraph.keys())[0];
       const isExternal = field.byGraph.get(graphId)?.external === true;
-      const isFederationV1 = this.supergraphState.subgraphs.get(graphId)?.version === 'v1.0';
+      const isFederationV1 =
+        this.supergraphState.subgraphs.get(graphId)?.federation.version === 'v1.0';
 
       if (isExternal && isFederationV1) {
         return;

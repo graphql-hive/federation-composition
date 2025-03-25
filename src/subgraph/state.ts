@@ -17,7 +17,8 @@ import {
 import { print } from '../graphql/printer.js';
 import { TypeNodeInfo } from '../graphql/type-node-info.js';
 import { FederationVersion, isFederationLink } from '../specifications/federation.js';
-import { Link } from '../specifications/link.js';
+import { Link, LinkImport } from '../specifications/link.js';
+import { mathMax } from '../utils/helpers.js';
 import { printOutputType } from './helpers.js';
 
 export type SubgraphType =
@@ -66,6 +67,7 @@ export interface ScalarType {
   policies: string[][];
   scopes: string[][];
   authenticated: boolean;
+  cost: number | null;
   tags: Set<string>;
   description?: Description;
   specifiedBy?: string;
@@ -87,6 +89,7 @@ export interface ObjectType {
   authenticated: boolean;
   policies: string[][];
   scopes: string[][];
+  cost: number | null;
   shareable: boolean;
   tags: Set<string>;
   interfaces: Set<string>;
@@ -155,6 +158,7 @@ export interface EnumType {
   authenticated: boolean;
   policies: string[][];
   scopes: string[][];
+  cost: number | null;
   tags: Set<string>;
   isDefinition: boolean;
   description?: Description;
@@ -177,6 +181,7 @@ export interface Field {
   authenticated: boolean;
   policies: string[][];
   scopes: string[][];
+  cost: number | null;
   override: string | null;
   provides: string | null;
   requires: string | null;
@@ -200,6 +205,7 @@ export interface InputField {
   kind: ArgumentKind;
   inaccessible: boolean;
   tags: Set<string>;
+  cost: number | null;
   defaultValue?: string;
   description?: Description;
   deprecated?: Deprecated;
@@ -225,6 +231,7 @@ export interface Argument {
   kind: ArgumentKind;
   inaccessible: boolean;
   tags: Set<string>;
+  cost: number | null;
   defaultValue?: string;
   description?: Description;
   deprecated?: Deprecated;
@@ -273,12 +280,22 @@ export interface SubgraphState {
   specs: {
     tag: boolean;
     inaccessible: boolean;
+    cost: {
+      used: boolean;
+      names: {
+        cost: string | null;
+        listSize: string | null;
+      };
+    };
     link: boolean;
     policy: boolean;
     requiresScopes: boolean;
     authenticated: boolean;
   };
-  version: FederationVersion;
+  federation: {
+    version: FederationVersion;
+    imports: readonly LinkImport[];
+  };
 }
 
 const MISSING = 'MISSING';
@@ -291,6 +308,7 @@ export function createSubgraphStateBuilder(
   version: FederationVersion,
   links: readonly Link[],
 ) {
+  const federationLink = links.find(isFederationLink);
   const linksWithDirective = links.filter(
     // Reject federation links and links without directives
     link => !isFederationLink(link) && link.imports.some(im => im.kind === 'directive'),
@@ -313,13 +331,23 @@ export function createSubgraphStateBuilder(
     links: linksWithDirective,
     specs: {
       tag: false,
+      cost: {
+        used: false,
+        names: {
+          cost: null,
+          listSize: null,
+        },
+      },
       inaccessible: false,
       authenticated: false,
       requiresScopes: false,
       policy: false,
       link: isLinkSpecManuallyProvided,
     },
-    version,
+    federation: {
+      version,
+      imports: federationLink?.imports ?? [],
+    },
   };
 
   const schemaDef = typeDefs.definitions.find(isSchemaDefinition);
@@ -428,7 +456,11 @@ export function createSubgraphStateBuilder(
     enumType: enumTypeBuilder,
     composedDirectives,
     state,
-    markSpecAsUsed(specName: keyof SubgraphState['specs']) {
+    markCostSpecAsUsed(directive: keyof SubgraphState['specs']['cost']['names'], name: string) {
+      state.specs.cost.used = true;
+      state.specs.cost.names[directive] = name;
+    },
+    markSpecAsUsed(specName: Exclude<keyof SubgraphState['specs'], 'cost'>) {
       state.specs[specName] = true;
     },
     visitor(typeNodeInfo: TypeNodeInfo): ASTVisitor {
@@ -1163,6 +1195,10 @@ function scalarTypeFactory(state: SubgraphState) {
     setScopes(typeName: string, scopes: string[][]) {
       getOrCreateScalarType(state, typeName).scopes.push(...scopes);
     },
+    setCost(typeName: string, cost: number) {
+      const existing = getOrCreateScalarType(state, typeName);
+      existing.cost = mathMax(cost, existing.cost);
+    },
     setTag(typeName: string, tag: string) {
       getOrCreateScalarType(state, typeName).tags.add(tag);
     },
@@ -1274,6 +1310,17 @@ function objectTypeFactory(
 
       getOrCreateObjectType(state, renameObject, typeName).scopes.push(...scopes);
     },
+    setCost(typeName: string, cost: number) {
+      if (isInterfaceObject(typeName)) {
+        // type Foo @cost(weight: 420) @interfaceObject @key(fields: "id")
+        // is not allowed.
+        // The validation rules are detecting this as an error.
+        return;
+      }
+
+      const existing = getOrCreateObjectType(state, renameObject, typeName);
+      existing.cost = mathMax(cost, existing.cost);
+    },
     setShareable(typeName: string) {
       if (isInterfaceObject(typeName)) {
         return;
@@ -1363,6 +1410,14 @@ function objectTypeFactory(
         }
 
         getOrCreateObjectField(state, renameObject, typeName, fieldName).scopes.push(...scopes);
+      },
+      setCost(typeName: string, fieldName: string, cost: number) {
+        if (isInterfaceObject(typeName)) {
+          return interfaceTypeBuilder.field.setCost(typeName, fieldName, cost);
+        }
+
+        const existing = getOrCreateObjectField(state, renameObject, typeName, fieldName);
+        existing.cost = mathMax(cost, existing.cost);
       },
       setExternal(typeName: string, fieldName: string) {
         if (isInterfaceObject(typeName)) {
@@ -1567,6 +1622,21 @@ function objectTypeFactory(
             argName,
           ).tags.add(tag);
         },
+        setCost(typeName: string, fieldName: string, argName: string, cost: number) {
+          if (isInterfaceObject(typeName)) {
+            return interfaceTypeBuilder.field.arg.setCost(typeName, fieldName, argName, cost);
+          }
+
+          const existing = getOrCreateObjectFieldArgument(
+            state,
+            renameObject,
+            typeName,
+            fieldName,
+            argName,
+          );
+
+          existing.cost = mathMax(cost, existing.cost);
+        },
       },
     },
   };
@@ -1635,7 +1705,6 @@ function interfaceTypeFactory(state: SubgraphState) {
       setLeaf(typeName: string, fieldName: string) {
         getOrCreateInterfaceField(state, typeName, fieldName).isLeaf = true;
       },
-
       setExternal(typeName: string, fieldName: string) {
         getOrCreateInterfaceField(state, typeName, fieldName).external = true;
       },
@@ -1650,6 +1719,10 @@ function interfaceTypeFactory(state: SubgraphState) {
       },
       setScopes(typeName: string, fieldName: string, scopes: string[][]) {
         getOrCreateInterfaceField(state, typeName, fieldName).scopes.push(...scopes);
+      },
+      setCost(typeName: string, fieldName: string, cost: number) {
+        const existing = getOrCreateInterfaceField(state, typeName, fieldName);
+        existing.cost = mathMax(cost, existing.cost);
       },
       setOverride(typeName: string, fieldName: string, override: string) {
         getOrCreateInterfaceField(state, typeName, fieldName).override = override;
@@ -1715,6 +1788,10 @@ function interfaceTypeFactory(state: SubgraphState) {
         setInaccessible(typeName: string, fieldName: string, argName: string) {
           getOrCreateInterfaceFieldArgument(state, typeName, fieldName, argName).inaccessible =
             true;
+        },
+        setCost(typeName: string, fieldName: string, argName: string, cost: number) {
+          const existing = getOrCreateInterfaceFieldArgument(state, typeName, fieldName, argName);
+          existing.cost = mathMax(cost, existing.cost);
         },
         setDirective(
           typeName: string,
@@ -1787,6 +1864,10 @@ function inputObjectTypeFactory(state: SubgraphState) {
       setDirective(typeName: string, fieldName: string, directive: DirectiveNode) {
         getOrCreateInputObjectField(state, typeName, fieldName).ast.directives.push(directive);
       },
+      setCost(typeName: string, fieldName: string, cost: number) {
+        const existing = getOrCreateInputObjectField(state, typeName, fieldName);
+        existing.cost = mathMax(cost, existing.cost);
+      },
     },
   };
 }
@@ -1830,6 +1911,10 @@ function enumTypeFactory(state: SubgraphState) {
     },
     setScopes(typeName: string, scopes: string[][]) {
       getOrCreateEnumType(state, typeName).scopes.push(...scopes);
+    },
+    setCost(typeName: string, cost: number) {
+      const existing = getOrCreateEnumType(state, typeName);
+      existing.cost = mathMax(cost, existing.cost);
     },
     setDescription(typeName: string, description: Description) {
       getOrCreateEnumType(state, typeName).description = description;
@@ -1917,6 +2002,7 @@ function getOrCreateDirectiveArg(
     kind: ArgumentKind.SCALAR,
     inaccessible: false,
     tags: new Set(),
+    cost: null,
     ast: {
       directives: [],
     },
@@ -1946,6 +2032,7 @@ function getOrCreateScalarType(state: SubgraphState, typeName: string): ScalarTy
     authenticated: false,
     policies: [],
     scopes: [],
+    cost: null,
     ast: {
       directives: [],
     },
@@ -1984,6 +2071,7 @@ function getOrCreateObjectType(
     authenticated: false,
     policies: [],
     scopes: [],
+    cost: null,
     shareable: false,
     tags: new Set(),
     interfaces: new Set(),
@@ -2083,6 +2171,7 @@ function getOrCreateEnumType(state: SubgraphState, typeName: string): EnumType {
     authenticated: false,
     policies: [],
     scopes: [],
+    cost: null,
     tags: new Set(),
     isDefinition: false,
     referencedByInputType: false,
@@ -2152,6 +2241,7 @@ function getOrCreateObjectField(
     extension: false,
     policies: [],
     scopes: [],
+    cost: null,
     used: false,
     required: false,
     provided: false,
@@ -2195,6 +2285,7 @@ function getOrCreateInterfaceField(
     authenticated: false,
     policies: [],
     scopes: [],
+    cost: null,
     used: false,
     override: null,
     provides: null,
@@ -2233,6 +2324,7 @@ function getOrCreateInputObjectField(
     type: MISSING,
     kind: ArgumentKind.SCALAR,
     inaccessible: false,
+    cost: null,
     tags: new Set(),
     ast: {
       directives: [],
@@ -2292,6 +2384,7 @@ function getOrCreateObjectFieldArgument(
     kind: ArgumentKind.SCALAR,
     inaccessible: false,
     tags: new Set(),
+    cost: null,
     ast: {
       directives: [],
     },
@@ -2322,6 +2415,7 @@ function getOrCreateInterfaceFieldArgument(
     kind: ArgumentKind.SCALAR,
     inaccessible: false,
     tags: new Set(),
+    cost: null,
     ast: {
       directives: [],
     },

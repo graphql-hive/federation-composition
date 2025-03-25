@@ -18,7 +18,7 @@ export function ExternalTypeMismatchRule(
       const graphsWithEqualType: string[] = [];
 
       for (const [graphId, field] of fieldState.byGraph) {
-        const graphVersion = context.subgraphStates.get(graphId)!.version;
+        const graphVersion = context.subgraphStates.get(graphId)!.federation.version;
         const isExternal =
           graphVersion === 'v1.0'
             ? field.external && isRealExtension(objectTypeState.byGraph.get(graphId)!, graphVersion)

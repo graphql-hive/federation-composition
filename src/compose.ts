@@ -2,6 +2,7 @@ import { GraphQLError, Kind } from 'graphql';
 import { print } from './graphql/printer.js';
 import { transformSupergraphToPublicSchema } from './graphql/transform-supergraph-to-public-schema.js';
 import { sdl as authenticatedSDL } from './specifications/authenticated.js';
+import { sdl as costSDL } from './specifications/cost.js';
 import { sdl as inaccessibleSDL } from './specifications/inaccessible.js';
 import { sdl as joinSDL } from './specifications/join.js';
 import { sdl as linkSDL, printLink } from './specifications/link.js';
@@ -55,6 +56,7 @@ export function composeServices(
   }
 
   const usedTagSpec = validationResult.specs.tag;
+  const usedCostSpec = validationResult.specs.cost;
   const usedInaccessibleSpec = validationResult.specs.inaccessible;
   const usedPolicySpec = validationResult.specs.policy;
   const usedRequiresScopesSpec = validationResult.specs.requiresScopes;
@@ -62,12 +64,30 @@ export function composeServices(
 
   let _publicSdl: string;
 
+  let costLinkImports = '';
+
+  if (usedCostSpec.used) {
+    const imports: string[] = [];
+    if (usedCostSpec.names.cost && usedCostSpec.names.cost !== 'cost') {
+      imports.push(createLinkImportValue('@cost', `@${usedCostSpec.names.cost}`));
+    }
+
+    if (usedCostSpec.names.listSize && usedCostSpec.names.listSize !== 'listSize') {
+      imports.push(createLinkImportValue('@listSize', `@${usedCostSpec.names.listSize}`));
+    }
+
+    if (imports.length) {
+      costLinkImports = `, import: [${imports.join(', ')}]`;
+    }
+  }
+
   return {
     supergraphSdl: `
 schema
   @link(url: "https://specs.apollo.dev/link/v1.0")
-  @link(url: "https://specs.apollo.dev/join/v0.3", for: EXECUTION)
+  @link(url: "https://specs.apollo.dev/join/v0.5", for: EXECUTION)
   ${usedTagSpec ? '@link(url: "https://specs.apollo.dev/tag/v0.3")' : ''}
+  ${usedCostSpec.used ? `@link(url: "https://specs.apollo.dev/cost/v0.1"${costLinkImports})` : ''}
   ${
     usedInaccessibleSpec
       ? '@link(url: "https://specs.apollo.dev/inaccessible/v0.2", for: SECURITY)'
@@ -94,6 +114,14 @@ schema
 ${joinSDL}
 ${linkSDL}
 ${usedTagSpec ? tagSDL : ''}
+${
+  usedCostSpec
+    ? costSDL({
+        cost: usedCostSpec.names.cost ?? 'cost',
+        listSize: usedCostSpec.names.listSize ?? 'listSize',
+      })
+    : ''
+}
 ${usedInaccessibleSpec ? inaccessibleSDL : ''}
 ${usedPolicySpec ? policySDL : ''}
 ${usedRequiresScopesSpec ? requiresScopesSDL : ''}
@@ -122,6 +150,14 @@ ${print({
       return _publicSdl;
     },
   };
+}
+
+function createLinkImportValue(name: string, alias: string | null) {
+  if (alias) {
+    return `{ name: "${name}", as: "${alias}" }`;
+  }
+
+  return `"${name}"`;
 }
 
 export type CompositionResult = CompositionFailure | CompositionSuccess;

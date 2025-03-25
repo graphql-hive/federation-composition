@@ -34,6 +34,13 @@ export type SupergraphState = {
   >; // TODO: change it to a Link with no types (only directives) + reduce this type to minimum (no need for name property...)
   specs: {
     tag: boolean;
+    cost: {
+      used: boolean;
+      names: {
+        cost: string | null;
+        listSize: string | null;
+      };
+    };
     inaccessible: boolean;
     authenticated: boolean;
     requiresScopes: boolean;
@@ -56,6 +63,13 @@ export function createSupergraphStateBuilder() {
     links: [],
     specs: {
       tag: false,
+      cost: {
+        used: false,
+        names: {
+          cost: null,
+          listSize: null,
+        },
+      },
       inaccessible: false,
       policy: false,
       requiresScopes: false,
@@ -110,6 +124,18 @@ export function createSupergraphStateBuilder() {
 
       if (subgraphState.specs.policy) {
         state.specs.policy = true;
+      }
+
+      if (subgraphState.specs.cost.used) {
+        state.specs.cost.used = true;
+
+        if (subgraphState.specs.cost.names.cost) {
+          state.specs.cost.names.cost = subgraphState.specs.cost.names.cost;
+        }
+
+        if (subgraphState.specs.cost.names.listSize) {
+          state.specs.cost.names.listSize = subgraphState.specs.cost.names.listSize;
+        }
       }
 
       for (const [typeName, type] of subgraphState.types) {

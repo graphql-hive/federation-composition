@@ -21,7 +21,7 @@ export function ExtensionWithBaseRule(context: SupergraphValidationContext): Sup
         if (
           objectTypeState.byGraph.size > 1 &&
           Array.from(objectTypeState.byGraph).every(([graphId, meta]) =>
-            context.subgraphStates.get(graphId)!.version === 'v1.0'
+            context.subgraphStates.get(graphId)!.federation.version === 'v1.0'
               ? meta.extensionType === '@extends'
               : false,
           )

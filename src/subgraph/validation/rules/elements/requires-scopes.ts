@@ -1,4 +1,4 @@
-import { ASTVisitor, GraphQLError, Kind } from 'graphql';
+import { ASTVisitor, Kind } from 'graphql';
 import { print } from '../../../../graphql/printer.js';
 import { validateDirectiveAgainstOriginal } from '../../../helpers.js';
 import type { SubgraphValidationContext } from '../../validation-context.js';

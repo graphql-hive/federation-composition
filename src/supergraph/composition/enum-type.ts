@@ -1,6 +1,7 @@
 import type { DirectiveNode } from 'graphql';
 import { FederationVersion } from '../../specifications/federation.js';
 import { Deprecated, Description, EnumType } from '../../subgraph/state.js';
+import { ensureValue, mathMax } from '../../utils/helpers.js';
 import { createEnumTypeNode } from './ast.js';
 import { convertToConst, type MapByGraph, type TypeBuilder } from './common.js';
 
@@ -25,6 +26,10 @@ export function enumTypeBuilder(): TypeBuilder<EnumType, EnumTypeState> {
 
       if (type.scopes) {
         enumTypeState.scopes.push(...type.scopes);
+      }
+
+      if (type.cost !== null) {
+        enumTypeState.cost = mathMax(type.cost, enumTypeState.cost);
       }
 
       if (type.isDefinition) {
@@ -90,7 +95,7 @@ export function enumTypeBuilder(): TypeBuilder<EnumType, EnumTypeState> {
         });
       }
     },
-    composeSupergraphNode(enumType: EnumTypeState) {
+    composeSupergraphNode(enumType: EnumTypeState, _graph, { supergraphState }) {
       const mergeMethod = decideOnEnumMergeStrategy(
         enumType.referencedByInputType,
         enumType.referencedByOutputType,
@@ -107,6 +112,16 @@ export function enumTypeBuilder(): TypeBuilder<EnumType, EnumTypeState> {
 
       return createEnumTypeNode({
         name: enumType.name,
+        cost:
+          enumType.cost !== null
+            ? {
+                cost: enumType.cost,
+                directiveName: ensureValue(
+                  supergraphState.specs.cost.names.cost,
+                  'Directive name of @cost is not defined',
+                ),
+              }
+            : null,
         values: values.map(([_, value]) => ({
           name: value.name,
           join: {
@@ -173,6 +188,7 @@ export type EnumTypeState = {
   authenticated: boolean;
   policies: string[][];
   scopes: string[][];
+  cost: number | null;
   hasDefinition: boolean;
   description?: Description;
   byGraph: MapByGraph<EnumTypeStateInGraph>;
@@ -225,6 +241,7 @@ function getOrCreateEnumType(state: Map<string, EnumTypeState>, typeName: string
     authenticated: false,
     policies: [],
     scopes: [],
+    cost: null,
     referencedByInputType: false,
     referencedByOutputType: false,
     inputTypeReferences: new Set(),

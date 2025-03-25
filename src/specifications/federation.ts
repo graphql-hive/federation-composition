@@ -253,6 +253,48 @@ const federationSpecFactory = {
       prefix,
       imports,
     ),
+  'v2.9': (prefix: string, imports?: readonly LinkImport[]) =>
+    createTypeDefinitions(
+      /* GraphQL */ `
+        directive @policy(
+          policies: [[federation__Policy!]!]!
+        ) on FIELD_DEFINITION | OBJECT | INTERFACE | SCALAR | ENUM
+        directive @authenticated on FIELD_DEFINITION | OBJECT | INTERFACE | SCALAR | ENUM
+        directive @requiresScopes(
+          scopes: [[federation__Scope!]!]!
+        ) on FIELD_DEFINITION | OBJECT | INTERFACE | SCALAR | ENUM
+        directive @composeDirective(name: String!) repeatable on SCHEMA
+        directive @extends on OBJECT | INTERFACE
+        directive @external on OBJECT | FIELD_DEFINITION
+        directive @key(
+          fields: FieldSet!
+          resolvable: Boolean = true
+        ) repeatable on OBJECT | INTERFACE
+        directive @inaccessible on FIELD_DEFINITION | OBJECT | INTERFACE | UNION | ENUM | ENUM_VALUE | SCALAR | INPUT_OBJECT | INPUT_FIELD_DEFINITION | ARGUMENT_DEFINITION
+        directive @interfaceObject on OBJECT
+        directive @override(from: String!) on FIELD_DEFINITION
+        directive @provides(fields: FieldSet!) on FIELD_DEFINITION
+        directive @requires(fields: FieldSet!) on FIELD_DEFINITION
+        directive @shareable repeatable on FIELD_DEFINITION | OBJECT
+        directive @tag(
+          name: String!
+        ) repeatable on FIELD_DEFINITION | INTERFACE | OBJECT | UNION | ARGUMENT_DEFINITION | SCALAR | ENUM | ENUM_VALUE | INPUT_OBJECT | INPUT_FIELD_DEFINITION
+        directive @cost(
+          weight: Int!
+        ) on ARGUMENT_DEFINITION | ENUM | FIELD_DEFINITION | INPUT_FIELD_DEFINITION | OBJECT | SCALAR
+        directive @listSize(
+          assumedSize: Int
+          slicingArguments: [String!]
+          sizedFields: [String!]
+          requireOneSlicingArgument: Boolean = true
+        ) on FIELD_DEFINITION
+        scalar FieldSet
+        scalar federation__Policy
+        scalar federation__Scope
+      `,
+      prefix,
+      imports,
+    ),
 };
 
 // TODO: T03 support prefixes (imports could have them) of Federation directives

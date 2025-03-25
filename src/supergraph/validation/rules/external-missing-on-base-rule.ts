@@ -40,7 +40,7 @@ export function ExternalMissingOnBaseRule(
       // Check if the field is marked @external on all the subgraphs in which it is listed.
       if (
         Array.from(fieldState.byGraph).every(([graphId, stateInGraph]) => {
-          const graphVersion = context.subgraphStates.get(graphId)!.version;
+          const graphVersion = context.subgraphStates.get(graphId)!.federation.version;
 
           if (stateInGraph.usedAsKey) {
             if (graphVersion === 'v1.0') {

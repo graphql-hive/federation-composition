@@ -183,6 +183,7 @@ Your feedback and bug reports are welcome and appreciated.
 - ✅ `REQUIRED_INACCESSIBLE`
 - ✅ `SATISFIABILITY_ERROR`
 - ✅ `INTERFACE_FIELD_NO_IMPLEM`
+- ✅ `LINK_IMPORT_NAME_MISMATCH`
 
 ### TODOs
 
@@ -191,6 +192,5 @@ Your feedback and bug reports are welcome and appreciated.
 - [ ] `EXTERNAL_ARGUMENT_TYPE_MISMATCH`
 - [ ] `EXTERNAL_COLLISION_WITH_ANOTHER_DIRECTIVE`
 - [ ] `IMPLEMENTED_BY_INACCESSIBLE`
-- [ ] `LINK_IMPORT_NAME_MISMATCH`
 - [ ] `UNSUPPORTED_LINKED_FEATURE`
 - [ ] `TYPE_WITH_ONLY_UNUSED_EXTERNAL`

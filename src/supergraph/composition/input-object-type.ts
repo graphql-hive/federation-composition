@@ -1,12 +1,7 @@
 import { DirectiveNode } from 'graphql';
 import { FederationVersion } from '../../specifications/federation.js';
-import {
-  Argument,
-  ArgumentKind,
-  Deprecated,
-  Description,
-  InputObjectType,
-} from '../../subgraph/state.js';
+import { ArgumentKind, Deprecated, Description, InputObjectType } from '../../subgraph/state.js';
+import { ensureValue, mathMax } from '../../utils/helpers.js';
 import { createInputObjectTypeNode } from './ast.js';
 import { convertToConst, type MapByGraph, type TypeBuilder } from './common.js';
 
@@ -59,6 +54,10 @@ export function inputObjectTypeBuilder(): TypeBuilder<InputObjectType, InputObje
           fieldState.inaccessible = true;
         }
 
+        if (field.cost !== null) {
+          fieldState.cost = mathMax(field.cost, fieldState.cost);
+        }
+
         if (field.description && !fieldState.description) {
           fieldState.description = field.description;
         }
@@ -86,7 +85,7 @@ export function inputObjectTypeBuilder(): TypeBuilder<InputObjectType, InputObje
         });
       }
     },
-    composeSupergraphNode(inputObjectType) {
+    composeSupergraphNode(inputObjectType, _graph, { supergraphState }) {
       return createInputObjectTypeNode({
         name: inputObjectType.name,
         tags: Array.from(inputObjectType.tags),
@@ -112,6 +111,16 @@ export function inputObjectTypeBuilder(): TypeBuilder<InputObjectType, InputObje
               type: field.type,
               tags: Array.from(field.tags),
               inaccessible: field.inaccessible,
+              cost:
+                field.cost !== null
+                  ? {
+                      cost: field.cost,
+                      directiveName: ensureValue(
+                        supergraphState.specs.cost.names.cost,
+                        'Directive name of @cost is not defined',
+                      ),
+                    }
+                  : null,
               defaultValue: fieldStateInGraphs.every(f => typeof f.defaultValue !== 'undefined')
                 ? field.defaultValue
                 : undefined,
@@ -158,6 +167,7 @@ export type InputObjectTypeFieldState = {
   kind: ArgumentKind;
   tags: Set<string>;
   inaccessible: boolean;
+  cost: number | null;
   defaultValue?: string;
   description?: Description;
   deprecated?: Deprecated;
@@ -222,6 +232,7 @@ function getOrCreateField(
     kind: fieldKind,
     tags: new Set(),
     inaccessible: false,
+    cost: null,
     byGraph: new Map(),
     ast: {
       directives: [],

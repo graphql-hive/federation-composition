@@ -13,10 +13,12 @@ import { FieldArgumentsOfTheSameTypeRule } from './rules/field-arguments-of-the-
 import { FieldsOfTheSameTypeRule } from './rules/fields-of-the-same-type-rule.js';
 import { InputFieldDefaultMismatchRule } from './rules/input-field-default-mismatch-rule.js';
 import { InputObjectValuesRule } from './rules/input-object-values-rule.js';
+import { InterfaceFieldNoImplementationRule } from './rules/interface-field-no-implementation-rule.js';
 import { InterfaceKeyMissingImplementationTypeRule } from './rules/interface-key-missing-implementation-type.js';
 import { InterfaceObjectUsageErrorRule } from './rules/interface-object-usage-error.js';
 import { InterfaceSubtypeRule } from './rules/interface-subtype-rule.js';
 import { InvalidFieldSharingRule } from './rules/invalid-field-sharing-rule.js';
+import { LinkImportNameMismatchRule } from './rules/link-import-name-mismatch-rule.js';
 import { OnlyInaccessibleChildrenRule } from './rules/only-inaccessible-children-rule.js';
 import { OverrideSourceHasOverrideRule } from './rules/override-source-has-override.js';
 import { ReferencedInaccessibleRule } from './rules/referenced-inaccessible-rule.js';
@@ -26,7 +28,6 @@ import { RequiredInputFieldMissingInSomeSubgraphRule } from './rules/required-in
 import { RequiredQueryRule } from './rules/required-query-rule.js';
 import { SatisfiabilityRule } from './rules/satisfiablity-rule.js';
 import { SubgraphNameRule } from './rules/subgraph-name-rule.js';
-import { InterfaceFieldNoImplementationRule } from './rules/interface-field-no-implementation-rule.js';
 import { TypesOfTheSameKindRule } from './rules/types-of-the-same-kind-rule.js';
 import { createSupergraphValidationContext } from './validation-context.js';
 
@@ -42,7 +43,11 @@ export function validateSupergraph(
   for (const subgraphState of subgraphStates.values()) {
     state.addSubgraph(subgraphState);
   }
-  const preSupergraphRules = [RequiredQueryRule, TypesOfTheSameKindRule];
+  const preSupergraphRules = [
+    RequiredQueryRule,
+    TypesOfTheSameKindRule,
+    LinkImportNameMismatchRule,
+  ];
   const rulesToSkip = __internal?.disableValidationRules ?? [];
 
   for (const rule of preSupergraphRules) {

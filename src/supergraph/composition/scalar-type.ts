@@ -1,6 +1,7 @@
 import { DirectiveNode } from 'graphql';
 import { FederationVersion } from '../../specifications/federation.js';
 import { Description, ScalarType } from '../../subgraph/state.js';
+import { ensureValue, mathMax } from '../../utils/helpers.js';
 import { createScalarTypeNode } from './ast.js';
 import { convertToConst, MapByGraph, TypeBuilder } from './common.js';
 
@@ -27,6 +28,10 @@ export function scalarTypeBuilder(): TypeBuilder<ScalarType, ScalarTypeState> {
         scalarTypeState.scopes.push(...type.scopes);
       }
 
+      if (type.cost !== null) {
+        scalarTypeState.cost = mathMax(type.cost, scalarTypeState.cost);
+      }
+
       if (type.description && !scalarTypeState.description) {
         scalarTypeState.description = type.description;
       }
@@ -44,7 +49,7 @@ export function scalarTypeBuilder(): TypeBuilder<ScalarType, ScalarTypeState> {
         version: graph.version,
       });
     },
-    composeSupergraphNode(scalarType: ScalarTypeState) {
+    composeSupergraphNode(scalarType: ScalarTypeState, _graph, { supergraphState }) {
       return createScalarTypeNode({
         name: scalarType.name,
         tags: Array.from(scalarType.tags),
@@ -52,6 +57,16 @@ export function scalarTypeBuilder(): TypeBuilder<ScalarType, ScalarTypeState> {
         authenticated: scalarType.authenticated,
         policies: scalarType.policies,
         scopes: scalarType.scopes,
+        cost:
+          scalarType.cost !== null
+            ? {
+                cost: scalarType.cost,
+                directiveName: ensureValue(
+                  supergraphState.specs.cost.names.cost,
+                  'Directive name of @cost is not defined',
+                ),
+              }
+            : null,
         description: scalarType.description,
         specifiedBy: scalarType.specifiedBy,
         join: {
@@ -75,6 +90,7 @@ export type ScalarTypeState = {
   authenticated: boolean;
   policies: string[][];
   scopes: string[][];
+  cost: number | null;
   byGraph: MapByGraph<ScalarTypeStateInGraph>;
   description?: Description;
   specifiedBy?: string;
@@ -103,6 +119,7 @@ function getOrCreateScalarType(state: Map<string, ScalarTypeState>, typeName: st
     authenticated: false,
     policies: [],
     scopes: [],
+    cost: null,
     byGraph: new Map(),
     ast: {
       directives: [],
