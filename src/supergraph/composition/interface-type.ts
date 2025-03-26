@@ -1,7 +1,13 @@
 import { DirectiveNode } from 'graphql';
 import { FederationVersion } from '../../specifications/federation.js';
-import { ArgumentKind, Deprecated, Description, InterfaceType } from '../../subgraph/state.js';
-import { ensureValue, mathMax } from '../../utils/helpers.js';
+import {
+  ArgumentKind,
+  Deprecated,
+  Description,
+  InterfaceType,
+  ListSize,
+} from '../../subgraph/state.js';
+import { ensureValue, mathMax, mathMaxNullable, nullableArrayUnion } from '../../utils/helpers.js';
 import { createInterfaceTypeNode, JoinFieldAST } from './ast.js';
 import { convertToConst } from './common.js';
 import type { Key, MapByGraph, TypeBuilder } from './common.js';
@@ -96,6 +102,27 @@ export function interfaceTypeBuilder(): TypeBuilder<InterfaceType, InterfaceType
 
         if (field.cost !== null) {
           fieldState.cost = mathMax(field.cost, fieldState.cost);
+        }
+
+        if (field.listSize !== null) {
+          fieldState.listSize = {
+            assumedSize: mathMaxNullable(
+              fieldState.listSize?.assumedSize,
+              field.listSize.assumedSize,
+            ),
+            // prefer `false`
+            requireOneSlicingArgument:
+              (fieldState.listSize?.requireOneSlicingArgument ?? true) &&
+              field.listSize.requireOneSlicingArgument,
+            slicingArguments: nullableArrayUnion(
+              fieldState.listSize?.slicingArguments,
+              field.listSize.slicingArguments,
+            ),
+            sizedFields: nullableArrayUnion(
+              fieldState.listSize?.sizedFields,
+              field.listSize.sizedFields,
+            ),
+          };
         }
 
         // First deprecation wins
@@ -215,6 +242,16 @@ export function interfaceTypeBuilder(): TypeBuilder<InterfaceType, InterfaceType
                     directiveName: ensureValue(
                       supergraphState.specs.cost.names.cost,
                       'Directive name of @cost is not defined',
+                    ),
+                  }
+                : null,
+            listSize:
+              field.listSize !== null
+                ? {
+                    ...field.listSize,
+                    directiveName: ensureValue(
+                      supergraphState.specs.cost.names.listSize,
+                      'Directive name of @listSize is not defined',
                     ),
                   }
                 : null,
@@ -344,6 +381,7 @@ export type InterfaceTypeFieldState = {
   policies: string[][];
   scopes: string[][];
   cost: number | null;
+  listSize: ListSize | null;
   deprecated?: Deprecated;
   description?: Description;
   usedAsKey: boolean;
@@ -450,6 +488,7 @@ function getOrCreateInterfaceField(
     policies: [],
     scopes: [],
     cost: null,
+    listSize: null,
     byGraph: new Map(),
     args: new Map(),
     ast: {

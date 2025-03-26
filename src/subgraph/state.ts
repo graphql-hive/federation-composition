@@ -18,7 +18,6 @@ import { print } from '../graphql/printer.js';
 import { TypeNodeInfo } from '../graphql/type-node-info.js';
 import { FederationVersion, isFederationLink } from '../specifications/federation.js';
 import { Link, LinkImport } from '../specifications/link.js';
-import { mathMax } from '../utils/helpers.js';
 import { printOutputType } from './helpers.js';
 
 export type SubgraphType =
@@ -182,6 +181,7 @@ export interface Field {
   policies: string[][];
   scopes: string[][];
   cost: number | null;
+  listSize: ListSize | null;
   override: string | null;
   provides: string | null;
   requires: string | null;
@@ -254,6 +254,13 @@ export interface Deprecated {
   reason?: string;
   deprecated: true;
 }
+
+export type ListSize = {
+  assumedSize: number | null;
+  slicingArguments: string[] | null;
+  sizedFields: string[] | null;
+  requireOneSlicingArgument: boolean;
+};
 
 export interface SubgraphState {
   graph: {
@@ -1196,8 +1203,7 @@ function scalarTypeFactory(state: SubgraphState) {
       getOrCreateScalarType(state, typeName).scopes.push(...scopes);
     },
     setCost(typeName: string, cost: number) {
-      const existing = getOrCreateScalarType(state, typeName);
-      existing.cost = mathMax(cost, existing.cost);
+      getOrCreateScalarType(state, typeName).cost = cost;
     },
     setTag(typeName: string, tag: string) {
       getOrCreateScalarType(state, typeName).tags.add(tag);
@@ -1318,8 +1324,7 @@ function objectTypeFactory(
         return;
       }
 
-      const existing = getOrCreateObjectType(state, renameObject, typeName);
-      existing.cost = mathMax(cost, existing.cost);
+      getOrCreateObjectType(state, renameObject, typeName).cost = cost;
     },
     setShareable(typeName: string) {
       if (isInterfaceObject(typeName)) {
@@ -1416,8 +1421,14 @@ function objectTypeFactory(
           return interfaceTypeBuilder.field.setCost(typeName, fieldName, cost);
         }
 
-        const existing = getOrCreateObjectField(state, renameObject, typeName, fieldName);
-        existing.cost = mathMax(cost, existing.cost);
+        getOrCreateObjectField(state, renameObject, typeName, fieldName).cost = cost;
+      },
+      setListSize(typeName: string, fieldName: string, listSize: ListSize) {
+        if (isInterfaceObject(typeName)) {
+          return interfaceTypeBuilder.field.setListSize(typeName, fieldName, listSize);
+        }
+
+        getOrCreateObjectField(state, renameObject, typeName, fieldName).listSize = listSize;
       },
       setExternal(typeName: string, fieldName: string) {
         if (isInterfaceObject(typeName)) {
@@ -1627,15 +1638,8 @@ function objectTypeFactory(
             return interfaceTypeBuilder.field.arg.setCost(typeName, fieldName, argName, cost);
           }
 
-          const existing = getOrCreateObjectFieldArgument(
-            state,
-            renameObject,
-            typeName,
-            fieldName,
-            argName,
-          );
-
-          existing.cost = mathMax(cost, existing.cost);
+          getOrCreateObjectFieldArgument(state, renameObject, typeName, fieldName, argName).cost =
+            cost;
         },
       },
     },
@@ -1721,8 +1725,10 @@ function interfaceTypeFactory(state: SubgraphState) {
         getOrCreateInterfaceField(state, typeName, fieldName).scopes.push(...scopes);
       },
       setCost(typeName: string, fieldName: string, cost: number) {
-        const existing = getOrCreateInterfaceField(state, typeName, fieldName);
-        existing.cost = mathMax(cost, existing.cost);
+        getOrCreateInterfaceField(state, typeName, fieldName).cost = cost;
+      },
+      setListSize(typeName: string, fieldName: string, listSize: ListSize) {
+        getOrCreateInterfaceField(state, typeName, fieldName).listSize = listSize;
       },
       setOverride(typeName: string, fieldName: string, override: string) {
         getOrCreateInterfaceField(state, typeName, fieldName).override = override;
@@ -1790,8 +1796,7 @@ function interfaceTypeFactory(state: SubgraphState) {
             true;
         },
         setCost(typeName: string, fieldName: string, argName: string, cost: number) {
-          const existing = getOrCreateInterfaceFieldArgument(state, typeName, fieldName, argName);
-          existing.cost = mathMax(cost, existing.cost);
+          getOrCreateInterfaceFieldArgument(state, typeName, fieldName, argName).cost = cost;
         },
         setDirective(
           typeName: string,
@@ -1865,8 +1870,7 @@ function inputObjectTypeFactory(state: SubgraphState) {
         getOrCreateInputObjectField(state, typeName, fieldName).ast.directives.push(directive);
       },
       setCost(typeName: string, fieldName: string, cost: number) {
-        const existing = getOrCreateInputObjectField(state, typeName, fieldName);
-        existing.cost = mathMax(cost, existing.cost);
+        getOrCreateInputObjectField(state, typeName, fieldName).cost = cost;
       },
     },
   };
@@ -1913,8 +1917,7 @@ function enumTypeFactory(state: SubgraphState) {
       getOrCreateEnumType(state, typeName).scopes.push(...scopes);
     },
     setCost(typeName: string, cost: number) {
-      const existing = getOrCreateEnumType(state, typeName);
-      existing.cost = mathMax(cost, existing.cost);
+      getOrCreateEnumType(state, typeName).cost = cost;
     },
     setDescription(typeName: string, description: Description) {
       getOrCreateEnumType(state, typeName).description = description;
@@ -2242,6 +2245,7 @@ function getOrCreateObjectField(
     policies: [],
     scopes: [],
     cost: null,
+    listSize: null,
     used: false,
     required: false,
     provided: false,
@@ -2286,6 +2290,7 @@ function getOrCreateInterfaceField(
     policies: [],
     scopes: [],
     cost: null,
+    listSize: null,
     used: false,
     override: null,
     provides: null,
