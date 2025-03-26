@@ -51,6 +51,7 @@ export type JoinUnionMemberAST = inferArgument<typeof createJoinUnionMemberDirec
 export type JoinEnumValueAST = inferArgument<typeof createJoinEnumValueDirectiveNode>;
 type Link = inferArgument<typeof createLinkDirectiveNode>;
 type Cost = inferArgument<typeof createCostDirectiveNode>;
+type ListSize = inferArgument<typeof createListSizeDirectiveNode>;
 type DescriptionAST = inferArgument<typeof createDescriptionNode>;
 type Deprecated = {
   reason?: string;
@@ -323,6 +324,7 @@ function createFieldNode(field: {
   };
   inaccessible?: boolean;
   cost: Cost | null;
+  listSize: ListSize | null;
   tags?: string[];
   description?: DescriptionAST;
   deprecated?: Deprecated;
@@ -979,6 +981,88 @@ function createCostDirectiveNode(input: {
   };
 }
 
+function createListSizeDirectiveNode(input: {
+  assumedSize: number | null;
+  slicingArguments: string[] | null;
+  sizedFields: string[] | null;
+  requireOneSlicingArgument: boolean;
+  directiveName: string;
+}): ConstDirectiveNode {
+  const args: ConstArgumentNode[] = [];
+
+  if (input.requireOneSlicingArgument === false) {
+    args.push({
+      kind: Kind.ARGUMENT,
+      name: {
+        kind: Kind.NAME,
+        value: 'requireOneSlicingArgument',
+      },
+      value: {
+        kind: Kind.BOOLEAN,
+        value: false,
+      },
+    });
+  }
+
+  if (typeof input.assumedSize === 'number') {
+    args.push({
+      kind: Kind.ARGUMENT,
+      name: {
+        kind: Kind.NAME,
+        value: 'assumedSize',
+      },
+      value: {
+        kind: Kind.INT,
+        value: String(input.assumedSize),
+      },
+    });
+  }
+
+  if (Array.isArray(input.slicingArguments)) {
+    args.push({
+      kind: Kind.ARGUMENT,
+      name: {
+        kind: Kind.NAME,
+        value: 'slicingArguments',
+      },
+      value: {
+        kind: Kind.LIST,
+        values: input.slicingArguments.map(arg => ({
+          kind: Kind.STRING,
+          value: arg,
+        })),
+      },
+    });
+  }
+
+  if (Array.isArray(input.sizedFields)) {
+    args.push({
+      kind: Kind.ARGUMENT,
+      name: {
+        kind: Kind.NAME,
+        value: 'sizedFields',
+      },
+      value: {
+        kind: Kind.LIST,
+        values: input.sizedFields.map(arg => ({
+          kind: Kind.STRING,
+          value: arg,
+          block: false,
+        })),
+      },
+    });
+  }
+
+  return {
+    kind: Kind.DIRECTIVE,
+    name: {
+      kind: Kind.NAME,
+      value: input.directiveName,
+    },
+    arguments: args,
+  };
+}
+
 function createLinkDirectiveNode(link: {
   url: string;
   import?: Array<{
@@ -1094,6 +1178,7 @@ function applyDirectives(common: {
   policies?: string[][];
   scopes?: string[][];
   cost?: Cost | null;
+  listSize?: ListSize | null;
 }) {
   const deduplicatedDirectives = (common.ast?.directives ?? [])
     .map(directive => {
@@ -1118,6 +1203,7 @@ function applyDirectives(common: {
     common.policies?.length ? [createPolicyDirectiveNode(common.policies)] : [],
     common.scopes?.length ? [createRequiresScopesDirectiveNode(common.scopes)] : [],
     common.cost ? [createCostDirectiveNode(common.cost)] : [],
+    common.listSize ? [createListSizeDirectiveNode(common.listSize)] : [],
     common.deprecated ? [createDeprecatedDirectiveNode(common.deprecated)] : [],
     common.specifiedBy ? [createSpecifiedByDirectiveNode(common.specifiedBy)] : [],
   );

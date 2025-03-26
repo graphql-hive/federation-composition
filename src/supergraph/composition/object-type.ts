@@ -1,7 +1,19 @@
 import { DirectiveNode } from 'graphql';
 import type { FederationVersion } from '../../specifications/federation.js';
-import { ArgumentKind, Deprecated, Description, ObjectType } from '../../subgraph/state.js';
-import { ensureValue, isDefined, mathMax } from '../../utils/helpers.js';
+import {
+  ArgumentKind,
+  Deprecated,
+  Description,
+  ListSize,
+  ObjectType,
+} from '../../subgraph/state.js';
+import {
+  ensureValue,
+  isDefined,
+  mathMax,
+  mathMaxNullable,
+  nullableArrayUnion,
+} from '../../utils/helpers.js';
 import { createObjectTypeNode, JoinFieldAST } from './ast.js';
 import type { Key, MapByGraph, TypeBuilder } from './common.js';
 import { convertToConst } from './common.js';
@@ -159,6 +171,27 @@ export function objectTypeBuilder(): TypeBuilder<ObjectType, ObjectTypeState> {
 
         if (field.cost !== null) {
           fieldState.cost = mathMax(field.cost, fieldState.cost);
+        }
+
+        if (field.listSize !== null) {
+          fieldState.listSize = {
+            assumedSize: mathMaxNullable(
+              fieldState.listSize?.assumedSize,
+              field.listSize.assumedSize,
+            ),
+            // prefer `false`
+            requireOneSlicingArgument:
+              (fieldState.listSize?.requireOneSlicingArgument ?? true) &&
+              field.listSize.requireOneSlicingArgument,
+            slicingArguments: nullableArrayUnion(
+              fieldState.listSize?.slicingArguments,
+              field.listSize.slicingArguments,
+            ),
+            sizedFields: nullableArrayUnion(
+              fieldState.listSize?.sizedFields,
+              field.listSize.sizedFields,
+            ),
+          };
         }
 
         // first wins BUT a graph overriding a field of an entity type (that provided the description) is an exception (it's applied at the supergraph level REF_1)
@@ -652,6 +685,16 @@ export function objectTypeBuilder(): TypeBuilder<ObjectType, ObjectTypeState> {
                       ),
                     }
                   : null,
+              listSize:
+                field.listSize !== null
+                  ? {
+                      ...field.listSize,
+                      directiveName: ensureValue(
+                        supergraphState.specs.cost.names.listSize,
+                        'Directive name of @listSize is not defined',
+                      ),
+                    }
+                  : null,
               ast: {
                 directives: convertToConst(field.ast.directives),
               },
@@ -725,6 +768,16 @@ export function objectTypeBuilder(): TypeBuilder<ObjectType, ObjectTypeState> {
                           directiveName: ensureValue(
                             supergraphState.specs.cost.names.cost,
                             'Directive name of @cost is not defined',
+                          ),
+                        }
+                      : null,
+                  listSize:
+                    field.listSize !== null
+                      ? {
+                          ...field.listSize,
+                          directiveName: ensureValue(
+                            supergraphState.specs.cost.names.listSize,
+                            'Directive name of @listSize is not defined',
                           ),
                         }
                       : null,
@@ -854,6 +907,7 @@ export type ObjectTypeFieldState = {
   policies: string[][];
   scopes: string[][];
   cost: number | null;
+  listSize: ListSize | null;
   usedAsKey: boolean;
   override: string | null;
   byGraph: MapByGraph<FieldStateInGraph>;
@@ -969,6 +1023,7 @@ function getOrCreateField(objectTypeState: ObjectTypeState, fieldName: string, f
     policies: [],
     scopes: [],
     cost: null,
+    listSize: null,
     usedAsKey: false,
     override: null,
     byGraph: new Map(),

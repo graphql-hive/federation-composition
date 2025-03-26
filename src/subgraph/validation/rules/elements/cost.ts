@@ -51,7 +51,7 @@ export function CostRule(context: SubgraphValidationContext): ASTVisitor {
       const parent = ancestors[directivesKeyAt];
 
       if (!parent) {
-        throw new Error('Could not find the node annotated with @requiresScopes');
+        throw new Error('Could not find the node annotated with @cost');
       }
 
       if (Array.isArray(parent)) {

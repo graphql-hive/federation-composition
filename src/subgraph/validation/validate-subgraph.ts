@@ -28,6 +28,7 @@ import { FieldSetRules } from './rules/elements/field-set.js';
 import { InaccessibleRules } from './rules/elements/inaccessible.js';
 import { InterfaceObjectRules } from './rules/elements/interface-object.js';
 import { KeyRules } from './rules/elements/key.js';
+import { ListSizeRule } from './rules/elements/list-size.js';
 import { OverrideRules } from './rules/elements/override.js';
 import { PolicyRule } from './rules/elements/policy.js';
 import { ProvidesRules } from './rules/elements/provides.js';
@@ -145,6 +146,7 @@ export function validateSubgraph(
     PolicyRule,
     RequiresScopesRule,
     CostRule,
+    ListSizeRule,
     OverrideRules,
     ExtendsRules,
     QueryRootTypeInaccessibleRule,
