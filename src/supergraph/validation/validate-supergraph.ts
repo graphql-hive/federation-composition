@@ -17,7 +17,7 @@ import { InterfaceFieldNoImplementationRule } from './rules/interface-field-no-i
 import { InterfaceKeyMissingImplementationTypeRule } from './rules/interface-key-missing-implementation-type.js';
 import { InterfaceObjectUsageErrorRule } from './rules/interface-object-usage-error.js';
 import { InterfaceSubtypeRule } from './rules/interface-subtype-rule.js';
-import { InvalidFieldSharingRule } from './rules/invalid-field-sharing-rule.js';+
+import { InvalidFieldSharingRule } from './rules/invalid-field-sharing-rule.js';
 import { LinkImportNameMismatchRule } from './rules/link-import-name-mismatch-rule.js';
 import { NoInaccessibleOnImplementedInterfaceFieldsRule } from './rules/no-inaccessible-on-implemented-interface-fields-rule.js';
 import { OnlyInaccessibleChildrenRule } from './rules/only-inaccessible-children-rule.js';
