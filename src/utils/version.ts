@@ -1,4 +1,4 @@
-import { FederationVersion } from '../specifications/federation';
+import { FederationVersion } from '../specifications/federation.js';
 
 type UnsupportedVersion = 'v2.7' | 'v2.8';
 

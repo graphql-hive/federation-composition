@@ -1,5 +1,5 @@
-import { satisfiesVersionRange } from '../utils/version';
-import type { FederationVersion } from './federation';
+import { satisfiesVersionRange } from '../utils/version.js';
+import type { FederationVersion } from './federation.js';
 
 export const sdl = (version: FederationVersion) => {
   const joinField = /* GraphQL */ `
