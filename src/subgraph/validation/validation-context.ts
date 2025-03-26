@@ -267,6 +267,7 @@ export function createSubgraphValidationContext(
 
   return {
     stateBuilder,
+    federationImports: imports,
     isLinkSpecDirective(name: string) {
       return linkSpecDirectives.some(d => d.name.value === name);
     },

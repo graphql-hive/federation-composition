@@ -1,10 +1,11 @@
 import { parse, print } from 'graphql';
-import { expect, test } from 'vitest';
+import { describe, expect, test } from 'vitest';
 import { sortSDL } from '../src/graphql/sort-sdl.js';
 import {
   assertCompositionFailure,
   assertCompositionSuccess,
-  testImplementations,
+  satisfiesVersionRange,
+  testVersions,
 } from './shared/testkit.js';
 
 expect.addSnapshotSerializer({
@@ -12,61 +13,121 @@ expect.addSnapshotSerializer({
   test: value => typeof value === 'string' && value.includes('specs.apollo.dev'),
 });
 
-testImplementations(api => {
-  const composeServices = api.composeServices;
+describe('@override(label:)', () => {
+  testVersions((api, version) => {
+    const composeServices = api.composeServices;
 
-  test('allow to use v2.7, but not progressive @override labels', () => {
-    const result = composeServices([
-      {
-        name: 'foo',
-        typeDefs: parse(/* GraphQL */ `
-          extend schema
-            @link(url: "https://specs.apollo.dev/federation/v2.7", import: ["@key", "@override"])
+    if (satisfiesVersionRange('< v2.7', version)) {
+      test('not available, raise na error', () => {
+        const result = composeServices([
+          {
+            name: 'foo',
+            typeDefs: parse(/* GraphQL */ `
+              extend schema
+                @link(
+                  url: "https://specs.apollo.dev/federation/${version}"
+                  import: ["@key", "@override"]
+                )
 
-          type Query {
-            foo: User
-          }
+              type Query {
+                foo: User
+              }
 
-          type User @key(fields: "id") {
-            id: ID
-            name: String @override(from: "bar", label: "foo")
-          }
-        `),
-      },
-      {
-        name: 'bar',
-        typeDefs: parse(/* GraphQL */ `
-          extend schema @link(url: "https://specs.apollo.dev/federation/v2.7", import: ["@key"])
+              type User @key(fields: "id") {
+                id: ID
+                name: String @override(from: "bar", label: "foo")
+              }
+            `),
+          },
+          {
+            name: 'bar',
+            typeDefs: parse(/* GraphQL */ `
+              extend schema @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@key"])
 
-          type Query {
-            bar: User
-          }
+              type Query {
+                bar: User
+              }
 
-          type User @key(fields: "id") {
-            id: ID
-            name: String
-          }
-        `),
-      },
-    ]);
+              type User @key(fields: "id") {
+                id: ID
+                name: String
+              }
+            `),
+          },
+        ]);
 
-    if (api.library === 'apollo') {
-      assertCompositionSuccess(result);
+        assertCompositionFailure(result);
+
+        expect(result.errors).toContainEqual(
+          expect.objectContaining({
+            message: '[foo] Unknown argument "label" on directive "@override".',
+            extensions: expect.objectContaining({
+              code: 'INVALID_GRAPHQL',
+            }),
+          }),
+        );
+      });
       return;
     }
 
-    // Our composition does not support override labels yet
-    assertCompositionFailure(result);
+    test(
+      api.library === 'guild'
+        ? `allow to use the version, but disallow to import @override(label:)`
+        : 'available, allow to use',
+      () => {
+        const result = composeServices([
+          {
+            name: 'foo',
+            typeDefs: parse(/* GraphQL */ `
+            extend schema
+              @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@key", "@override"])
 
-    expect(result.errors).toContainEqual(
-      expect.objectContaining({
-        message:
-          '[foo] Progressive @override labels are not yet supported. Attempted to override field "User.name".',
-        extensions: expect.objectContaining({
-          code: 'UNSUPPORTED_FEATURE',
-          subgraphName: 'foo',
-        }),
-      }),
+            type Query {
+              foo: User
+            }
+
+            type User @key(fields: "id") {
+              id: ID
+              name: String @override(from: "bar", label: "foo")
+            }
+          `),
+          },
+          {
+            name: 'bar',
+            typeDefs: parse(/* GraphQL */ `
+              extend schema @link(url: "https://specs.apollo.dev/federation/v2.7", import: ["@key"])
+
+              type Query {
+                bar: User
+              }
+
+              type User @key(fields: "id") {
+                id: ID
+                name: String
+              }
+            `),
+          },
+        ]);
+
+        if (api.library === 'apollo') {
+          assertCompositionSuccess(result);
+          return;
+        }
+
+        // Our composition does not support override labels yet
+        assertCompositionFailure(result);
+
+        expect(result.errors).toContainEqual(
+          expect.objectContaining({
+            message:
+              '[foo] Progressive @override labels are not yet supported. Attempted to override field "User.name".',
+            extensions: expect.objectContaining({
+              code: 'UNSUPPORTED_FEATURE',
+              subgraphName: 'foo',
+            }),
+          }),
+        );
+      },
     );
   });
 });

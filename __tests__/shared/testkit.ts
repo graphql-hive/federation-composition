@@ -25,7 +25,6 @@ const missingErrorCodes = [
   'IMPLEMENTED_BY_INACCESSIBLE',
   'INVALID_FEDERATION_SUPERGRAPH',
   'SHAREABLE_HAS_MISMATCHED_RUNTIME_TYPES',
-  'UNSUPPORTED_FEATURE',
   'UNSUPPORTED_LINKED_FEATURE',
 ];
 
@@ -95,7 +94,7 @@ export const versions = [
   'v2.5',
   'v2.6',
   'v2.7',
-  // 'v2.8',
+  'v2.8',
   'v2.9',
 ] as const;
 
@@ -108,7 +107,7 @@ export const federationVersionToJoinSpecVersion: Record<FederationVersion, strin
   'v2.5': 'v0.3',
   'v2.6': 'v0.3',
   'v2.7': 'v0.4',
-  // 'v2.8': 'v0.5',
+  'v2.8': 'v0.5',
   'v2.9': 'v0.5',
 };
 

@@ -21,10 +21,12 @@ import { Link, LinkImport, parseLinkDirective } from '../../specifications/link.
 import { SubgraphStateBuilder } from '../state.js';
 import { AuthenticatedRule } from './rules/elements/authenticated.js';
 import { ComposeDirectiveRules } from './rules/elements/compose-directive.js';
+import { ContextDirectiveRules } from './rules/elements/context.js';
 import { CostRule } from './rules/elements/cost.js';
 import { ExtendsRules } from './rules/elements/extends.js';
 import { ExternalRules } from './rules/elements/external.js';
 import { FieldSetRules } from './rules/elements/field-set.js';
+import { FromContextDirectiveRules } from './rules/elements/from-context.js';
 import { InaccessibleRules } from './rules/elements/inaccessible.js';
 import { InterfaceObjectRules } from './rules/elements/interface-object.js';
 import { KeyRules } from './rules/elements/key.js';
@@ -148,6 +150,8 @@ export function validateSubgraph(
     CostRule,
     ListSizeRule,
     OverrideRules,
+    ContextDirectiveRules,
+    FromContextDirectiveRules,
     ExtendsRules,
     QueryRootTypeInaccessibleRule,
     KnownTypeNamesRule,

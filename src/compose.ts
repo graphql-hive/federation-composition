@@ -97,7 +97,7 @@ export function composeServices(
     'v2.5': 'v0.3',
     'v2.6': 'v0.3',
     'v2.7': 'v0.4',
-    // 'v2.8': 'v0.5',
+    'v2.8': 'v0.5',
     'v2.9': 'v0.5',
   };
 
