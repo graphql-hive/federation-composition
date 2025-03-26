@@ -852,6 +852,8 @@ testImplementations(api => {
             inStock: Boolean! @inaccessible @join__field(graph: B)
           }
         `);
+
+        expect(result.publicSdl).not.toMatch('@inaccessible');
       });
 
       test('type annotated with @inaccessible should not result in @inaccessible on its fields', () => {
@@ -1673,6 +1675,7 @@ testImplementations(api => {
 
       expect(result.supergraphSdl).not.toMatch('lowercase');
       expect(result.supergraphSdl).not.toMatch('uppercase');
+      expect(result.publicSdl).not.toMatch('lowercase');
     });
 
     test('ignore directive if identically defined in all subgraphs', () => {
@@ -1710,6 +1713,7 @@ testImplementations(api => {
       assertCompositionSuccess(result);
 
       expect(result.supergraphSdl).not.toMatch('lowercase');
+      expect(result.publicSdl).not.toMatch('lowercase');
     });
 
     test('ignore directive if not defined in all subgraphs', () => {
@@ -1747,6 +1751,7 @@ testImplementations(api => {
       assertCompositionSuccess(result);
 
       expect(result.supergraphSdl).not.toMatch('lowercase');
+      expect(result.publicSdl).not.toMatch('lowercase');
     });
 
     test('ignore directive if defined differently across subgraphs', () => {
@@ -1786,6 +1791,7 @@ testImplementations(api => {
       assertCompositionSuccess(result);
 
       expect(result.supergraphSdl).not.toMatch('lowercase');
+      expect(result.publicSdl).not.toMatch('lowercase');
     });
 
     test('ignore directive if it has different locations across subgraphs', () => {
@@ -1825,6 +1831,7 @@ testImplementations(api => {
       assertCompositionSuccess(result);
 
       expect(result.supergraphSdl).not.toMatch('lowercase');
+      expect(result.publicSdl).not.toMatch('lowercase');
     });
 
     test('support @composeDirective when using multiple schema extensions', () => {
@@ -1888,6 +1895,12 @@ testImplementations(api => {
         directive @lowercase on FIELD_DEFINITION
       `);
 
+      api.runIf('guild', () => {
+        expect(result.publicSdl).toContainGraphQL(/* GraphQL */ `
+          directive @lowercase on FIELD_DEFINITION
+        `);
+      });
+
       expect(result.supergraphSdl).toContainGraphQL(/* GraphQL */ `
         type User
           @join__type(graph: A, key: "id")
@@ -1895,6 +1908,14 @@ testImplementations(api => {
           id: ID!
           name: String! @lowercase @join__field(graph: A)
           reviews: [Review] @join__field(graph: B)
+        }
+      `);
+
+      expect(result.publicSdl).toContainGraphQL(/* GraphQL */ `
+        type User {
+          id: ID!
+          name: String! ${api.injectIf('guild', '@lowercase')}
+          reviews: [Review]
         }
       `);
 
@@ -1967,6 +1988,12 @@ testImplementations(api => {
         directive @lowercase on FIELD_DEFINITION
       `);
 
+      api.runIf('guild', () => {
+        expect(result.publicSdl).toContainGraphQL(/* GraphQL */ `
+          directive @lowercase on FIELD_DEFINITION
+        `);
+      });
+
       expect(result.supergraphSdl).toContainGraphQL(/* GraphQL */ `
         type User
           @join__type(graph: A, key: "id")
@@ -1974,6 +2001,14 @@ testImplementations(api => {
           id: ID!
           name: String! @lowercase @join__field(graph: A)
           reviews: [Review] @join__field(graph: B)
+        }
+      `);
+
+      expect(result.publicSdl).toContainGraphQL(/* GraphQL */ `
+        type User {
+          id: ID!
+          name: String! ${api.injectIf('guild', '@lowercase')}
+          reviews: [Review]
         }
       `);
 
@@ -2041,6 +2076,12 @@ testImplementations(api => {
         directive @lowercase on FIELD_DEFINITION
       `);
 
+      api.runIf('guild', () => {
+        expect(result.supergraphSdl).toContainGraphQL(/* GraphQL */ `
+          directive @lowercase on FIELD_DEFINITION
+        `);
+      });
+
       expect(result.supergraphSdl).toContainGraphQL(/* GraphQL */ `
         type Query @join__type(graph: A) @join__type(graph: B) @join__type(graph: C) {
           comments: [String] @join__field(graph: C)
@@ -2048,6 +2089,16 @@ testImplementations(api => {
           users
           """
           users: [String] @join__field(graph: B, override: "a") @lowercase
+        }
+      `);
+
+      expect(result.publicSdl).toContainGraphQL(/* GraphQL */ `
+        type Query {
+          comments: [String]
+          """
+          users
+          """
+          users: [String] ${api.injectIf('guild', '@lowercase')}
         }
       `);
 
@@ -2103,6 +2154,7 @@ testImplementations(api => {
 
       assertCompositionSuccess(result);
       expect(result.supergraphSdl).not.toMatch(/lowercase/);
+      expect(result.publicSdl).not.toMatch(/lowercase/);
     });
 
     test('preserve directive from one subgraph if defined differently across subgraphs but one included in @composeDirective', () => {
@@ -2166,6 +2218,12 @@ testImplementations(api => {
         directive @lowercase on FIELD_DEFINITION
       `);
 
+      api.runIf('guild', () => {
+        expect(result.publicSdl).toContainGraphQL(/* GraphQL */ `
+          directive @lowercase on FIELD_DEFINITION
+        `);
+      });
+
       expect(result.supergraphSdl).toContainGraphQL(/* GraphQL */ `
         type User
           @join__type(graph: A, key: "id")
@@ -2176,8 +2234,23 @@ testImplementations(api => {
         }
       `);
 
+      expect(result.publicSdl).toContainGraphQL(/* GraphQL */ `
+        type User {
+          id: ID!
+          name: String! ${api.injectIf('guild', '@lowercase')}
+          comments: [Comment]
+        }
+      `);
+
       expect(result.supergraphSdl).toContainGraphQL(/* GraphQL */ `
         type Comment @join__type(graph: B) {
+          id: ID!
+          text: String!
+        }
+      `);
+
+      expect(result.publicSdl).toContainGraphQL(/* GraphQL */ `
+        type Comment {
           id: ID!
           text: String!
         }
@@ -2249,6 +2322,12 @@ testImplementations(api => {
         directive @lowercase on OBJECT | FIELD_DEFINITION
       `);
 
+      api.runIf('guild', () => {
+        expect(result.publicSdl).toContainGraphQL(/* GraphQL */ `
+          directive @lowercase on OBJECT | FIELD_DEFINITION
+        `);
+      });
+
       expect(result.supergraphSdl).toContainGraphQL(/* GraphQL */ `
         type User
           @join__type(graph: A, key: "id")
@@ -2260,8 +2339,23 @@ testImplementations(api => {
         }
       `);
 
+      expect(result.publicSdl).toContainGraphQL(/* GraphQL */ `
+        type User ${api.injectIf('guild', '@lowercase')} {
+          id: ID!
+          name: String! ${api.injectIf('guild', '@lowercase')}
+          comments: [Comment]
+        }
+      `);
+
       expect(result.supergraphSdl).toContainGraphQL(/* GraphQL */ `
         type Comment @join__type(graph: B) @lowercase {
+          id: ID!
+          text: String!
+        }
+      `);
+
+      expect(result.publicSdl).toContainGraphQL(/* GraphQL */ `
+        type Comment ${api.injectIf('guild', '@lowercase')} {
           id: ID!
           text: String!
         }
@@ -2318,8 +2412,22 @@ testImplementations(api => {
         directive @whatever on SCALAR
       `);
 
+      api.runIf('guild', () => {
+        expect(result.publicSdl).toContainGraphQL(/* GraphQL */ `
+          directive @whatever on SCALAR
+        `);
+      });
+
       expect(result.supergraphSdl).toContainGraphQL(/* GraphQL */ `
         type User @join__type(graph: A, key: "id") {
+          id: ID!
+          name: String!
+          createdAt: DateTime!
+        }
+      `);
+
+      expect(result.publicSdl).toContainGraphQL(/* GraphQL */ `
+        type User {
           id: ID!
           name: String!
           createdAt: DateTime!
@@ -2371,10 +2479,25 @@ testImplementations(api => {
         directive @whatever on ENUM
       `);
 
+      api.runIf('guild', () => {
+        expect(result.publicSdl).toContainGraphQL(/* GraphQL */ `
+          directive @whatever on ENUM
+        `);
+      });
+
       expect(result.supergraphSdl).toContainGraphQL(/* GraphQL */ `
         enum UserType @whatever @join__type(graph: A) {
           ADMIN @join__enumValue(graph: A)
           REGULAR @join__enumValue(graph: A)
+        }
+      `);
+
+      expect(result.publicSdl).toContainGraphQL(/* GraphQL */ `
+        enum UserType
+        ${api.injectIf('guild', '@whatever')}
+        {
+          ADMIN
+          REGULAR
         }
       `);
     });
@@ -2423,10 +2546,23 @@ testImplementations(api => {
         directive @whatever on ENUM_VALUE
       `);
 
+      api.runIf('guild', () => {
+        expect(result.publicSdl).toContainGraphQL(/* GraphQL */ `
+          directive @whatever on ENUM_VALUE
+        `);
+      });
+
       expect(result.supergraphSdl).toContainGraphQL(/* GraphQL */ `
         enum UserType @join__type(graph: A) {
           ADMIN @join__enumValue(graph: A) @whatever
           REGULAR @join__enumValue(graph: A)
+        }
+      `);
+
+      expect(result.publicSdl).toContainGraphQL(/* GraphQL */ `
+        enum UserType {
+          ADMIN ${api.injectIf('guild', '@whatever')}
+          REGULAR
         }
       `);
     });
@@ -2476,12 +2612,24 @@ testImplementations(api => {
         directive @whatever on UNION
       `);
 
+      api.runIf('guild', () => {
+        expect(result.publicSdl).toContainGraphQL(/* GraphQL */ `
+          directive @whatever on UNION
+        `);
+      });
+
       expect(result.supergraphSdl).toContainGraphQL(/* GraphQL */ `
         union Whoever
           @join__type(graph: A)
           @join__unionMember(graph: A, member: "Admin")
           @join__unionMember(graph: A, member: "User")
           @whatever =
+          | Admin
+          | User
+      `);
+
+      expect(result.publicSdl).toContainGraphQL(/* GraphQL */ `
+        union Whoever ${api.injectIf('guild', '@whatever')} =
           | Admin
           | User
       `);
@@ -2537,10 +2685,23 @@ testImplementations(api => {
         directive @whatever on FIELD_DEFINITION | INTERFACE | INPUT_FIELD_DEFINITION | ARGUMENT_DEFINITION
       `);
 
+      api.runIf('guild', () => {
+        expect(result.publicSdl).toContainGraphQL(/* GraphQL */ `
+          directive @whatever on FIELD_DEFINITION | INTERFACE | INPUT_FIELD_DEFINITION | ARGUMENT_DEFINITION
+        `);
+      });
+
       expect(result.supergraphSdl).toContainGraphQL(/* GraphQL */ `
         interface User @join__type(graph: A) @whatever {
           id: ID! @whatever
           tags(limit: Int @whatever): [String!]!
+        }
+      `);
+
+      expect(result.publicSdl).toContainGraphQL(/* GraphQL */ `
+        interface User ${api.injectIf('guild', '@whatever')} {
+          id: ID! ${api.injectIf('guild', '@whatever')}
+          tags(limit: Int ${api.injectIf('guild', '@whatever')}): [String!]!
         }
       `);
     });
@@ -2588,9 +2749,25 @@ testImplementations(api => {
         directive @whenever on ARGUMENT_DEFINITION
       `);
 
+      api.runIf('guild', () => {
+        expect(result.publicSdl).toContainGraphQL(/* GraphQL */ `
+          directive @whatever(when: String @whenever) on FIELD_DEFINITION
+        `);
+
+        expect(result.publicSdl).toContainGraphQL(/* GraphQL */ `
+          directive @whenever on ARGUMENT_DEFINITION
+        `);
+      });
+
       expect(result.supergraphSdl).toContainGraphQL(/* GraphQL */ `
         type User @join__type(graph: A) {
           id: ID! @whatever(when: "now")
+        }
+      `);
+
+      expect(result.publicSdl).toContainGraphQL(/* GraphQL */ `
+        type User {
+          id: ID! ${api.injectIf('guild', '@whatever(when: "now")')}
         }
       `);
     });
@@ -2728,6 +2905,10 @@ testImplementations(api => {
         scalar LowercaseString @join__type(graph: A) @join__type(graph: B)
       `);
 
+      expect(result.publicSdl).toContainGraphQL(/* GraphQL */ `
+        scalar LowercaseString
+      `);
+
       expect(result.supergraphSdl).toContainGraphQL(/* GraphQL */ `
         type User
           @join__type(graph: A, key: "id")
@@ -2738,8 +2919,23 @@ testImplementations(api => {
         }
       `);
 
+      expect(result.publicSdl).toContainGraphQL(/* GraphQL */ `
+        type User {
+          id: ID!
+          name: LowercaseString!
+          comments: [Comment]
+        }
+      `);
+
       expect(result.supergraphSdl).toContainGraphQL(/* GraphQL */ `
         type Comment @join__type(graph: B) {
+          id: ID!
+          text: LowercaseString!
+        }
+      `);
+
+      expect(result.publicSdl).toContainGraphQL(/* GraphQL */ `
+        type Comment {
           id: ID!
           text: LowercaseString!
         }
@@ -3675,6 +3871,13 @@ testImplementations(api => {
         }
       `);
 
+      expect(result.publicSdl).toContainGraphQL(/* GraphQL */ `
+        interface User {
+          id: String!
+          name(lowercase: Boolean): String!
+        }
+      `);
+
       expect(result.supergraphSdl).toContainGraphQL(/* GraphQL */ `
         type Employee implements User
           @join__implements(graph: A, interface: "User")
@@ -3682,6 +3885,15 @@ testImplementations(api => {
           @tag(name: "team-admin") {
           id: String!
           name(lowercase: Boolean @tag(name: "team-accounts")): String!
+          ssn: String!
+          createdAt: DateTime!
+        }
+      `);
+
+      expect(result.publicSdl).toContainGraphQL(/* GraphQL */ `
+        type Employee implements User {
+          id: String!
+          name(lowercase: Boolean): String!
           ssn: String!
           createdAt: DateTime!
         }
@@ -3697,13 +3909,31 @@ testImplementations(api => {
         }
       `);
 
+      expect(result.publicSdl).toContainGraphQL(/* GraphQL */ `
+        type Customer implements User {
+          id: String!
+          name(lowercase: Boolean): String!
+        }
+      `);
+
       expect(result.supergraphSdl).toContainGraphQL(/* GraphQL */ `
         scalar DateTime @join__type(graph: A) @tag(name: "team-admin")
+      `);
+
+      expect(result.publicSdl).toContainGraphQL(/* GraphQL */ `
+        scalar DateTime
       `);
 
       expect(result.supergraphSdl).toContainGraphQL(/* GraphQL */ `
         input EmployeesFilter @join__type(graph: A) {
           id: String @tag(name: "team-admin")
+          name: String
+        }
+      `);
+
+      expect(result.publicSdl).toContainGraphQL(/* GraphQL */ `
+        input EmployeesFilter {
+          id: String
           name: String
         }
       `);
@@ -6230,7 +6460,16 @@ testImplementations(api => {
           }
         `);
 
+        expect(result.publicSdl).toContainGraphQL(/* GraphQL */ `
+          type User {
+            id: ID!
+            name: String!
+            blocked: Boolean!
+          }
+        `);
+
         expect(result.supergraphSdl).toContainGraphQL(tagDirective);
+        expect(result.publicSdl).not.toMatch('@tag');
 
         expect(result.supergraphSdl).toContainGraphQL(/* GraphQL */ `
           schema
@@ -6268,6 +6507,14 @@ testImplementations(api => {
           type User @join__type(graph: USERS, key: "id") {
             id: ID!
             name: String! @tag(name: "private")
+            blocked: Boolean!
+          }
+        `);
+
+        expect(result.publicSdl).toContainGraphQL(/* GraphQL */ `
+          type User {
+            id: ID!
+            name: String!
             blocked: Boolean!
           }
         `);

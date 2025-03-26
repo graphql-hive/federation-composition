@@ -140,5 +140,34 @@ describe('@context and @fromContext', () => {
         );
       },
     );
+
+    test('public sdl should not contain @context and @fromContext related definitions', () => {
+      const result = composeServices([
+        {
+          name: 'foo',
+          typeDefs: parse(/* GraphQL */ `
+              extend schema
+                @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@key"])
+
+
+              type User @key(fields: "id") {
+                id: ID!
+                name: String!
+              }
+
+              type Query {
+                user(id: ID!): User
+              }
+          `),
+        },
+      ]);
+
+      assertCompositionSuccess(result);
+
+      expect(result.publicSdl).not.toMatch('@context');
+      expect(result.publicSdl).not.toMatch('@fromContext');
+      expect(result.publicSdl).not.toMatch('join__ContextArgument');
+      expect(result.publicSdl).not.toMatch('join__FieldValue');
+    });
   });
 });

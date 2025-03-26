@@ -383,6 +383,10 @@ const federationSpecFactory = {
     ),
 };
 
+export function getLatestFederationVersion() {
+  return Object.keys(federationSpecFactory).sort().pop() as FederationVersion;
+}
+
 // TODO: T03 support prefixes (imports could have them) of Federation directives
 function createTypeDefinitions(doc: string, prefix: string, imports?: readonly LinkImport[]) {
   const shouldFilter = !!imports;

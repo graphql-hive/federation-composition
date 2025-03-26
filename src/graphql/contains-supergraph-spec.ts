@@ -1,20 +1,30 @@
+import { Kind } from 'graphql';
 import {
-  federationDirectives,
-  federationEnums,
-  federationScalars,
-} from './transform-supergraph-to-public-schema.js';
-
-const supergraphSpecDetectionRegex = new RegExp(
-  Array.from(federationScalars)
-    .concat(Array.from(federationEnums))
-    // "[NAME" or " NAME" for scalars and enums
-    .map(name => [`\\[${name}`, `\\s${name}`])
-    .flat(2)
-    // "@NAME" for directives
-    .concat(Array.from(federationDirectives).map(name => `@${name}`))
-    .join('|'),
-);
+  extraFederationDirectiveNames,
+  extraFederationTypeNames,
+  getSupergraphSpecNodes,
+} from './supergraph-spec.js';
 
 export function containsSupergraphSpec(sdl: string): boolean {
-  return supergraphSpecDetectionRegex.test(sdl);
+  const patterns: string[] = [];
+
+  for (const { name, kind } of getSupergraphSpecNodes()) {
+    if (kind === Kind.DIRECTIVE) {
+      // "@NAME" for directives
+      patterns.push(`@${name}`);
+    } else {
+      // "[NAME" or " NAME" for scalars, enums and inputs
+      patterns.push(`\\[${name}`, `\\s${name}`);
+    }
+  }
+
+  extraFederationTypeNames.forEach(name => {
+    patterns.push(`\\[${name}`, `\\s${name}`);
+  });
+
+  extraFederationDirectiveNames.forEach(name => {
+    patterns.push(`@${name}`);
+  });
+
+  return new RegExp(patterns.join('|')).test(sdl);
 }

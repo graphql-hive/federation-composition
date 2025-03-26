@@ -1,4 +1,4 @@
-import { GraphQLError, Kind } from 'graphql';
+import { GraphQLError, Kind, parse } from 'graphql';
 import { print } from './graphql/printer.js';
 import { transformSupergraphToPublicSchema } from './graphql/transform-supergraph-to-public-schema.js';
 import { sdl as authenticatedSDL } from './specifications/authenticated.js';
@@ -101,52 +101,55 @@ export function composeServices(
     'v2.9': 'v0.5',
   };
 
+  const core = `
+    schema
+    @link(url: "https://specs.apollo.dev/link/v1.0")
+    @link(url: "https://specs.apollo.dev/join/${federationVersionToJoinVersion[validationResult.federationVersion]}", for: EXECUTION)
+    ${usedTagSpec ? '@link(url: "https://specs.apollo.dev/tag/v0.3")' : ''}
+    ${usedCostSpec.used ? `@link(url: "https://specs.apollo.dev/cost/v0.1"${costLinkImports})` : ''}
+    ${
+      usedInaccessibleSpec
+        ? '@link(url: "https://specs.apollo.dev/inaccessible/v0.2", for: SECURITY)'
+        : ''
+    }
+    ${usedPolicySpec ? '@link(url: "https://specs.apollo.dev/policy/v0.1", for: SECURITY)' : ''}
+    ${
+      usedRequiresScopesSpec
+        ? '@link(url: "https://specs.apollo.dev/requiresScopes/v0.1", for: SECURITY)'
+        : ''
+    }
+    ${
+      usedAuthenticatedSpec
+        ? '@link(url: "https://specs.apollo.dev/authenticated/v0.1", for: SECURITY)'
+        : ''
+    }
+    ${validationResult.links.map(printLink).join('\n  ')}
+  {
+    ${rootTypes.query ? 'query: Query' : ''}
+    ${rootTypes.mutation ? 'mutation: Mutation' : ''}
+    ${rootTypes.subscription ? 'subscription: Subscription' : ''}
+  }
+
+  ${joinSDL(validationResult.federationVersion)}
+  ${linkSDL}
+  ${usedTagSpec ? tagSDL : ''}
+  ${
+    usedCostSpec.used
+      ? costSDL({
+          cost: usedCostSpec.names.cost ?? 'cost',
+          listSize: usedCostSpec.names.listSize ?? 'listSize',
+        })
+      : ''
+  }
+  ${usedInaccessibleSpec ? inaccessibleSDL : ''}
+  ${usedPolicySpec ? policySDL : ''}
+  ${usedRequiresScopesSpec ? requiresScopesSDL : ''}
+  ${usedAuthenticatedSpec ? authenticatedSDL : ''}
+  `;
+
   return {
     supergraphSdl: `
-schema
-  @link(url: "https://specs.apollo.dev/link/v1.0")
-  @link(url: "https://specs.apollo.dev/join/${federationVersionToJoinVersion[validationResult.federationVersion]}", for: EXECUTION)
-  ${usedTagSpec ? '@link(url: "https://specs.apollo.dev/tag/v0.3")' : ''}
-  ${usedCostSpec.used ? `@link(url: "https://specs.apollo.dev/cost/v0.1"${costLinkImports})` : ''}
-  ${
-    usedInaccessibleSpec
-      ? '@link(url: "https://specs.apollo.dev/inaccessible/v0.2", for: SECURITY)'
-      : ''
-  }
-  ${usedPolicySpec ? '@link(url: "https://specs.apollo.dev/policy/v0.1", for: SECURITY)' : ''}
-  ${
-    usedRequiresScopesSpec
-      ? '@link(url: "https://specs.apollo.dev/requiresScopes/v0.1", for: SECURITY)'
-      : ''
-  }
-  ${
-    usedAuthenticatedSpec
-      ? '@link(url: "https://specs.apollo.dev/authenticated/v0.1", for: SECURITY)'
-      : ''
-  }
-  ${validationResult.links.map(printLink).join('\n  ')}
-{
-  ${rootTypes.query ? 'query: Query' : ''}
-  ${rootTypes.mutation ? 'mutation: Mutation' : ''}
-  ${rootTypes.subscription ? 'subscription: Subscription' : ''}
-}
-
-${joinSDL(validationResult.federationVersion)}
-${linkSDL}
-${usedTagSpec ? tagSDL : ''}
-${
-  usedCostSpec
-    ? costSDL({
-        cost: usedCostSpec.names.cost ?? 'cost',
-        listSize: usedCostSpec.names.listSize ?? 'listSize',
-      })
-    : ''
-}
-${usedInaccessibleSpec ? inaccessibleSDL : ''}
-${usedPolicySpec ? policySDL : ''}
-${usedRequiresScopesSpec ? requiresScopesSDL : ''}
-${usedAuthenticatedSpec ? authenticatedSDL : ''}
-
+${core}
 ${print({
   kind: Kind.DOCUMENT,
   definitions: validationResult.supergraph,
@@ -163,7 +166,7 @@ ${print({
       _publicSdl = print(
         transformSupergraphToPublicSchema({
           kind: Kind.DOCUMENT,
-          definitions: validationResult.supergraph,
+          definitions: parse(core).definitions.concat(validationResult.supergraph),
         }),
       );
 

@@ -1,13 +1,17 @@
-import { DocumentNode } from 'graphql';
+import { assertValidSchema, buildASTSchema, buildSchema, DocumentNode, print } from 'graphql';
 import stripIndent from 'strip-indent';
 import { describe } from 'vitest';
-import { composeServices as apolloComposeServices } from '@apollo/composition';
+import {
+  composeServices as apolloComposeServices,
+  CompositionSuccess as ApolloCompositionSuccess,
+} from '@apollo/composition';
 import {
   assertCompositionFailure,
-  assertCompositionSuccess,
   compositionHasErrors,
   CompositionResult,
+  CompositionSuccess,
   composeServices as guildComposeServices,
+  assertCompositionSuccess as originalAssertCompositionSuccess,
 } from '../../src/compose.js';
 import { createStarsStuff } from './../fixtures/stars-stuff.js';
 import { graphql } from './utils.js';
@@ -22,7 +26,7 @@ const missingErrorCodes = [
   'EXTERNAL_ARGUMENT_DEFAULT_MISMATCH',
   'EXTERNAL_ARGUMENT_TYPE_MISMATCH',
   'EXTERNAL_COLLISION_WITH_ANOTHER_DIRECTIVE',
-  'IMPLEMENTED_BY_INACCESSIBLE',
+
   'INVALID_FEDERATION_SUPERGRAPH',
   'SHAREABLE_HAS_MISMATCHED_RUNTIME_TYPES',
   'UNSUPPORTED_LINKED_FEATURE',
@@ -69,6 +73,9 @@ function composeServicesFactory(
           console.warn(['Detected', todoCodes.join(', '), 'in a test'].join(' '));
         }
       }
+    } else if ('schema' in result && !!result.schema) {
+      const apolloSchema = (result as unknown as ApolloCompositionSuccess).schema;
+      result.publicSdl = print(apolloSchema.toAPISchema().toAST());
     }
 
     return result;
@@ -79,10 +86,40 @@ const both = [
   {
     library: 'apollo' as const,
     composeServices: composeServicesFactory(apolloComposeServices),
+    /** Adds strings to the  */
+    interpolate(_str: string) {
+      return '';
+    },
+    injectIf(library: 'apollo' | 'guild', str: string): string {
+      if (library === 'apollo') {
+        return str;
+      }
+
+      return '';
+    },
+    runIf(library: 'apollo' | 'guild', fn: () => void) {
+      if (library === 'apollo') {
+        fn();
+        return;
+      }
+    },
   },
   {
     library: 'guild' as const,
     composeServices: composeServicesFactory(guildComposeServices),
+    injectIf(library: 'apollo' | 'guild', str: string): string {
+      if (library === 'guild') {
+        return str;
+      }
+
+      return '';
+    },
+    runIf(library: 'apollo' | 'guild', fn: () => void) {
+      if (library === 'guild') {
+        fn();
+        return;
+      }
+    },
   },
 ];
 export const versions = [
@@ -148,12 +185,33 @@ export function testImplementations(runTests: (api: TestAPI) => void) {
   });
 }
 
+export function assertCompositionSuccess(
+  result: CompositionResult,
+  message?: string,
+): asserts result is CompositionSuccess {
+  originalAssertCompositionSuccess(result, message);
+
+  const superSchema = buildSchema(result.supergraphSdl);
+  assertValidSchema(superSchema);
+
+  if ('publicSdl' in result) {
+    const publicSchema = buildSchema(result.publicSdl);
+    assertValidSchema(publicSchema);
+  }
+
+  if (!result.publicSdl && 'schema' in result) {
+    assertValidSchema(
+      buildASTSchema((result as unknown as ApolloCompositionSuccess).schema.toAPISchema().toAST()),
+    );
+  }
+}
+
 export function ensureCompositionSuccess<T extends CompositionResult>(result: T) {
   assertCompositionSuccess(result);
 
   return result;
 }
 
-export { assertCompositionFailure, assertCompositionSuccess, graphql };
+export { assertCompositionFailure, graphql };
 
 export { createStarsStuff };

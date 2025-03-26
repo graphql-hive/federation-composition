@@ -620,15 +620,21 @@ testImplementations(api => {
       directive @authenticated on FIELD_DEFINITION | OBJECT | INTERFACE | SCALAR | ENUM
     `);
 
+    expect(result.publicSdl).not.toMatch('@authenticated');
+
     expect(result.supergraphSdl).toContainGraphQL(/* GraphQL */ `
       directive @requiresScopes(
         scopes: [[requiresScopes__Scope!]!]!
       ) on FIELD_DEFINITION | OBJECT | INTERFACE | SCALAR | ENUM
     `);
 
+    expect(result.publicSdl).not.toMatch('@requiresScopes');
+
     expect(result.supergraphSdl).toContainGraphQL(/* GraphQL */ `
       scalar requiresScopes__Scope
     `);
+
+    expect(result.publicSdl).not.toMatch('requiresScopes__Scope');
 
     expect(result.supergraphSdl).toContainGraphQL(/* GraphQL */ `
       directive @policy(
@@ -636,9 +642,13 @@ testImplementations(api => {
       ) on ENUM | FIELD_DEFINITION | INTERFACE | OBJECT | SCALAR
     `);
 
+    expect(result.publicSdl).not.toMatch('policy');
+
     expect(result.supergraphSdl).toContainGraphQL(/* GraphQL */ `
       scalar policy__Policy
     `);
+
+    expect(result.publicSdl).not.toMatch('policy__Policy');
 
     expect(result.supergraphSdl).toContainGraphQL(/* GraphQL */ `
       type Mutation @join__type(graph: COMMENTS) {

@@ -150,9 +150,22 @@ testVersions((api, version) => {
         }
       `);
 
+      expect(result.publicSdl).toContainGraphQL(/* GraphQL */ `
+        enum UserType {
+          ADMIN
+          REGULAR
+        }
+      `);
+
       expect(result.supergraphSdl).toContainGraphQL(/* GraphQL */ `
         input UsersFilterInput @join__type(graph: FOO) {
           limit: Int @cost(weight: 0)
+        }
+      `);
+
+      expect(result.publicSdl).toContainGraphQL(/* GraphQL */ `
+        input UsersFilterInput {
+          limit: Int
         }
       `);
 
@@ -160,6 +173,15 @@ testVersions((api, version) => {
         type Query @join__type(graph: FOO) {
           userCount: Int @cost(weight: 0)
           user(id: ID! @cost(weight: 0)): User
+          userType(id: ID!): UserType
+          users(filter: UsersFilterInput): [User]
+        }
+      `);
+
+      expect(result.publicSdl).toContainGraphQL(/* GraphQL */ `
+        type Query {
+          userCount: Int
+          user(id: ID!): User
           userType(id: ID!): UserType
           users(filter: UsersFilterInput): [User]
         }
@@ -478,6 +500,9 @@ testVersions((api, version) => {
         ) on ARGUMENT_DEFINITION | ENUM | FIELD_DEFINITION | INPUT_FIELD_DEFINITION | OBJECT | SCALAR
       `);
 
+      expect(result.publicSdl).not.toMatch('@price');
+      expect(result.publicSdl).not.toMatch('@cost');
+
       expect(result.supergraphSdl).toContainGraphQL(/* GraphQL */ `
         enum UserType @join__type(graph: FOO) @join__type(graph: BAR) @price(weight: 30) {
           ADMIN @join__enumValue(graph: FOO) @join__enumValue(graph: BAR)
@@ -490,6 +515,14 @@ testVersions((api, version) => {
           limit: Int @price(weight: 40)
         }
       `);
+
+      if (api.library === 'guild') {
+        expect(result.publicSdl).toContainGraphQL(/* GraphQL */ `
+          input UsersFilterInput {
+            limit: Int
+          }
+        `);
+      }
 
       expect(result.supergraphSdl).toContainGraphQL(/* GraphQL */ `
         type Query @join__type(graph: FOO) @join__type(graph: BAR) {
@@ -761,6 +794,8 @@ testVersions((api, version) => {
         ) on FIELD_DEFINITION
       `);
 
+      expect(result.publicSdl).not.toMatch('@listSize');
+
       expect(result.supergraphSdl).toContainGraphQL(/* GraphQL */ `
         type Query @join__type(graph: FOO) {
           allUsers: [User] @listSize(assumedSize: 1, requireOneSlicingArgument: false)
@@ -801,6 +836,9 @@ testVersions((api, version) => {
       ]);
 
       assertCompositionSuccess(result);
+
+      expect(result.publicSdl).not.toMatch('@listSize');
+      expect(result.publicSdl).not.toMatch('@cartSize');
 
       expect(result.supergraphSdl).toContainGraphQL(/* GraphQL */ `
         schema
