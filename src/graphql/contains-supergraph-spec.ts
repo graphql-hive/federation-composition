@@ -5,7 +5,13 @@ import {
   getSupergraphSpecNodes,
 } from './supergraph-spec.js';
 
+let containsSupergraphSpecRegex: RegExp | null = null;
+
 export function containsSupergraphSpec(sdl: string): boolean {
+  if (containsSupergraphSpecRegex !== null) {
+    return containsSupergraphSpecRegex.test(sdl);
+  }
+
   const patterns: string[] = [];
 
   for (const { name, kind } of getSupergraphSpecNodes()) {
@@ -26,5 +32,7 @@ export function containsSupergraphSpec(sdl: string): boolean {
     patterns.push(`@${name}`);
   });
 
-  return new RegExp(patterns.join('|')).test(sdl);
+  containsSupergraphSpecRegex = new RegExp(patterns.join('|'));
+
+  return containsSupergraphSpecRegex.test(sdl);
 }
