@@ -63,7 +63,7 @@
   },
   "dependencies": {
     "constant-case": "^3.0.4",
-    "debug": "4.3.4",
+    "debug": "4.4.0",
     "json5": "^2.2.3",
     "lodash.sortby": "^4.7.0"
   },
