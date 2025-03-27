@@ -35,6 +35,7 @@ export const extraFederationDirectiveNames = new Set([
   'core', // from Federation v1 supergraph
   'join__owner', // from Federation v1 supergraph
   'join__directive', // from Federation v2 - connectors
+  'context', // from Federation v2.8 - we don't support it yet
 ]);
 
 export function getSupergraphSpecNodes(): readonly { name: string; kind: Kind }[] {
