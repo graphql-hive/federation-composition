@@ -2975,6 +2975,11 @@ testImplementations(api => {
         }
       ]);
 
+      if (version === 'v2.0') {
+        assertCompositionFailure(result);
+        return;
+      }
+
       assertCompositionSuccess(result);
 
       expect(result.supergraphSdl).toContainGraphQL(/* GraphQL */ `
