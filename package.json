@@ -77,7 +77,7 @@
     "@types/node": "22.13.13",
     "@vitest/ui": "3.0.9",
     "bob-the-bundler": "7.0.1",
-    "graphql": "16.8.1",
+    "graphql": "16.10.0",
     "lodash.sortby": "4.7.0",
     "mitata": "1.0.34",
     "prettier": "3.5.3",

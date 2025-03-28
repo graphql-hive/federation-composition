@@ -970,10 +970,6 @@ export function createSubgraphStateBuilder(
         DirectiveDefinition(node) {
           const directiveName = node.name.value;
 
-          if (specifiedDirectives.includes(directiveName)) {
-            return;
-          }
-
           if (node.repeatable) {
             directiveBuilder.setRepeatable(directiveName);
           }

@@ -2951,6 +2951,60 @@ testImplementations(api => {
       `);
     });
 
+    test('allow to compose a built-in directive (@oneOf)', () => {
+      const result = composeServices([
+        {
+          name: 'a',
+          typeDefs: parse(/* GraphQL */ `
+              extend schema
+                @link(url: "https://specs.apollo.dev/federation/${version}" import: ["@key", "@composeDirective"])
+                @link(url: "https://spec.graphql.org/specified/v1.6", import: ["@oneOf"])
+                @composeDirective(name: "@oneOf")
+
+              directive @oneOf on INPUT_OBJECT
+
+              input HelloInput @oneOf {
+                world: String
+                me: String
+              }
+
+              type Query {
+                hello(input: HelloInput): String
+              }
+            `),
+        }
+      ]);
+
+      assertCompositionSuccess(result);
+
+      expect(result.supergraphSdl).toContainGraphQL(/* GraphQL */ `
+        directive @oneOf on INPUT_OBJECT
+      `);
+
+      expect(result.supergraphSdl).toContainGraphQL(/* GraphQL */ `
+        input HelloInput @oneOf @join__type(graph: A)  {
+          world: String
+          me: String
+        }
+      `);
+
+      expect(result.publicSdl).toContainGraphQL(/* GraphQL */ `
+        input HelloInput ${api.injectIf('guild', '@oneOf')} {
+          world: String
+          me: String
+        }
+      `);
+
+      expect(result.supergraphSdl).toContainGraphQL(/* GraphQL */ `
+        schema
+          @link(url: "https://specs.apollo.dev/link/v1.0")
+          @link(url: "https://spec.graphql.org/specified/v1.6", import: ["@oneOf"])
+          @link(url: "https://specs.apollo.dev/join/${federationVersionToJoinSpecVersion[version]}", for: EXECUTION) {
+          query: Query
+        }
+      `);
+    });
+
     test('two different specs were used to import a scalar of the same name', () => {
       const result = composeServices([
         {
