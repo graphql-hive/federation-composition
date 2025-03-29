@@ -222,7 +222,7 @@ export class Walker {
       ),
     );
 
-    if (superTail.isGraphComboVisited(graphsLeadingToNode)) {
+    if (superTail.isGraphComboVisited(graphsLeadingToNode, state.labelValues)) {
       this.logger.log(() => 'Node already visited: ' + superTail);
       return;
     }
