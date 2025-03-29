@@ -10,7 +10,7 @@ import type { ObjectTypeFieldState, ObjectTypeState } from '../../../composition
 import type { ScalarTypeState } from '../../../composition/scalar-type.js';
 import type { UnionTypeState } from '../../../composition/union-type.js';
 import type { SupergraphState } from '../../../state.js';
-import { SUPERGRAPH_ID } from './constants.js';
+import { MERGEDGRAPH_ID, SUPERGRAPH_ID } from './constants.js';
 import {
   assertAbstractEdge,
   assertFieldEdge,
@@ -46,6 +46,17 @@ export class Graph {
   private logger: Logger;
   private id: string;
   private idSymbol: Symbol;
+  // When I detect a Edge<FieldMove> with override(label:), I need to store it
+  // so I can later have two edges:
+  //   type User { name: String @override(label: "feature") }            in subgraph A
+  //   type User { name: String @override(label: "feature", from: "A") } in subgraph B
+  // User/A -> (name ["feature" === true]) -> String/A
+  // User/B -> (name ["feature" === false]) -> String/B
+  // Store this information in the Edge itself or whenever we do caching
+  private fieldEdgesWithProgressiveOverride: Edge<FieldMove>[] = [];
+  // When I detect a Edge<FieldMove> with override(from:), I need to store it
+  private fieldEdgesWithOverride: Edge<FieldMove>[] = [];
+  private superFieldEdgesToApplyOverride: Edge<FieldMove>[] = [];
 
   constructor(
     logger: Logger,
@@ -414,6 +425,7 @@ export class Graph {
           edge.move.fieldName,
           edge.move.requires,
           edge.move.provides,
+          null,
           true,
         ),
         newTail,
@@ -583,6 +595,140 @@ export class Graph {
     return this;
   }
 
+  addOverriddenFields() {
+    if (this.isSupergraph()) {
+      for (const superFieldEdge of this.superFieldEdgesToApplyOverride) {
+        // We need to look for field states in graphs
+        // and add two edges (override: on and off)
+        // when a label is available
+        const typeName = superFieldEdge.move.typeName;
+        const fieldName = superFieldEdge.move.fieldName;
+        const objectTypeState = this.supergraphState.objectTypes.get(typeName);
+
+        if (!objectTypeState) {
+          throw new Error('Expected to find object type state');
+        }
+
+        const fieldState = objectTypeState.fields.get(fieldName);
+
+        if (!fieldState) {
+          throw new Error('Expected to find field state');
+        }
+
+        if (!fieldState.overrideLabel) {
+          throw new Error('Expected a label on a field');
+        }
+
+        for (const [_, fieldStateInGraph] of fieldState.byGraph) {
+          if (fieldStateInGraph.overrideLabel && fieldStateInGraph.override) {
+            const fromGraphId = this.graphNameToId(fieldStateInGraph.override);
+            if (!fromGraphId) {
+              // Looks like there is no such graph, we ignore it
+              continue;
+            }
+
+            // When the label is on, use the field with `@override(from:)`
+            superFieldEdge.move.override = {
+              label: fieldStateInGraph.overrideLabel,
+              value: true,
+              fromGraphId,
+            };
+
+            // When the label is off, use the other field
+            this.addEdge(new Edge(superFieldEdge.head, new FieldMove(
+              typeName,
+              fieldName,
+              null,
+              null,
+              {
+                label: fieldStateInGraph.overrideLabel,
+                value: false,
+                fromGraphId: null,
+              }
+            ), superFieldEdge.tail));
+          }
+        }
+      }
+      return this;
+    }
+
+    if (!this.isMergedGraph()) {
+      throw new Error('Expected to be called only on merged graph');
+    }
+
+    for (const fieldWithOverride of this.fieldEdgesWithProgressiveOverride) {
+      if (!fieldWithOverride.move.override) {
+        throw new Error('Expected edge.move.override to be defined');
+      }
+
+      const fromGraphId = fieldWithOverride.move.override.fromGraphId;
+
+      if (!fromGraphId) {
+        // This edge is the source of the override,
+        // it should contain the `@override(from:)` argument
+        throw new Error('Expected fromGraphId to be defined');
+      }
+
+      const nodes = this.nodesOf(fieldWithOverride.head.typeName, true);
+      for(const node of nodes) {
+        if (node.graphId !== fromGraphId) {
+          // We're not in the right graph
+          continue;
+        }
+
+        const fieldEdges = this.fieldEdgesOfHead(node, fieldWithOverride.move.fieldName);
+        for (const fieldEdge of fieldEdges) {
+          if (fieldEdge.move.provided) {
+            // We don't want to override provided fields
+            continue;
+          }
+
+          fieldEdge.updateOverride({
+            label: fieldWithOverride.move.override.label ?? null,
+            // we negate the value, because we want to have 2 possible values
+            // for a given progressive override
+            value: !fieldWithOverride.move.override.value,
+            fromGraphId: null,
+          })
+        }
+      }
+    }
+
+    for (const fieldWithOverride of this.fieldEdgesWithOverride) {
+      if (!fieldWithOverride.move.override) {
+        throw new Error('Expected edge.move.override to be defined');
+      }
+
+      const fromGraphId = fieldWithOverride.move.override.fromGraphId;
+
+      if (!fromGraphId) {
+        // This edge is the source of the override,
+        // it should contain the `@override(from:)` argument
+        throw new Error('Expected fromGraphId to be defined');
+      }
+
+      const nodes = this.nodesOf(fieldWithOverride.head.typeName, true);
+      for(const node of nodes) {
+        if (node.graphId !== fromGraphId) {
+          // We're not in the right graph
+          continue;
+        }
+
+        const fieldEdges = this.fieldEdgesOfHead(node, fieldWithOverride.move.fieldName);
+        for (const fieldEdge of fieldEdges) {
+          if (fieldEdge.move.provided) {
+            // We don't want to override provided fields
+            continue;
+          }
+
+          this.ignoreEdge(fieldEdge);
+        }
+      }
+    }
+
+    return this;
+  }
+
   private duplicateNode(originalNode: Node) {
     const newNode = this.createNode(
       originalNode.typeName,
@@ -628,6 +774,10 @@ export class Graph {
     }
 
     for (const edge of this.edgesByHeadTypeIndex.flat()) {
+      if (edge.isIgnored()) {
+        continue;
+      }
+
       if (edge.head.typeName === 'Query') {
         str += `\n  "Query" -> "${edge.head}";`;
       } else if (edge.head.typeName === 'Mutation') {
@@ -717,6 +867,10 @@ export class Graph {
         throw new Error(`Expected edge to be defined at index ${i}`);
       }
 
+      if (edge.isIgnored()) {
+        continue;
+      }
+
       if (edge.head.graphName === head.graphName) {
         edges.push(edge);
         continue;
@@ -731,8 +885,8 @@ export class Graph {
     return edges;
   }
 
-  fieldEdgesOfHead(head: Node, fieldName: string): Edge[] {
-    return this.getSameGraphEdgesOfIndex(head, head.getFieldEdgeIndexes(fieldName), 'field');
+  fieldEdgesOfHead(head: Node, fieldName: string): Edge<FieldMove>[] {
+    return this.getSameGraphEdgesOfIndex(head, head.getFieldEdgeIndexes(fieldName), 'field') as Edge<FieldMove>[]
   }
 
   abstractEdgesOfHead(head: Node) {
@@ -741,6 +895,10 @@ export class Graph {
       head.getAbstractEdgeIndexes(head.typeName),
       'abstract',
     );
+  }
+
+  private filterEdges(edges: Edge[]) {
+    return edges.filter((edge) => edge.isIgnored() === false);
   }
 
   entityEdgesOfHead(head: Node) {
@@ -760,11 +918,11 @@ export class Graph {
   }
 
   edgesOfHead(head: Node) {
-    return this.edgesByHeadTypeIndex[head.index]?.filter(e => e.head === head) ?? [];
+    return this.filterEdges(this.edgesByHeadTypeIndex[head.index]?.filter(e => e.head === head)) ?? [];
   }
 
   edgesOfTail(tail: Node) {
-    return this.edgesByTailTypeIndex[tail.index]?.filter(e => e.tail === tail) ?? [];
+    return this.filterEdges(this.edgesByTailTypeIndex[tail.index]?.filter(e => e.tail === tail)) ?? [];
   }
 
   possibleTypesOf(typeName: string) {
@@ -1035,11 +1193,24 @@ export class Graph {
     }
 
     if (this.isSupergraph()) {
-      return this.addEdge(new Edge(head, new FieldMove(head.typeName, field.name), tail));
+      // If the field has a @override(label:),
+      // we should add two edges, for each label
+      // - one for the case when the gateway should override the field
+      // - one for the case when it should not
+      // This is because we want to allow progressive overrides
+      const edge = new Edge(head, new FieldMove(head.typeName, field.name), tail);
+      if (field.override && field.overrideLabel) {
+        this.superFieldEdgesToApplyOverride.push(edge);
+      }
+      return this.addEdge(edge);
     }
 
-    const requires = field.byGraph.get(head.graphId)?.requires;
-    const provides = field.byGraph.get(head.graphId)?.provides;
+    const fieldStateInGraph = field.byGraph.get(head.graphId);
+    const requires = fieldStateInGraph?.requires;
+    const provides = fieldStateInGraph?.provides;
+    const override = fieldStateInGraph?.override;
+    const overrideLabel = fieldStateInGraph?.overrideLabel;
+    const overrideFromGraphId = override ? this.graphNameToId(override) : null;
 
     return this.addEdge(
       new Edge(
@@ -1049,6 +1220,11 @@ export class Graph {
           field.name,
           requires ? this.selectionResolver.resolve(head.typeName, requires) : null,
           provides ? this.selectionResolver.resolve(outputTypeName, provides) : null,
+          overrideFromGraphId ? {
+            label: overrideLabel ?? null,
+            value: true,
+            fromGraphId: overrideFromGraphId,
+          } : null
         ),
         tail,
       ),
@@ -1122,12 +1298,29 @@ export class Graph {
     return node;
   }
 
+  /**
+  * Removing an edge from the graph is a bit tricky,
+  * because we need to remove it from bunch of indexes.
+  * Let's do a soft delete :)
+  */
+  private ignoreEdge(edge: Edge) {
+    edge.setIgnored(true);
+  }
+
   private addEdge(edge: Edge) {
     const edgeIndex = this.edgesByHeadTypeIndex[edge.head.index].push(edge) - 1;
     this.edgesByTailTypeIndex[edge.tail.index].push(edge);
     this.typeChildren[edge.head.index].add(edge.tail.typeName);
 
     if (isFieldEdge(edge)) {
+      if (edge.move.override) {
+        if (edge.move.override.label) {
+          this.fieldEdgesWithProgressiveOverride.push(edge);
+        } else {
+          this.fieldEdgesWithOverride.push(edge);
+        }
+      }
+
       edge.head.addFieldEdge(edge.move.fieldName, edgeIndex);
     } else if (isEntityEdge(edge)) {
       edge.head.addEntityEdge(edge.head.typeName, edgeIndex);
@@ -1156,5 +1349,9 @@ export class Graph {
 
   private isSupergraph() {
     return this.isSubgraph === false;
+  }
+
+  private isMergedGraph() {
+    return this.idSymbol === MERGEDGRAPH_ID;
   }
 }

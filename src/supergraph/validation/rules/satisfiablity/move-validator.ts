@@ -3,7 +3,8 @@ import { Edge, isAbstractEdge, isEntityEdge, isFieldEdge } from './edge.js';
 import { SatisfiabilityError } from './errors.js';
 import { concatIfNotExistsFields, concatIfNotExistsString, PathFinder } from './finder.js';
 import type { Graph } from './graph.js';
-import { lazy, type Lazy } from './helpers.js';
+import { lazy, OverrideLabels, type Lazy } from './helpers.js';
+import { FieldMove } from './moves.js';
 import { OperationPath } from './operation-path.js';
 import type { Field, Fragment, Selection, SelectionNode } from './selection.js';
 
@@ -50,6 +51,7 @@ export class MoveValidator {
     visitedEdges: Edge[],
     visitedGraphs: string[],
     visitedFields: Selection[],
+    labelValues: OverrideLabels,
   ) {
     const requirements: MoveRequirement[] = [];
 
@@ -73,6 +75,7 @@ export class MoveValidator {
         visitedEdges,
         visitedGraphs,
         visitedFields,
+        labelValues,
       );
 
       if (result.success === false) {
@@ -95,6 +98,7 @@ export class MoveValidator {
     visitedEdges: Edge[],
     visitedGraphs: string[],
     visitedFields: Selection[],
+    labelValues: OverrideLabels,
   ): RequirementResult {
     this.logger.log(() => 'Validating: ... on ' + requirement.selection.typeName);
 
@@ -120,6 +124,7 @@ export class MoveValidator {
         requirement.selection.typeName,
         null,
         visitedEdges,
+        labelValues,
       );
       if (directPathsResult.success) {
         if (this.logger.isEnabled) {
@@ -144,6 +149,7 @@ export class MoveValidator {
         visitedEdges,
         visitedGraphs,
         visitedFields,
+        labelValues,
       );
 
       if (indirectPathsResult.success) {
@@ -196,6 +202,7 @@ export class MoveValidator {
     visitedEdges: Edge[],
     visitedGraphs: string[],
     visitedFields: Selection[],
+    labelValues: OverrideLabels,
   ): RequirementResult {
     const { fieldName, typeName } = requirement.selection;
     this.logger.log(() => 'Validating: ' + typeName + '.' + fieldName);
@@ -209,6 +216,7 @@ export class MoveValidator {
         requirement.selection.typeName,
         requirement.selection.fieldName,
         visitedEdges,
+        labelValues,
       );
       if (directPathsResult.success) {
         if (this.logger.isEnabled) {
@@ -232,6 +240,7 @@ export class MoveValidator {
         visitedEdges,
         visitedGraphs,
         visitedFields,
+        labelValues,
       );
 
       if (indirectPathsResult.success) {
@@ -284,6 +293,7 @@ export class MoveValidator {
     visitedEdges: Edge[],
     visitedGraphs: string[],
     visitedFields: Selection[],
+    labelValues: OverrideLabels,
   ) {
     if (isFragmentRequirement(requirement)) {
       return this.validateFragmentRequirement(
@@ -291,11 +301,12 @@ export class MoveValidator {
         visitedEdges,
         visitedGraphs,
         visitedFields,
+        labelValues,
       );
     }
 
     if (isFieldRequirement(requirement)) {
-      return this.validateFieldRequirement(requirement, visitedEdges, visitedGraphs, visitedFields);
+      return this.validateFieldRequirement(requirement, visitedEdges, visitedGraphs, visitedFields, labelValues);
     }
 
     throw new Error(`Unsupported requirement: ${requirement.selection.kind}`);
@@ -351,28 +362,31 @@ export class MoveValidator {
     return true;
   }
 
-  private isOverridden(edge: Edge) {
-    if (!isFieldEdge(edge) || !edge.head.typeState || edge.head.typeState.kind !== 'object') {
+  private canAccessFieldWithOverride(edge: Edge<FieldMove>, overrideLabels: OverrideLabels) {
+
+    if (!edge.move.override) {
+      return true;
+    }
+
+    // the edge is overridden if the expected value is different from the actual value
+    // If we have label: "percent(10)":
+    //   true will be for the edge field with @override(label: "percent(10)", from: "a") in Subgraph B
+    //   false will be for the edge field in Subgraph A
+    // If we do not have a label:
+    //  true will be for the edge field with @override(from: "a") in Subgraph B
+    //  false will be for the edge field in Subgraph A
+
+    if (!edge.move.override.label) {
+      return edge.move.override.value;
+    }
+
+    const value = overrideLabels.get(edge.move.override.label);
+
+    if (typeof value !== 'boolean') {
       return false;
     }
 
-    const fieldState = edge.head.typeState.fields.get(edge.move.fieldName);
-
-    if (!fieldState) {
-      return false;
-    }
-
-    if (!fieldState.override) {
-      return false;
-    }
-
-    const overriddenGraphId = this.supergraph.graphNameToId(fieldState.override);
-
-    if (!overriddenGraphId) {
-      return false;
-    }
-
-    return edge.head.graphId === overriddenGraphId;
+    return edge.move.override.value === value;
   }
 
   isEdgeResolvable(
@@ -381,6 +395,7 @@ export class MoveValidator {
     visitedEdges: Edge[],
     visitedGraphs: string[],
     visitedFields: Selection[],
+    labelValues: OverrideLabels,
   ):
     | {
         success: true;
@@ -394,6 +409,7 @@ export class MoveValidator {
     this.logger.log(() => 'Visited graphs: ' + visitedGraphs.join(','));
     const resolvability = edge.getResolvability(
       concatIfNotExistsString(visitedGraphs, edge.tail.graphName),
+      labelValues,
     );
 
     if (resolvability) {
@@ -407,11 +423,12 @@ export class MoveValidator {
     }
 
     if (isFieldEdge(edge)) {
-      if (this.isOverridden(edge)) {
-        this.logger.groupEnd(() => 'Cannot move to ' + edge + ' because it is overridden');
+      if (!this.canAccessFieldWithOverride(edge, labelValues)) {
+        this.logger.groupEnd(() => 'Cannot move to ' + edge + ' because it requirement of the override is not met');
         return edge.setResolvable(
           false,
           visitedGraphs,
+          labelValues,
           lazy(() =>
             SatisfiabilityError.forMissingField(
               edge.tail.graphName,
@@ -429,6 +446,7 @@ export class MoveValidator {
         return edge.setResolvable(
           false,
           visitedGraphs,
+          labelValues,
           lazy(() =>
             SatisfiabilityError.forExternal(
               edge.head.graphName,
@@ -454,10 +472,11 @@ export class MoveValidator {
             visitedEdges.concat(edge),
             newVisitedGraphs,
             newVisitedFields,
+            labelValues,
           ).success
         ) {
           this.logger.groupEnd(() => 'Can move to ' + edge);
-          return edge.setResolvable(true, newVisitedGraphs);
+          return edge.setResolvable(true, newVisitedGraphs, labelValues);
         }
 
         this.logger.groupEnd(
@@ -477,7 +496,7 @@ export class MoveValidator {
       }
 
       this.logger.groupEnd(() => 'Can move to ' + edge);
-      return edge.setResolvable(true, visitedGraphs);
+      return edge.setResolvable(true, visitedGraphs, labelValues);
     }
 
     if (!isEntityEdge(edge) && !isAbstractEdge(edge)) {
@@ -486,7 +505,7 @@ export class MoveValidator {
 
     if (!edge.move.keyFields) {
       this.logger.groupEnd(() => 'Can move to ' + edge);
-      return edge.setResolvable(true, visitedGraphs);
+      return edge.setResolvable(true, visitedGraphs, labelValues);
     }
 
     const newVisitedGraphs = concatIfNotExistsString(visitedGraphs, edge.tail.graphName);
@@ -501,11 +520,12 @@ export class MoveValidator {
       visitedEdges.concat(edge),
       newVisitedGraphs,
       newVisitedFields,
+      labelValues,
     ).success;
 
     if (resolvable) {
       this.logger.groupEnd(() => 'Can move to ' + edge);
-      return edge.setResolvable(true, newVisitedGraphs);
+      return edge.setResolvable(true, newVisitedGraphs, labelValues);
     }
 
     this.logger.groupEnd(() => 'Cannot move to ' + edge + ' because key fields are not resolvable');
@@ -513,6 +533,7 @@ export class MoveValidator {
     return edge.setResolvable(
       false,
       newVisitedGraphs,
+      labelValues,
       lazy(() =>
         SatisfiabilityError.forKey(
           edge.head.graphName,

@@ -4,7 +4,7 @@ import { isAbstractEdge, isFieldEdge, type Edge } from './edge.js';
 import { SatisfiabilityError } from './errors.js';
 import { PathFinder } from './finder.js';
 import type { Graph } from './graph.js';
-import { type Lazy } from './helpers.js';
+import { OverrideLabels, type Lazy } from './helpers.js';
 import type { MoveValidator } from './move-validator.js';
 import type { Node } from './node.js';
 import { OperationPath, type Step } from './operation-path.js';
@@ -15,11 +15,15 @@ export class WalkTracker {
   constructor(
     public superPath: OperationPath,
     public paths: OperationPath[],
+    public labelValues: OverrideLabels,
   ) {}
 
   move(edge: Edge) {
     if (isFieldEdge(edge) || isAbstractEdge(edge)) {
-      return new WalkTracker(this.superPath.clone().move(edge), []);
+      if (isFieldEdge(edge) && edge.move.override?.label) {
+        return new WalkTracker(this.superPath.clone().move(edge), [], this.labelValues.clone().set(edge.move.override.label, edge.move.override.value));
+      }
+      return new WalkTracker(this.superPath.clone().move(edge), [], this.labelValues.clone());
     }
 
     throw new Error('Expected edge to be FieldMove or AbstractMove');
@@ -110,6 +114,7 @@ export class Walker {
     let state = new WalkTracker(
       new OperationPath(rootNode),
       this.mergedGraph.nodesOf(rootNode.typeName, false).map(n => new OperationPath(n)),
+      new OverrideLabels(),
     );
 
     for (const step of steps) {
@@ -243,20 +248,30 @@ export class Walker {
         throw new Error('Expected edge to have a FieldMove or AbstractMove');
       }
 
+      if (isFieldEdge(superEdge) && superEdge.move.override?.label) {
+        const labelValue = state.labelValues.get(superEdge.move.override.label);
+        if (typeof labelValue === 'boolean' && labelValue !== superEdge.move.override.value) {
+          this.logger.groupEnd(() => 'Different label value. Skipping ' + superEdge);
+          continue;
+        }
+      }
+
       const nextState = state.move(superEdge);
       const shortestPathPerTail = new Map<Node, OperationPath>();
-      const isFieldMove = isFieldEdge(superEdge);
-      const id = isFieldMove
+      const superEdgeIsField = isFieldEdge(superEdge);
+      const id = superEdgeIsField
         ? `${superEdge.move.typeName}.${superEdge.move.fieldName}`
         : `... on ${superEdge.tail.typeName}`;
 
       for (const path of state.paths) {
         this.logger.group(() => 'Advance path: ' + path.toString());
+
         const directPathsResult = this.pathFinder.findDirectPaths(
           path,
-          isFieldMove ? superEdge.move.typeName : superEdge.tail.typeName,
-          isFieldMove ? superEdge.move.fieldName : null,
+          superEdgeIsField ? superEdge.move.typeName : superEdge.tail.typeName,
+          superEdgeIsField ? superEdge.move.fieldName : null,
           [],
+          nextState.labelValues,
         );
 
         // Special case when it's an abstract type and there are no direct paths
@@ -280,11 +295,12 @@ export class Walker {
 
         const indirectPathsResult = this.pathFinder.findIndirectPaths(
           path,
-          isFieldMove ? superEdge.move.typeName : superEdge.tail.typeName,
-          isFieldMove ? superEdge.move.fieldName : null,
+          superEdgeIsField ? superEdge.move.typeName : superEdge.tail.typeName,
+          superEdgeIsField ? superEdge.move.fieldName : null,
           [],
           [],
           [],
+          nextState.labelValues,
         );
 
         if (indirectPathsResult.success) {
@@ -315,12 +331,15 @@ export class Walker {
       .map(name => this.supergraph.nodeOf(name, false))
       .filter((node): node is Node => !!node);
 
+    const overrideLabels = new OverrideLabels();
+
     for (const rootNode of rootNodes) {
       this._dfs(
         rootNode,
         new WalkTracker(
           new OperationPath(rootNode),
           this.mergedGraph.nodesOf(rootNode.typeName, false).map(n => new OperationPath(n)),
+          overrideLabels,
         ),
         unreachable,
       );
@@ -361,6 +380,7 @@ export class Walker {
   }
 
   private bfs() {
+    const overrideLabels = new OverrideLabels();
     const unreachable: WalkTracker[] = [];
     const queue: WalkTracker[] = [];
 
@@ -375,6 +395,7 @@ export class Walker {
         new WalkTracker(
           new OperationPath(rootNode),
           this.mergedGraph.nodesOf(rootNode.typeName, false).map(n => new OperationPath(n)),
+          overrideLabels,
         ),
       );
     }

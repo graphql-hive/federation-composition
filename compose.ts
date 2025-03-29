@@ -63,8 +63,8 @@ let services: Array<{
   name: string;
 }> = [];
 // services = await getDGS();
-// services = await getHuge();
-services = fromDirectory('./temp');
+services = await getHuge();
+// services = fromDirectory('./temp');
 
 if (typeof gc === 'function') {
   gc();

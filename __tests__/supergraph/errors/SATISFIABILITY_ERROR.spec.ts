@@ -587,7 +587,7 @@ testVersions((api, version) => {
           name: 'quux',
           typeDefs: graphql`
             extend schema @link(url: "https://specs.apollo.dev/federation/${version}" import: ["@inaccessible", "@shareable"])
-            
+
             type Query {
               _quux: Boolean @inaccessible
               view: Queries!
@@ -1797,7 +1797,7 @@ testVersions((api, version) => {
         name: 'a',
         typeDefs: graphql`
           extend schema @link(url: "https://specs.apollo.dev/federation/${version}" import: ["@key", "@external"])
-          
+
           extend type User @key(fields: "id") {
             id: ID @external
             email: String
@@ -1812,7 +1812,7 @@ testVersions((api, version) => {
         name: 'b',
         typeDefs: graphql`
           extend schema @link(url: "https://specs.apollo.dev/federation/${version}" import: ["@key"])
-          
+
           type User {
             profile: String
           }
@@ -2706,7 +2706,7 @@ testVersions((api, version) => {
     const result = api.composeServices([
       {
         name: 'a',
-        typeDefs: graphql` 
+        typeDefs: graphql`
           extend schema
             @link(
               url: "https://specs.apollo.dev/federation/${version}"

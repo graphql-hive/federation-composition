@@ -1,9 +1,13 @@
-import { ASTVisitor, GraphQLError, Kind } from 'graphql';
+import { ASTVisitor, GraphQLError, Kind, ValueNode } from 'graphql';
 import { validateDirectiveAgainstOriginal } from '../../../helpers.js';
+import { print } from '../../../../graphql/printer.js'
 import type { SubgraphValidationContext } from '../../validation-context.js';
 
 // Supergraph context:
 // - save what field is being overridden and from which subgraph
+
+const labelNonPercentRegex = /^[a-zA-Z][a-zA-Z0-9_\-:./]*$/;
+const labelPercentRegex = /^percent\(((\d{1,2}(\.\d{1,8})?)|100(\.[0]{1,8})?)\)$/
 
 export function OverrideRules(context: SubgraphValidationContext): ASTVisitor {
   return {
@@ -41,19 +45,23 @@ export function OverrideRules(context: SubgraphValidationContext): ASTVisitor {
 
       const labelArg = node.arguments?.find(arg => arg.name.value === 'label');
       if (labelArg && context.satisfiesVersionRange('>= v2.7')) {
-        context.reportError(
-          new GraphQLError(
-            [
-              `Progressive @override labels are not yet supported.`,
-              `Attempted to override field "${typeDef.name.value}.${fieldDef.name.value}".`,
-            ].join(' '),
-            {
-              extensions: {
-                code: 'UNSUPPORTED_FEATURE',
-              },
-            },
-          ),
-        );
+        if(!isValidLabel(labelArg.value)) {
+          context.reportError(
+            new GraphQLError(
+              invalidLabelValueError(print(labelArg.value), `${typeDef.name.value}.${fieldDef.name.value}`, context.getSubgraphName()),
+              { extensions: { code: 'OVERRIDE_LABEL_INVALID' } },
+            ),
+          );
+          return;
+        }
+      }
+
+      const labelValue = labelArg?.value;
+
+      if (labelValue && labelValue.kind !== Kind.STRING) {
+        // other validation rule takes care of this case.
+        // At this point, we can ignore this directive as the subgraph is invalid anyway.
+        return;
       }
 
       const fromArg = node.arguments?.find(arg => arg.name.value === 'from');
@@ -108,14 +116,43 @@ export function OverrideRules(context: SubgraphValidationContext): ASTVisitor {
           typeDef.name.value,
           fieldDef.name.value,
           fromArg.value.value,
+          labelValue?.value ?? null,
         );
       } else {
         context.stateBuilder.interfaceType.field.setOverride(
           typeDef!.name.value,
           fieldDef.name.value,
           fromArg.value.value,
+          labelValue?.value ?? null,
         );
       }
     },
   };
+}
+
+function invalidLabelValueError(value: string, coordinate: string, subgraphName: string) {
+  return `Invalid @override label ${value} on field "${coordinate}" on subgraph "${subgraphName}": labels must start with a letter and after that may contain alphanumerics, underscores, minuses, colons, periods, or slashes. Alternatively, labels may be of the form "percent(x)" where x is a float between 0-100 inclusive.`
+}
+
+function isValidLabel(valueNode: ValueNode) {
+  if (valueNode.kind !== Kind.STRING) {
+    return false;
+  }
+
+  const value = valueNode.value;
+
+  if (value.startsWith('percent(+') || value.startsWith('percent(-')) {
+    return false;
+  }
+
+  if (value.startsWith('percent(') && value.endsWith(')')) {
+    if (!labelPercentRegex.test(value)) {
+      return false;
+    }
+
+    const percentage = parseFloat(value.replace('percent(', '').replace(')', ''));
+    return percentage >= 0 && percentage <= 100;
+  }
+
+  return labelNonPercentRegex.test(value);
 }

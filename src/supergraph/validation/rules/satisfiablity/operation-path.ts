@@ -4,6 +4,12 @@ import type { Node } from './node.js';
 
 export type Step = FieldStep | AbstractStep;
 
+/**
+ * `@override(label:)` cannot start with a space,
+ * that's why we use a space to indicate that the label is empty
+*/
+export const emptyOverrideLabel = ' ';
+
 export type FieldStep = {
   fieldName: string;
   typeName: string;
@@ -78,15 +84,16 @@ export class OperationPath {
   private advance(edge: Edge) {
     this.previousEdges.push(edge);
     this.previousNodes.push(edge.head);
-    this.previousSteps.push(
-      isFieldEdge(edge)
-        ? {
-            typeName: edge.move.typeName,
-            fieldName: edge.move.fieldName,
-          }
-        : {
-            typeName: edge.tail.typeName,
-          },
-    );
+
+    if(isFieldEdge(edge)) {
+      this.previousSteps.push({
+        typeName: edge.move.typeName,
+        fieldName: edge.move.fieldName,
+      });
+    } else {
+      this.previousSteps.push({
+        typeName: edge.tail.typeName,
+      });
+    }
   }
 }

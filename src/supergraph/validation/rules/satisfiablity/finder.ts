@@ -2,7 +2,7 @@ import type { Logger } from '../../../../utils/logger.js';
 import { Edge, isAbstractEdge, isEntityEdge, isFieldEdge } from './edge.js';
 import { SatisfiabilityError } from './errors.js';
 import type { Graph } from './graph.js';
-import { lazy, type Lazy } from './helpers.js';
+import { lazy, OverrideLabels, type Lazy } from './helpers.js';
 import type { MoveValidator } from './move-validator.js';
 import type { OperationPath } from './operation-path.js';
 import { Selection } from './selection.js';
@@ -47,6 +47,7 @@ export class PathFinder {
     typeName: string,
     fieldName: string | null,
     visitedEdges: Edge[],
+    labelValues: OverrideLabels,
   ): PathFinderResult {
     const nextPaths: OperationPath[] = [];
     const errors: Lazy<SatisfiabilityError>[] = [];
@@ -91,7 +92,7 @@ export class PathFinder {
       }
 
       if (isFieldTarget && isFieldEdge(edge) && edge.move.fieldName === fieldName) {
-        const resolvable = this.moveValidator.isEdgeResolvable(edge, path, [], [], []);
+        const resolvable = this.moveValidator.isEdgeResolvable(edge, path, [], [], [], labelValues);
         if (!resolvable.success) {
           errors.push(resolvable.error);
           this.logger.groupEnd(() => 'Not resolvable: ' + edge);
@@ -160,6 +161,7 @@ export class PathFinder {
     for (const typeNode of typeNodes) {
       const edges = this.graph.fieldEdgesOfHead(typeNode, fieldName);
       for (const edge of edges) {
+
         if (
           isFieldEdge(edge) &&
           // edge.move.typeName === typeName &&
@@ -202,6 +204,7 @@ export class PathFinder {
     visitedEdges: Edge[],
     visitedGraphs: string[],
     visitedFields: Selection[],
+    labelValues: OverrideLabels,
     errors: Lazy<SatisfiabilityError>[],
     finalPaths: OperationPath[],
     queue: [string[], Selection[], OperationPath][],
@@ -258,6 +261,7 @@ export class PathFinder {
       visitedEdges.concat(edge),
       visitedGraphs,
       visitedFields,
+      labelValues,
     );
 
     if (!resolvable.success) {
@@ -277,7 +281,7 @@ export class PathFinder {
         ' from: ' +
         edge,
     );
-    const direct = this.findDirectPaths(newPath, typeName, fieldName, [edge]);
+    const direct = this.findDirectPaths(newPath, typeName, fieldName, [edge], labelValues);
 
     if (direct.success) {
       this.logger.groupEnd(() => 'Resolvable: ' + edge + ' with ' + direct.paths.length + ' paths');
@@ -307,6 +311,7 @@ export class PathFinder {
     typeName: string,
     visitedGraphs: string[],
     visitedFields: Selection[],
+    labelValues: OverrideLabels,
     finalPaths: OperationPath[],
     queue: [string[], Selection[], OperationPath][],
     resolvedGraphs: string[],
@@ -353,6 +358,7 @@ export class PathFinder {
     visitedEdges: Edge[],
     visitedGraphs: string[],
     visitedFields: Selection[],
+    labelValues: OverrideLabels,
   ): PathFinderResult {
     const errors: Lazy<SatisfiabilityError>[] = [];
     const tail = path.tail() ?? path.rootNode();
@@ -409,6 +415,7 @@ export class PathFinder {
             visitedEdges,
             visitedGraphs,
             visitedFields,
+            labelValues,
             errors,
             finalPaths,
             queue,
@@ -421,6 +428,7 @@ export class PathFinder {
             typeName,
             visitedGraphs,
             visitedFields,
+            labelValues,
             finalPaths,
             queue,
             resolvedGraphs,

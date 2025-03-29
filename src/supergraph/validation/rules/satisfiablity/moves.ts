@@ -5,6 +5,12 @@ export interface Move {
   toString(): string;
 }
 
+type FieldMoveOverride =
+{
+  label: string | null;
+  fromGraphId: string | null;
+  value: boolean;
+} | null
 export class FieldMove implements Move {
   private _toString = lazy(() => {
     let str = this.fieldName;
@@ -21,6 +27,11 @@ export class FieldMove implements Move {
       str += ' @provided';
     }
 
+    if (this.override) {
+      str += ` @override(label: ${this.override.label}`;
+      str += `, on: ${this.override.value})`;
+    }
+
     return str;
   });
 
@@ -29,8 +40,22 @@ export class FieldMove implements Move {
     public fieldName: string,
     public requires: Selection | null = null,
     public provides: Selection | null = null,
+    private _override: {
+      label: string | null;
+      fromGraphId: string | null;
+      value: boolean;
+    } | null = null,
     public provided: boolean = false,
   ) {}
+
+  get override(): FieldMoveOverride {
+    return this._override;
+  }
+
+  set override(override: FieldMoveOverride) {
+    this._override = override;
+    this._toString.invalidate();
+  }
 
   toString() {
     return this._toString.get();

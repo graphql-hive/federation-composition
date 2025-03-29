@@ -183,6 +183,7 @@ export interface Field {
   cost: number | null;
   listSize: ListSize | null;
   override: string | null;
+  overrideLabel: string | null;
   provides: string | null;
   requires: string | null;
   extension: boolean;
@@ -327,7 +328,7 @@ export function createSubgraphStateBuilder(
       def.locations.every(loc => loc.value === 'SCHEMA'),
   );
   const specifiedScalars = specifiedScalarTypes.map(type => type.name);
-  const specifiedDirectives = specifiedDirectiveTypes.map(directive => directive.name);
+
   const state: SubgraphState = {
     graph: {
       ...graph,
@@ -1440,12 +1441,14 @@ function objectTypeFactory(
 
         getOrCreateObjectField(state, renameObject, typeName, fieldName).inaccessible = true;
       },
-      setOverride(typeName: string, fieldName: string, override: string) {
+      setOverride(typeName: string, fieldName: string, override: string, label: string | null) {
         if (isInterfaceObject(typeName)) {
-          return interfaceTypeBuilder.field.setOverride(typeName, fieldName, override);
+          return interfaceTypeBuilder.field.setOverride(typeName, fieldName, override, label);
         }
 
-        getOrCreateObjectField(state, renameObject, typeName, fieldName).override = override;
+        const field = getOrCreateObjectField(state, renameObject, typeName, fieldName);
+        field.override = override;
+        field.overrideLabel = label;
       },
       setProvides(typeName: string, fieldName: string, provides: string) {
         if (isInterfaceObject(typeName)) {
@@ -1726,8 +1729,10 @@ function interfaceTypeFactory(state: SubgraphState) {
       setListSize(typeName: string, fieldName: string, listSize: ListSize) {
         getOrCreateInterfaceField(state, typeName, fieldName).listSize = listSize;
       },
-      setOverride(typeName: string, fieldName: string, override: string) {
-        getOrCreateInterfaceField(state, typeName, fieldName).override = override;
+      setOverride(typeName: string, fieldName: string, override: string, label: string | null) {
+        const field = getOrCreateInterfaceField(state, typeName, fieldName);
+        field.override = override;
+        field.overrideLabel = label;
       },
       setRequires(typeName: string, fieldName: string, requires: string) {
         getOrCreateInterfaceField(state, typeName, fieldName).requires = requires;
@@ -2246,6 +2251,7 @@ function getOrCreateObjectField(
     required: false,
     provided: false,
     override: null,
+    overrideLabel: null,
     provides: null,
     requires: null,
     shareable: false,
@@ -2289,6 +2295,7 @@ function getOrCreateInterfaceField(
     listSize: null,
     used: false,
     override: null,
+    overrideLabel: null,
     provides: null,
     requires: null,
     required: false,

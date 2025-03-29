@@ -1,7 +1,7 @@
 import { OperationTypeNode } from 'graphql';
 import { Logger, LoggerContext } from '../../../../utils/logger.js';
 import type { SupergraphState } from '../../../state.js';
-import { SUPERGRAPH_ID } from './constants.js';
+import { MERGEDGRAPH_ID, SUPERGRAPH_ID } from './constants.js';
 import { Graph } from './graph.js';
 import { MoveValidator } from './move-validator.js';
 import type { Step } from './operation-path.js';
@@ -27,7 +27,7 @@ export class Supergraph {
     );
     this.mergedGraph = new Graph(
       this.logger,
-      SUPERGRAPH_ID,
+      MERGEDGRAPH_ID,
       'merged',
       supergraphState,
       this.selectionResolver,
@@ -49,8 +49,9 @@ export class Supergraph {
     }
 
     this.mergedGraph.joinSubgraphs();
+    this.mergedGraph.addOverriddenFields();
 
-    this.supergraph.addFromRoots().addInterfaceObjectFields();
+    this.supergraph.addFromRoots().addOverriddenFields().addInterfaceObjectFields();
 
     this.moveRequirementChecker = new MoveValidator(this.logger, this.mergedGraph);
   }

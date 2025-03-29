@@ -1,5 +1,5 @@
 import { SatisfiabilityError } from './errors.js';
-import { lazy, type Lazy } from './helpers.js';
+import { lazy, OverrideLabels, type Lazy } from './helpers.js';
 import { AbstractMove, EntityMove, FieldMove, Move } from './moves.js';
 import { Node } from './node.js';
 
@@ -44,7 +44,8 @@ export function assertFieldEdge(edge: Edge): asserts edge is Edge<FieldMove> {
 }
 
 export class Edge<T = Move> {
-  private resolvable: Array<[string[], EdgeResolvabilityResult]> = [];
+  private resolvable: Array<[string[], OverrideLabels, EdgeResolvabilityResult]> = [];
+  private ignored = false;
   private _toString = lazy(() => `${this.head} -(${this.move})-> ${this.tail}`);
 
   constructor(
@@ -52,6 +53,14 @@ export class Edge<T = Move> {
     public move: T,
     public tail: Node,
   ) {}
+
+  setIgnored(ignored: boolean) {
+    this.ignored = ignored;
+  }
+
+  isIgnored(): boolean {
+    return this.ignored;
+  }
 
   isCrossGraphEdge(): boolean {
     return this.head.graphId !== this.tail.graphId;
@@ -61,27 +70,38 @@ export class Edge<T = Move> {
     return this._toString.get();
   }
 
-  getResolvability(graphNames: string[]) {
-    return this.resolvable.find(([checkedGraphNames]) => {
-      return checkedGraphNames.every(name => {
-        return graphNames.includes(name);
-      });
-    })?.[1];
+  updateOverride(override: { label: string | null; fromGraphId: string | null; value: boolean }) {
+    if (!(this.move instanceof FieldMove)) {
+      throw new Error(`Expected move to be FieldMove, but got ${this.move}`);
+    }
+
+    this.move.override = override;
+    this._toString.invalidate();
   }
 
-  setResolvable(success: true, graphNames: string[]): EdgeResolvabilityResult;
+  getResolvability(graphNames: string[], labelValues: OverrideLabels) {
+    return this.resolvable.find(([checkedGraphNames, checkedLabelValues]) => {
+      return checkedGraphNames.every(name => {
+        return graphNames.includes(name);
+      }) && checkedLabelValues.matches(labelValues);
+    })?.[2];
+  }
+
+  setResolvable(success: true, graphNames: string[], labelValues: OverrideLabels): EdgeResolvabilityResult;
   setResolvable(
     success: false,
     graphNames: string[],
+    labelValues: OverrideLabels,
     error: Lazy<SatisfiabilityError>,
   ): EdgeResolvabilityResult;
   setResolvable(
     success: boolean,
     graphNames: string[],
+    labelValues: OverrideLabels,
     error?: Lazy<SatisfiabilityError>,
   ): EdgeResolvabilityResult {
     const result = success ? { success, error: undefined } : { success, error: error! };
-    this.resolvable.push([graphNames, result]);
+    this.resolvable.push([graphNames, labelValues, result]);
     return result;
   }
 }
