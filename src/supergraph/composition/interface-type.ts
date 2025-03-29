@@ -145,9 +145,11 @@ export function interfaceTypeBuilder(): TypeBuilder<InterfaceType, InterfaceType
           fieldState.usedAsKey = true;
         }
 
+
         fieldState.byGraph.set(graph.id, {
           type: field.type,
           override: field.override,
+          overrideLabel: field.overrideLabel,
           provides: field.provides,
           requires: field.requires,
           version: graph.version,
@@ -419,6 +421,7 @@ type InterfaceTypeInGraph = {
 type FieldStateInGraph = {
   type: string;
   override: string | null;
+  overrideLabel: string | null;
   provides: string | null;
   shareable: boolean;
   usedAsKey: boolean;

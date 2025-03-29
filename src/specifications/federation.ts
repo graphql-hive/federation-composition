@@ -253,7 +253,6 @@ const federationSpecFactory = {
       prefix,
       imports,
     ),
-  // TODO: Implement @override(label:) from v2.7
   'v2.7': (prefix: string, imports?: readonly LinkImport[]) =>
     createTypeDefinitions(
       /* GraphQL */ `
@@ -273,7 +272,7 @@ const federationSpecFactory = {
         ) repeatable on OBJECT | INTERFACE
         directive @inaccessible on FIELD_DEFINITION | OBJECT | INTERFACE | UNION | ENUM | ENUM_VALUE | SCALAR | INPUT_OBJECT | INPUT_FIELD_DEFINITION | ARGUMENT_DEFINITION
         directive @interfaceObject on OBJECT
-        directive @override(from: String!) on FIELD_DEFINITION
+        directive @override(from: String!, label: String) on FIELD_DEFINITION
         directive @provides(fields: FieldSet!) on FIELD_DEFINITION
         directive @requires(fields: FieldSet!) on FIELD_DEFINITION
         directive @shareable repeatable on FIELD_DEFINITION | OBJECT
@@ -288,7 +287,6 @@ const federationSpecFactory = {
       imports,
     ),
   // TODO: Implement @context and @fromContext from v2.8
-  // TODO: Add @override(label:) from v2.7
   'v2.8': (prefix: string, imports?: readonly LinkImport[]) =>
     createTypeDefinitions(
       /* GraphQL */ `
@@ -308,7 +306,7 @@ const federationSpecFactory = {
         ) repeatable on OBJECT | INTERFACE
         directive @inaccessible on FIELD_DEFINITION | OBJECT | INTERFACE | UNION | ENUM | ENUM_VALUE | SCALAR | INPUT_OBJECT | INPUT_FIELD_DEFINITION | ARGUMENT_DEFINITION
         directive @interfaceObject on OBJECT
-        directive @override(from: String!) on FIELD_DEFINITION
+        directive @override(from: String!, label: String) on FIELD_DEFINITION
         directive @provides(fields: FieldSet!) on FIELD_DEFINITION
         directive @requires(fields: FieldSet!) on FIELD_DEFINITION
         directive @shareable repeatable on FIELD_DEFINITION | OBJECT
@@ -335,7 +333,6 @@ const federationSpecFactory = {
       imports,
     ),
   // TODO: Add @context and @fromContext from v2.8
-  // TODO: Add @override(label:) from v2.7
   'v2.9': (prefix: string, imports?: readonly LinkImport[]) =>
     createTypeDefinitions(
       /* GraphQL */ `
@@ -355,7 +352,7 @@ const federationSpecFactory = {
         ) repeatable on OBJECT | INTERFACE
         directive @inaccessible on FIELD_DEFINITION | OBJECT | INTERFACE | UNION | ENUM | ENUM_VALUE | SCALAR | INPUT_OBJECT | INPUT_FIELD_DEFINITION | ARGUMENT_DEFINITION
         directive @interfaceObject on OBJECT
-        directive @override(from: String!) on FIELD_DEFINITION
+        directive @override(from: String!, label: String) on FIELD_DEFINITION
         directive @provides(fields: FieldSet!) on FIELD_DEFINITION
         directive @requires(fields: FieldSet!) on FIELD_DEFINITION
         directive @shareable repeatable on FIELD_DEFINITION | OBJECT
