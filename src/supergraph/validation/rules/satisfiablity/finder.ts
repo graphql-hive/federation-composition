@@ -1,6 +1,6 @@
 import type { Logger } from '../../../../utils/logger.js';
 import { Edge, isAbstractEdge, isEntityEdge, isFieldEdge } from './edge.js';
-import { SatisfiabilityError } from './errors.js';
+import { LazyErrors, SatisfiabilityError } from './errors.js';
 import type { Graph } from './graph.js';
 import { lazy, OverrideLabels, type Lazy } from './helpers.js';
 import type { MoveValidator } from './move-validator.js';
@@ -32,7 +32,7 @@ type PathFinderResult =
   | {
       success: false;
       paths: undefined;
-      errors: Lazy<SatisfiabilityError>[];
+      errors: LazyErrors<SatisfiabilityError>;
     };
 
 export class PathFinder {
@@ -50,7 +50,7 @@ export class PathFinder {
     labelValues: OverrideLabels,
   ): PathFinderResult {
     const nextPaths: OperationPath[] = [];
-    const errors: Lazy<SatisfiabilityError>[] = [];
+    const errors = new LazyErrors<SatisfiabilityError>();
     const tail = path.tail() ?? path.rootNode();
     const isFieldTarget = fieldName !== null;
     const id = isFieldTarget ? `${typeName}.${fieldName}` : `... on ${typeName}`;
@@ -94,7 +94,7 @@ export class PathFinder {
       if (isFieldTarget && isFieldEdge(edge) && edge.move.fieldName === fieldName) {
         const resolvable = this.moveValidator.isEdgeResolvable(edge, path, [], [], [], labelValues);
         if (!resolvable.success) {
-          errors.push(resolvable.error);
+          errors.add(resolvable.error);
           this.logger.groupEnd(() => 'Not resolvable: ' + edge);
           continue;
         }
@@ -118,7 +118,7 @@ export class PathFinder {
       };
     }
 
-    if (errors.length > 0) {
+    if (!errors.isEmpty()) {
       return {
         success: false,
         errors,
@@ -134,9 +134,7 @@ export class PathFinder {
           // no subgraph can be reached to resolve the implementation type of @interfaceObject type
           return {
             success: false,
-            errors: [
-              lazy(() => SatisfiabilityError.forNoImplementation(tail.graphName, tail.typeName)),
-            ],
+            errors: new LazyErrors<SatisfiabilityError>().add(lazy(() => SatisfiabilityError.forNoImplementation(tail.graphName, tail.typeName))),
             paths: undefined,
           };
         }
@@ -152,43 +150,43 @@ export class PathFinder {
     }
 
     // In case of no errors, we know that there were no edges matching the field name.
-    errors.push(
+    errors.add(
       lazy(() => SatisfiabilityError.forMissingField(tail.graphName, typeName, fieldName)),
     );
 
-    // find graphs with the same type and field name, but no @key defined
-    const typeNodes = this.graph.nodesOf(typeName);
-    for (const typeNode of typeNodes) {
-      const edges = this.graph.fieldEdgesOfHead(typeNode, fieldName);
-      for (const edge of edges) {
+    errors.add(lazy(() => {
+      const errors: SatisfiabilityError[] = [];
+      // find graphs with the same type and field name, but no @key defined
+      const typeNodes = this.graph.nodesOf(typeName);
+      for (const typeNode of typeNodes) {
+        const edges = this.graph.fieldEdgesOfHead(typeNode, fieldName);
+        for (const edge of edges) {
+          if (
+            isFieldEdge(edge) &&
+            // edge.move.typeName === typeName &&
+            edge.move.fieldName === fieldName &&
+            !this.moveValidator.isExternal(edge)
+          ) {
+            const typeStateInGraph =
+              edge.head.typeState &&
+              edge.head.typeState.kind === 'object' &&
+              edge.head.typeState.byGraph.get(edge.head.graphId);
+            const keys = typeStateInGraph ? typeStateInGraph.keys.filter(key => key.resolvable) : [];
 
-        if (
-          isFieldEdge(edge) &&
-          // edge.move.typeName === typeName &&
-          edge.move.fieldName === fieldName &&
-          !this.moveValidator.isExternal(edge)
-        ) {
-          const typeStateInGraph =
-            edge.head.typeState &&
-            edge.head.typeState.kind === 'object' &&
-            edge.head.typeState.byGraph.get(edge.head.graphId);
-          const keys = typeStateInGraph ? typeStateInGraph.keys.filter(key => key.resolvable) : [];
-
-          if (keys.length === 0) {
-            errors.push(
-              lazy(() =>
-                SatisfiabilityError.forNoKey(
-                  tail.graphName,
-                  edge.tail.graphName,
-                  typeName,
-                  fieldName,
-                ),
-              ),
-            );
+            if (keys.length === 0) {
+              errors.push(SatisfiabilityError.forNoKey(
+                tail.graphName,
+                edge.tail.graphName,
+                typeName,
+                fieldName,
+              ));
+            }
           }
         }
       }
-    }
+
+      return errors;
+    }))
 
     return {
       success: false,
@@ -205,7 +203,7 @@ export class PathFinder {
     visitedGraphs: string[],
     visitedFields: Selection[],
     labelValues: OverrideLabels,
-    errors: Lazy<SatisfiabilityError>[],
+    errors: LazyErrors<SatisfiabilityError>,
     finalPaths: OperationPath[],
     queue: [string[], Selection[], OperationPath][],
     resolvedGraphs: string[],
@@ -265,7 +263,7 @@ export class PathFinder {
     );
 
     if (!resolvable.success) {
-      errors.push(resolvable.error);
+      errors.add(resolvable.error);
       this.logger.groupEnd(() => 'Not resolvable: ' + resolvable.error);
       return;
     }
@@ -291,7 +289,7 @@ export class PathFinder {
       return;
     }
 
-    errors.push(...direct.errors);
+    errors.add(direct.errors);
 
     resolvedGraphs.push(newPath.edge()!.tail.graphName);
 
@@ -360,7 +358,7 @@ export class PathFinder {
     visitedFields: Selection[],
     labelValues: OverrideLabels,
   ): PathFinderResult {
-    const errors: Lazy<SatisfiabilityError>[] = [];
+    const errors = new LazyErrors<SatisfiabilityError>();
     const tail = path.tail() ?? path.rootNode();
     const sourceGraphName = tail.graphName;
     const isFieldTarget = fieldName !== null;

@@ -1,3 +1,6 @@
+import type {Lazy} from './helpers.js'
+import { isDefined } from '../../../../utils/helpers.js';
+
 type SatisfiabilityErrorKind =
   | 'KEY' // cannot move to subgraph "X" using @key(fields: "a b c") of "User", the key field(s) cannot be resolved from subgraph "Y".
   | 'REQUIRE' // cannot satisfy @require conditions on field "User.name".
@@ -113,5 +116,41 @@ export class SatisfiabilityError extends Error {
 
   toString() {
     return this.message;
+  }
+}
+
+/**
+* The main job of this class is to collect errors in a lazy fashion.
+* This is useful because we can collect errors in different parts of the code
+* and only evaluate them when we need to report them.
+* A lot of times we don't even need those errors.
+*
+* Everything being lazy means we do not compute anything until we need to.
+* Thanks to this change,
+* I was able to go from 2s to 600ms at quite a large scale supergraph.
+*/
+export class LazyErrors<T> {
+  private lazyError: Lazy<T | T[]>[] = [];
+
+  add(lazyError: Lazy<T | T[]> | LazyErrors<T>) {
+    if (lazyError instanceof LazyErrors) {
+      this.lazyError.push(...lazyError.getLazyErrors());
+      return this;
+    }
+
+    this.lazyError.push(lazyError);
+    return this;
+  }
+
+  getLazyErrors() {
+    return this.lazyError;
+  }
+
+  toArray(): T[] {
+    return this.lazyError.flatMap(error => error.get()).filter(isDefined);
+  }
+
+  isEmpty() {
+    return this.lazyError.length === 0;
   }
 }

@@ -1,6 +1,6 @@
 import type { Logger } from '../../../../utils/logger.js';
 import { Edge, isAbstractEdge, isEntityEdge, isFieldEdge } from './edge.js';
-import { SatisfiabilityError } from './errors.js';
+import { LazyErrors, SatisfiabilityError } from './errors.js';
 import { concatIfNotExistsFields, concatIfNotExistsString, PathFinder } from './finder.js';
 import type { Graph } from './graph.js';
 import { lazy, OverrideLabels, type Lazy } from './helpers.js';
@@ -30,7 +30,7 @@ type RequirementResult =
     }
   | {
       success: false;
-      errors: Lazy<SatisfiabilityError>[];
+      errors: LazyErrors<SatisfiabilityError>;
     };
 
 export class MoveValidator {
@@ -103,7 +103,7 @@ export class MoveValidator {
     this.logger.log(() => 'Validating: ... on ' + requirement.selection.typeName);
 
     const nextPaths: OperationPath[] = [];
-    const errors: Lazy<SatisfiabilityError>[] = [];
+    const errors = new LazyErrors<SatisfiabilityError>();
 
     // Looks like we hit a fragment spread that matches the current type.
     // It means that it's a fragment spread on an object type, not a union or interface.
@@ -135,7 +135,7 @@ export class MoveValidator {
         }
         nextPaths.push(...directPathsResult.paths);
       } else {
-        errors.push(...directPathsResult.errors);
+        errors.add(directPathsResult.errors);
       }
     }
 
@@ -161,7 +161,7 @@ export class MoveValidator {
         }
         nextPaths.push(...indirectPathsResult.paths);
       } else {
-        errors.push(...indirectPathsResult.errors);
+        errors.add(indirectPathsResult.errors);
       }
     }
 
@@ -208,7 +208,7 @@ export class MoveValidator {
     this.logger.log(() => 'Validating: ' + typeName + '.' + fieldName);
 
     const nextPaths: OperationPath[] = [];
-    const errors: Lazy<SatisfiabilityError>[] = [];
+    const errors = new LazyErrors<SatisfiabilityError>();
 
     for (const path of requirement.paths) {
       const directPathsResult = this.pathFinder.findDirectPaths(
@@ -227,7 +227,7 @@ export class MoveValidator {
         }
         nextPaths.push(...directPathsResult.paths);
       } else {
-        errors.push(...directPathsResult.errors);
+        errors.add(directPathsResult.errors);
       }
     }
 
@@ -252,7 +252,7 @@ export class MoveValidator {
         }
         nextPaths.push(...indirectPathsResult.paths);
       } else {
-        errors.push(...indirectPathsResult.errors);
+        errors.add(indirectPathsResult.errors);
       }
     }
 
@@ -265,9 +265,23 @@ export class MoveValidator {
       }
 
       // cannot advance
+      // TODO: improve it...
+      // const errorsInTotal = errors.toArray().length;
+      // const relevantErrors = errors.toArray().filter(e => () => e.isMatchingField(typeName, fieldName)).length;
+
+      // if (errorsInTotal !== relevantErrors) {
+      //   console.log('errorsInTotal', errorsInTotal);
+      //   console.log('relevantErrors', relevantErrors);
+      //   throw new Error('Not all errors are relevant (errorsInTotal=' + errorsInTotal + ', relevantErrors=' + relevantErrors + ')');
+      // }
+
+      // const fieldMatchingErrors = new LazyErrors<SatisfiabilityError>();
+      // for (const error of errors.toArray().filter(e => () => e.isMatchingField(typeName, fieldName))) {
+      //   fieldMatchingErrors.add(lazy(() => error));
+      // }
       return {
         success: false,
-        errors: errors.filter(e => () => e.get().isMatchingField(typeName, fieldName)),
+        errors,
       };
     }
 

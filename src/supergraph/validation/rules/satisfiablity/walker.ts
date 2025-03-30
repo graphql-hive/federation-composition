@@ -1,7 +1,7 @@
 import { OperationTypeNode } from 'graphql';
 import type { Logger } from '../../../../utils/logger.js';
 import { isAbstractEdge, isFieldEdge, type Edge } from './edge.js';
-import { SatisfiabilityError } from './errors.js';
+import { LazyErrors, SatisfiabilityError } from './errors.js';
 import { PathFinder } from './finder.js';
 import type { Graph } from './graph.js';
 import { OverrideLabels, type Lazy } from './helpers.js';
@@ -10,7 +10,7 @@ import type { Node } from './node.js';
 import { OperationPath, type Step } from './operation-path.js';
 
 export class WalkTracker {
-  private errors: Lazy<SatisfiabilityError>[] = [];
+  private errors = new LazyErrors<SatisfiabilityError>();
 
   constructor(
     public superPath: OperationPath,
@@ -31,11 +31,11 @@ export class WalkTracker {
 
   addPath(path: OperationPath) {
     this.paths.push(path);
-    this.errors = [];
+    this.errors = new LazyErrors();
   }
 
-  addError(error: Lazy<SatisfiabilityError>) {
-    this.errors.push(error);
+  addError(errors: LazyErrors<SatisfiabilityError>) {
+    this.errors.add(errors);
   }
 
   isPossible() {
@@ -45,7 +45,7 @@ export class WalkTracker {
   givesEmptyResult() {
     const lastEdge = this.superPath.edge();
     return (
-      this.paths.length === 0 && this.errors.length === 0 && !!lastEdge && isAbstractEdge(lastEdge)
+      this.paths.length === 0 && this.errors.isEmpty() && !!lastEdge && isAbstractEdge(lastEdge)
     );
   }
 
@@ -54,8 +54,7 @@ export class WalkTracker {
   }
 
   listErrors() {
-    return this.errors
-      .map(error => error.get())
+    return this.errors.toArray()
       .filter((error, i, all) => all.findIndex(e => e.toString() === error.toString()) === i)
       .filter(error => {
         if (error.kind !== 'KEY') {
@@ -283,9 +282,7 @@ export class Walker {
         if (directPathsResult.success) {
           setShortestPath(shortestPathPerTail, directPathsResult.paths);
         } else {
-          for (const error of directPathsResult.errors) {
-            nextState.addError(error);
-          }
+          nextState.addError(directPathsResult.errors);
         }
 
         if (directPathsResult.success && superEdge.tail.isLeaf) {
@@ -306,9 +303,7 @@ export class Walker {
         if (indirectPathsResult.success) {
           setShortestPath(shortestPathPerTail, indirectPathsResult.paths);
         } else {
-          for (const error of indirectPathsResult.errors) {
-            nextState.addError(error);
-          }
+          nextState.addError(indirectPathsResult.errors);
         }
         this.logger.groupEnd(() =>
           directPathsResult.success || indirectPathsResult.success
