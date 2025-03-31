@@ -1,5 +1,40 @@
 # @theguild/federation-composition
 
+## 0.18.0
+
+### Minor Changes
+
+- Support progressive overrides (`@override(label: "<value>")`)
+
+## Patch Changes
+
+- Performance improvements (lazy compute of errors), especially noticeable in large schemas (2s -> 600ms)
+
+## 0.17.0
+
+### Minor Changes
+
+- Allow to use `@composeDirective` on a built-in scalar (like `@oneOf`)
+
+## 0.16.0
+
+### Minor Changes
+
+- Allow to use v2.7, but not progressive `@override` labels
+- Allow to use v2.8, but not `@context` and `@fromContext` directives
+- Support `@cost` and `@listSize` directives
+- Add `extractLinkImplementations` function to extract information about applied specs (`@link`)
+
+### Patch Changes
+
+- Reuse type and direcive definitions from the composition logic to detect a supergraph spec in an SDL or transform a supergraph to a public schema
+
+## 0.15.0
+
+### Minor Changes
+
+- Implement rule for `IMPLEMENTED_BY_INACCESSIBLE` error code.
+
 ## 0.14.5
 
 ### Patch Changes
