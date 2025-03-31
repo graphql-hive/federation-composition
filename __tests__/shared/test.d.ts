@@ -1,7 +1,9 @@
-import type { DocumentNode, TypeSystemDefinitionNode } from 'graphql';
+import type { DocumentNode, TypeSystemDefinitionNode } from "graphql";
 
 interface CustomMatchers<R = unknown> {
-  toContainGraphQL(expected: string | DocumentNode | TypeSystemDefinitionNode): R;
+  toContainGraphQL(
+    expected: string | DocumentNode | TypeSystemDefinitionNode,
+  ): R;
   toEqualGraphQL(expected: string | DocumentNode | TypeSystemDefinitionNode): R;
 }
 

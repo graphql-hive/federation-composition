@@ -1,14 +1,14 @@
-import { isFieldEdge, type Edge } from './edge.js';
-import { lazy } from './helpers.js';
-import type { Node } from './node.js';
+import { isFieldEdge, type Edge } from "./edge.js";
+import { lazy } from "./helpers.js";
+import type { Node } from "./node.js";
 
 export type Step = FieldStep | AbstractStep;
 
 /**
  * `@override(label:)` cannot start with a space,
  * that's why we use a space to indicate that the label is empty
-*/
-export const emptyOverrideLabel = ' ';
+ */
+export const emptyOverrideLabel = " ";
 
 export type FieldStep = {
   fieldName: string;
@@ -85,7 +85,7 @@ export class OperationPath {
     this.previousEdges.push(edge);
     this.previousNodes.push(edge.head);
 
-    if(isFieldEdge(edge)) {
+    if (isFieldEdge(edge)) {
       this.previousSteps.push({
         typeName: edge.move.typeName,
         fieldName: edge.move.fieldName,

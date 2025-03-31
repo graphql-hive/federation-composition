@@ -1,6 +1,6 @@
-import { GraphQLError } from 'graphql';
-import { SupergraphVisitorMap } from '../../composition/visitor.js';
-import { SupergraphValidationContext } from '../validation-context.js';
+import { GraphQLError } from "graphql";
+import { SupergraphVisitorMap } from "../../composition/visitor.js";
+import { SupergraphValidationContext } from "../validation-context.js";
 
 export function RequiredArgumentOrFieldIsNotInaccessibleRule(
   context: SupergraphValidationContext,
@@ -10,14 +10,14 @@ export function RequiredArgumentOrFieldIsNotInaccessibleRule(
       if (
         !inputObjectState.inaccessible &&
         fieldState.inaccessible &&
-        fieldState.type.endsWith('!')
+        fieldState.type.endsWith("!")
       ) {
         context.reportError(
           new GraphQLError(
             `Input field "${inputObjectState.name}.${fieldState.name}" is @inaccessible but is a required input field of its type.`,
             {
               extensions: {
-                code: 'REQUIRED_INACCESSIBLE',
+                code: "REQUIRED_INACCESSIBLE",
               },
             },
           ),
@@ -25,13 +25,17 @@ export function RequiredArgumentOrFieldIsNotInaccessibleRule(
       }
     },
     ObjectTypeFieldArg(objectState, fieldState, argState) {
-      if (!fieldState.inaccessible && argState.inaccessible && argState.type.endsWith('!')) {
+      if (
+        !fieldState.inaccessible &&
+        argState.inaccessible &&
+        argState.type.endsWith("!")
+      ) {
         context.reportError(
           new GraphQLError(
             `Argument "${objectState.name}.${fieldState.name}(${argState.name}:)" is @inaccessible but is a required argument of its field.`,
             {
               extensions: {
-                code: 'REQUIRED_INACCESSIBLE',
+                code: "REQUIRED_INACCESSIBLE",
               },
             },
           ),

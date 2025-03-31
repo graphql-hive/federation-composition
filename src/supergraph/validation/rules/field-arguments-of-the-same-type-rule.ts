@@ -1,6 +1,6 @@
-import { GraphQLError } from 'graphql';
-import { SupergraphVisitorMap } from '../../composition/visitor.js';
-import { SupergraphValidationContext } from '../validation-context.js';
+import { GraphQLError } from "graphql";
+import { SupergraphVisitorMap } from "../../composition/visitor.js";
+import { SupergraphValidationContext } from "../validation-context.js";
 
 export function FieldArgumentsOfTheSameTypeRule(
   context: SupergraphValidationContext,
@@ -15,10 +15,10 @@ export function FieldArgumentsOfTheSameTypeRule(
         // But this way is faster to iterate.
         // TODO: This needs to show `!` and `[]` modifiers as well
         // TODO: This needs a good comparison logic (e.g. `String!` and `String` are the same in context of fields and arguments)
-        const isNonNullable = arg.type.endsWith('!');
-        const isNonNullableInSupergraph = argState.type.endsWith('!');
+        const isNonNullable = arg.type.endsWith("!");
+        const isNonNullableInSupergraph = argState.type.endsWith("!");
         const isMatchingNonNullablePart =
-          argState.type.replace(/!$/, '') === arg.type.replace(/!$/, '');
+          argState.type.replace(/!$/, "") === arg.type.replace(/!$/, "");
         let normalizedOutputType: string;
 
         // Turn User into User! (if super type is non-nullable)
@@ -30,7 +30,7 @@ export function FieldArgumentsOfTheSameTypeRule(
           normalizedOutputType = isNonNullableInSupergraph
             ? isNonNullable
               ? arg.type
-              : arg.type + '!'
+              : arg.type + "!"
             : arg.type;
         } else {
           normalizedOutputType = arg.type;
@@ -46,23 +46,25 @@ export function FieldArgumentsOfTheSameTypeRule(
       });
 
       if (typeToGraphs.size > 1) {
-        const groups = Array.from(typeToGraphs.entries()).map(([outputType, graphs]) => {
-          const plural = graphs.length > 1 ? 's' : '';
-          return `type "${outputType}" in subgraph${plural} "${graphs
-            .map(context.graphIdToName)
-            .join('", "')}"`;
-        });
+        const groups = Array.from(typeToGraphs.entries()).map(
+          ([outputType, graphs]) => {
+            const plural = graphs.length > 1 ? "s" : "";
+            return `type "${outputType}" in subgraph${plural} "${graphs
+              .map(context.graphIdToName)
+              .join('", "')}"`;
+          },
+        );
         const [first, second, ...rest] = groups;
         context.reportError(
           new GraphQLError(
             `Type of argument "${objectTypeState.name}.${fieldState.name}(${
               argState.name
             }:)" is incompatible across subgraphs: it has ${first} but ${second}${
-              rest.length ? ` and ${rest.join(' and ')}` : ''
+              rest.length ? ` and ${rest.join(" and ")}` : ""
             }`,
             {
               extensions: {
-                code: 'FIELD_ARGUMENT_TYPE_MISMATCH',
+                code: "FIELD_ARGUMENT_TYPE_MISMATCH",
               },
             },
           ),

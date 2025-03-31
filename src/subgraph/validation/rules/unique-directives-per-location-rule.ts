@@ -5,7 +5,7 @@ import {
   isTypeDefinitionNode,
   isTypeExtensionNode,
   Kind,
-} from 'graphql';
+} from "graphql";
 
 export function UniqueDirectivesPerLocationRule(context: {
   reportError: (error: GraphQLError) => void;
@@ -28,12 +28,15 @@ export function UniqueDirectivesPerLocationRule(context: {
     // them all, just listen for entering any node, and check to see if it
     // defines any directives.
     enter(node) {
-      if (!('directives' in node) || !node.directives) {
+      if (!("directives" in node) || !node.directives) {
         return;
       }
 
       let seenDirectives: Set<string>;
-      if (node.kind === Kind.SCHEMA_DEFINITION || node.kind === Kind.SCHEMA_EXTENSION) {
+      if (
+        node.kind === Kind.SCHEMA_DEFINITION ||
+        node.kind === Kind.SCHEMA_EXTENSION
+      ) {
         seenDirectives = schemaDirectives;
       } else if (isTypeDefinitionNode(node) || isTypeExtensionNode(node)) {
         const typeName = node.name.value;
@@ -55,7 +58,7 @@ export function UniqueDirectivesPerLocationRule(context: {
                 `The directive "@${directiveName}" can only be used once at this location.`,
                 {
                   extensions: {
-                    code: 'INVALID_GRAPHQL',
+                    code: "INVALID_GRAPHQL",
                   },
                 },
               ),

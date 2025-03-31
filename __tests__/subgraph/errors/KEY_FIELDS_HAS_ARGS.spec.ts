@@ -1,12 +1,12 @@
-import { expect, test } from 'vitest';
-import { graphql, testVersions } from '../../shared/testkit.js';
+import { expect, test } from "vitest";
+import { graphql, testVersions } from "../../shared/testkit.js";
 
 testVersions((api, version) => {
-  test('KEY_FIELDS_HAS_ARGS', () => {
+  test("KEY_FIELDS_HAS_ARGS", () => {
     expect(
       api.composeServices([
         {
-          name: 'users',
+          name: "users",
           typeDefs: graphql`
             extend schema @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@key"])
             
@@ -29,7 +29,7 @@ testVersions((api, version) => {
               `[users] On type "User", for @key(fields: "id tags"): field User.tags cannot be included because it has arguments (fields with argument are not allowed in @key)`,
             ),
             extensions: expect.objectContaining({
-              code: 'KEY_FIELDS_HAS_ARGS',
+              code: "KEY_FIELDS_HAS_ARGS",
             }),
           }),
         ]),
@@ -39,7 +39,7 @@ testVersions((api, version) => {
     expect(
       api.composeServices([
         {
-          name: 'users',
+          name: "users",
           typeDefs: graphql`
             type Query {
               users: [User]
@@ -60,7 +60,7 @@ testVersions((api, version) => {
               `[users] On type "User", for @key(fields: "id tags"): field User.tags cannot be included because it has arguments (fields with argument are not allowed in @key)`,
             ),
             extensions: expect.objectContaining({
-              code: 'KEY_FIELDS_HAS_ARGS',
+              code: "KEY_FIELDS_HAS_ARGS",
             }),
           }),
         ]),
@@ -70,7 +70,7 @@ testVersions((api, version) => {
     expect(
       api.composeServices([
         {
-          name: 'users',
+          name: "users",
           typeDefs: graphql`
             type Query {
               users: [User]
@@ -91,7 +91,7 @@ testVersions((api, version) => {
               `[users] On type "User", for @key(fields: "id tags"): field User.tags cannot be included because it has arguments (fields with argument are not allowed in @key)`,
             ),
             extensions: expect.objectContaining({
-              code: 'KEY_FIELDS_HAS_ARGS',
+              code: "KEY_FIELDS_HAS_ARGS",
             }),
           }),
         ]),

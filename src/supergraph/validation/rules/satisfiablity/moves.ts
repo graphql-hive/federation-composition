@@ -1,16 +1,15 @@
-import { lazy } from './helpers.js';
-import type { Selection } from './selection.js';
+import { lazy } from "./helpers.js";
+import type { Selection } from "./selection.js";
 
 export interface Move {
   toString(): string;
 }
 
-type FieldMoveOverride =
-{
+type FieldMoveOverride = {
   label: string | null;
   fromGraphId: string | null;
   value: boolean;
-} | null
+} | null;
 export class FieldMove implements Move {
   private _toString = lazy(() => {
     let str = this.fieldName;
@@ -24,7 +23,7 @@ export class FieldMove implements Move {
     }
 
     if (this.provided) {
-      str += ' @provided';
+      str += " @provided";
     }
 
     if (this.override) {
@@ -63,7 +62,9 @@ export class FieldMove implements Move {
 }
 
 export class AbstractMove implements Move {
-  private _toString = lazy(() => (this.keyFields ? `🔮 🔑 ${this.keyFields}` : `🔮`));
+  private _toString = lazy(() =>
+    this.keyFields ? `🔮 🔑 ${this.keyFields}` : `🔮`,
+  );
 
   constructor(public keyFields?: Selection) {}
 

@@ -1,12 +1,16 @@
-import { expect, test } from 'vitest';
-import { assertCompositionFailure, graphql, testVersions } from '../../shared/testkit.js';
+import { expect, test } from "vitest";
+import {
+  assertCompositionFailure,
+  graphql,
+  testVersions,
+} from "../../shared/testkit.js";
 
 testVersions((api, version) => {
-  test('INTERFACE_FIELD_NO_IMPLEM (entity)', () => {
+  test("INTERFACE_FIELD_NO_IMPLEM (entity)", () => {
     expect(
       api.composeServices([
         {
-          name: 'users',
+          name: "users",
           typeDefs: graphql`
             extend schema @link(url: "https://specs.apollo.dev/federation/${version}" import: ["@key"])
             
@@ -28,7 +32,7 @@ testVersions((api, version) => {
           `,
         },
         {
-          name: 'feed',
+          name: "feed",
           typeDefs: graphql`
             extend schema @link(url: "https://specs.apollo.dev/federation/${version}" import: ["@key"])
             
@@ -49,10 +53,10 @@ testVersions((api, version) => {
         errors: expect.arrayContaining([
           expect.objectContaining({
             message: expect.stringContaining(
-              `Interface field "User.email" is declared in subgraph "users" but type "Author", which implements "User" ${api.library === 'apollo' ? 'only ' : ''}in subgraph "feed" does not have field "email".`,
+              `Interface field "User.email" is declared in subgraph "users" but type "Author", which implements "User" ${api.library === "apollo" ? "only " : ""}in subgraph "feed" does not have field "email".`,
             ),
             extensions: expect.objectContaining({
-              code: 'INTERFACE_FIELD_NO_IMPLEM',
+              code: "INTERFACE_FIELD_NO_IMPLEM",
             }),
           }),
         ]),
@@ -60,11 +64,11 @@ testVersions((api, version) => {
     );
   });
 
-  test('INTERFACE_FIELD_NO_IMPLEM (data)', () => {
+  test("INTERFACE_FIELD_NO_IMPLEM (data)", () => {
     expect(
       api.composeServices([
         {
-          name: 'foo',
+          name: "foo",
           typeDefs: graphql`
             type Query {
               foo: Foo
@@ -82,7 +86,7 @@ testVersions((api, version) => {
           `,
         },
         {
-          name: 'bar',
+          name: "bar",
           typeDefs: graphql`
             type Query {
               bar: Bar
@@ -103,10 +107,10 @@ testVersions((api, version) => {
         errors: expect.arrayContaining([
           expect.objectContaining({
             message: expect.stringContaining(
-              `Interface field "Person.age" is declared in subgraph "foo" but type "Bar", which implements "Person" ${api.library === 'apollo' ? 'only ' : ''}in subgraph "bar" does not have field "age".`,
+              `Interface field "Person.age" is declared in subgraph "foo" but type "Bar", which implements "Person" ${api.library === "apollo" ? "only " : ""}in subgraph "bar" does not have field "age".`,
             ),
             extensions: expect.objectContaining({
-              code: 'INTERFACE_FIELD_NO_IMPLEM',
+              code: "INTERFACE_FIELD_NO_IMPLEM",
             }),
           }),
         ]),
@@ -114,10 +118,10 @@ testVersions((api, version) => {
     );
   });
 
-  test('Ignoring INTERFACE_FIELD_NO_IMPLEM when TYPE_KIND_MISMATCH detected', () => {
+  test("Ignoring INTERFACE_FIELD_NO_IMPLEM when TYPE_KIND_MISMATCH detected", () => {
     const result = api.composeServices([
       {
-        name: 'cars',
+        name: "cars",
         typeDefs: graphql`
           type Query {
             foo(id: ID!): String
@@ -133,7 +137,7 @@ testVersions((api, version) => {
         `,
       },
       {
-        name: 'vehicles',
+        name: "vehicles",
         typeDefs: graphql`
           type Vehicle {
             id: ID!
@@ -149,7 +153,7 @@ testVersions((api, version) => {
         message:
           'Type "Vehicle" has mismatched kind: it is defined as Interface Type in subgraph "cars" but Object Type in subgraph "vehicles"',
         extensions: expect.objectContaining({
-          code: 'TYPE_KIND_MISMATCH',
+          code: "TYPE_KIND_MISMATCH",
         }),
       }),
     );

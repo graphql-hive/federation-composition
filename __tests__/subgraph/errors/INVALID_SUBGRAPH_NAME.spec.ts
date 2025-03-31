@@ -1,12 +1,12 @@
-import { expect, test } from 'vitest';
-import { graphql, testVersions } from '../../shared/testkit.js';
+import { expect, test } from "vitest";
+import { graphql, testVersions } from "../../shared/testkit.js";
 
 testVersions((api, version) => {
-  test('INVALID_SUBGRAPH_NAME', () => {
+  test("INVALID_SUBGRAPH_NAME", () => {
     expect(
       api.composeServices([
         {
-          name: '_',
+          name: "_",
           typeDefs: graphql`
             extend schema
               @link(
@@ -32,7 +32,7 @@ testVersions((api, version) => {
               `[_] Invalid name _ for a subgraph: this name is reserved`,
             ),
             extensions: expect.objectContaining({
-              code: 'INVALID_SUBGRAPH_NAME',
+              code: "INVALID_SUBGRAPH_NAME",
             }),
           }),
         ]),

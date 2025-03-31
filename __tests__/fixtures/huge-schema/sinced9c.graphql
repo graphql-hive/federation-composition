@@ -46,14 +46,21 @@ extend schema
   )
 
 type Query @shareable {
-  kiosk902(scary40c: ID!, yahoo616: tweak7c2, zowie06b: which105, afterc14: [equald08]): [smell938]
-    @override(from: "cachec31")
+  kiosk902(
+    scary40c: ID!
+    yahoo616: tweak7c2
+    zowie06b: which105
+    afterc14: [equald08]
+  ): [smell938] @override(from: "cachec31")
 }
 
 type freak945 @key(fields: "scary40c") {
   scary40c: ID! @external
-  kiosk902(yahoo616: tweak7c2, zowie06b: which105, afterc14: [equald08]): [smell938]
-    @override(from: "cachec31")
+  kiosk902(
+    yahoo616: tweak7c2
+    zowie06b: which105
+    afterc14: [equald08]
+  ): [smell938] @override(from: "cachec31")
 }
 
 type Mutation @shareable {

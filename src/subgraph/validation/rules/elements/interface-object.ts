@@ -1,23 +1,25 @@
-import { ASTVisitor, GraphQLError, Kind } from 'graphql';
-import { validateDirectiveAgainstOriginal } from '../../../helpers.js';
-import type { SubgraphValidationContext } from '../../validation-context.js';
+import { ASTVisitor, GraphQLError, Kind } from "graphql";
+import { validateDirectiveAgainstOriginal } from "../../../helpers.js";
+import type { SubgraphValidationContext } from "../../validation-context.js";
 
-export function InterfaceObjectRules(context: SubgraphValidationContext): ASTVisitor {
+export function InterfaceObjectRules(
+  context: SubgraphValidationContext,
+): ASTVisitor {
   return {
     DirectiveDefinition(node) {
-      validateDirectiveAgainstOriginal(node, 'interfaceObject', context);
+      validateDirectiveAgainstOriginal(node, "interfaceObject", context);
     },
     Directive(node) {
-      if (!context.isAvailableFederationDirective('interfaceObject', node)) {
+      if (!context.isAvailableFederationDirective("interfaceObject", node)) {
         return;
       }
 
-      if (context.satisfiesVersionRange('< v2.3')) {
+      if (context.satisfiesVersionRange("< v2.3")) {
         context.reportError(
           new GraphQLError(
             `@interfaceObject is not yet supported. See https://github.com/graphql-hive/federation-composition/issues/7`,
             {
-              extensions: { code: 'UNSUPPORTED_FEATURE' },
+              extensions: { code: "UNSUPPORTED_FEATURE" },
             },
           ),
         );
@@ -38,12 +40,12 @@ export function InterfaceObjectRules(context: SubgraphValidationContext): ASTVis
         return;
       }
 
-      if (!typeDef.directives?.some(d => d.name.value === 'key')) {
+      if (!typeDef.directives?.some((d) => d.name.value === "key")) {
         context.reportError(
           new GraphQLError(
             `The @interfaceObject directive can only be applied to entity types but type "${typeDef.name.value}" has no @key in this subgraph.`,
             {
-              extensions: { code: 'INTERFACE_OBJECT_USAGE_ERROR' },
+              extensions: { code: "INTERFACE_OBJECT_USAGE_ERROR" },
             },
           ),
         );

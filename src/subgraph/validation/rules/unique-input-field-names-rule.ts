@@ -1,4 +1,4 @@
-import { ASTVisitor, GraphQLError } from 'graphql';
+import { ASTVisitor, GraphQLError } from "graphql";
 
 export function UniqueInputFieldNamesRule(context: {
   reportError: (error: GraphQLError) => void;
@@ -16,7 +16,7 @@ export function UniqueInputFieldNamesRule(context: {
         const prevKnownNames = knownNameStack.pop();
 
         if (!prevKnownNames) {
-          throw new Error('Assertion failed: nothing else in the stack');
+          throw new Error("Assertion failed: nothing else in the stack");
         }
 
         knownNames = prevKnownNames;
@@ -26,11 +26,14 @@ export function UniqueInputFieldNamesRule(context: {
       const fieldName = node.name.value;
       if (knownNames.has(fieldName)) {
         context.reportError(
-          new GraphQLError(`There can be only one input field named "${fieldName}".`, {
-            extensions: {
-              code: 'INVALID_GRAPHQL',
+          new GraphQLError(
+            `There can be only one input field named "${fieldName}".`,
+            {
+              extensions: {
+                code: "INVALID_GRAPHQL",
+              },
             },
-          }),
+          ),
         );
       } else {
         knownNames.add(fieldName);

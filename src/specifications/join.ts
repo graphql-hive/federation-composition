@@ -1,5 +1,5 @@
-import { satisfiesVersionRange } from '../utils/version.js';
-import type { FederationVersion } from './federation.js';
+import { satisfiesVersionRange } from "../utils/version.js";
+import type { FederationVersion } from "./federation.js";
 
 export const sdl = (version: FederationVersion) => {
   const joinField = /* GraphQL */ `
@@ -11,12 +11,12 @@ export const sdl = (version: FederationVersion) => {
         external: Boolean
         override: String
         usedOverridden: Boolean
-        ${satisfiesVersionRange(version, '>= v2.7') ? 'overrideLabel: String' : ''}
-        ${satisfiesVersionRange(version, '>= v2.8') ? 'contextArguments: [join__ContextArgument!]' : ''}
+        ${satisfiesVersionRange(version, ">= v2.7") ? "overrideLabel: String" : ""}
+        ${satisfiesVersionRange(version, ">= v2.8") ? "contextArguments: [join__ContextArgument!]" : ""}
       ) repeatable on FIELD_DEFINITION | INPUT_FIELD_DEFINITION
     `;
 
-  const joinContextArgument = satisfiesVersionRange(version, '>= v2.8')
+  const joinContextArgument = satisfiesVersionRange(version, ">= v2.8")
     ? /* GraphQL */ `
         input join__ContextArgument {
           name: String!
@@ -25,13 +25,13 @@ export const sdl = (version: FederationVersion) => {
           selection: join__FieldValue!
         }
       `
-    : '';
+    : "";
 
-  const joinFieldValue = satisfiesVersionRange(version, '>= v2.8')
+  const joinFieldValue = satisfiesVersionRange(version, ">= v2.8")
     ? /* GraphQL */ `
         scalar join__FieldValue
       `
-    : '';
+    : "";
 
   return /* GraphQL */ `
     directive @join__enumValue(graph: join__Graph!) repeatable on ENUM_VALUE
@@ -54,7 +54,10 @@ export const sdl = (version: FederationVersion) => {
       isInterfaceObject: Boolean! = false
     ) repeatable on OBJECT | INTERFACE | UNION | ENUM | INPUT_OBJECT | SCALAR
 
-    directive @join__unionMember(graph: join__Graph!, member: String!) repeatable on UNION
+    directive @join__unionMember(
+      graph: join__Graph!
+      member: String!
+    ) repeatable on UNION
 
     scalar join__FieldSet
     ${joinFieldValue}

@@ -1,13 +1,13 @@
-import type {Lazy} from './helpers.js'
-import { isDefined } from '../../../../utils/helpers.js';
+import type { Lazy } from "./helpers.js";
+import { isDefined } from "../../../../utils/helpers.js";
 
 type SatisfiabilityErrorKind =
-  | 'KEY' // cannot move to subgraph "X" using @key(fields: "a b c") of "User", the key field(s) cannot be resolved from subgraph "Y".
-  | 'REQUIRE' // cannot satisfy @require conditions on field "User.name".
-  | 'EXTERNAL' // field "User.name" is not resolvable because marked @external
-  | 'MISSING_FIELD' // cannot find field "User.name".
-  | 'NO_KEY' // cannot move to subgraph "X", which has field "User.name", because type "User" has no @key defined in subgraph "Y".
-  | 'NO_IMPLEMENTATION'; // no subgraph can be reached to resolve the implementation type of @interfaceObject type "X".
+  | "KEY" // cannot move to subgraph "X" using @key(fields: "a b c") of "User", the key field(s) cannot be resolved from subgraph "Y".
+  | "REQUIRE" // cannot satisfy @require conditions on field "User.name".
+  | "EXTERNAL" // field "User.name" is not resolvable because marked @external
+  | "MISSING_FIELD" // cannot find field "User.name".
+  | "NO_KEY" // cannot move to subgraph "X", which has field "User.name", because type "User" has no @key defined in subgraph "Y".
+  | "NO_IMPLEMENTATION"; // no subgraph can be reached to resolve the implementation type of @interfaceObject type "X".
 
 export class SatisfiabilityError extends Error {
   static forKey(
@@ -17,7 +17,7 @@ export class SatisfiabilityError extends Error {
     keyFields: string,
   ): SatisfiabilityError {
     return new SatisfiabilityError(
-      'KEY',
+      "KEY",
       sourceGraphName,
       typeName,
       null,
@@ -31,7 +31,7 @@ export class SatisfiabilityError extends Error {
     fieldName: string,
   ): SatisfiabilityError {
     return new SatisfiabilityError(
-      'REQUIRE',
+      "REQUIRE",
       sourceGraphName,
       typeName,
       fieldName,
@@ -45,7 +45,7 @@ export class SatisfiabilityError extends Error {
     fieldName: string,
   ): SatisfiabilityError {
     return new SatisfiabilityError(
-      'EXTERNAL',
+      "EXTERNAL",
       sourceGraphName,
       typeName,
       fieldName,
@@ -59,7 +59,7 @@ export class SatisfiabilityError extends Error {
     fieldName: string,
   ): SatisfiabilityError {
     return new SatisfiabilityError(
-      'MISSING_FIELD',
+      "MISSING_FIELD",
       sourceGraphName,
       typeName,
       fieldName,
@@ -74,7 +74,7 @@ export class SatisfiabilityError extends Error {
     fieldName: string,
   ): SatisfiabilityError {
     return new SatisfiabilityError(
-      'NO_KEY',
+      "NO_KEY",
       sourceGraphName,
       typeName,
       fieldName,
@@ -82,9 +82,12 @@ export class SatisfiabilityError extends Error {
     );
   }
 
-  static forNoImplementation(sourceGraphName: string, typeName: string): SatisfiabilityError {
+  static forNoImplementation(
+    sourceGraphName: string,
+    typeName: string,
+  ): SatisfiabilityError {
     return new SatisfiabilityError(
-      'NO_IMPLEMENTATION',
+      "NO_IMPLEMENTATION",
       sourceGraphName,
       typeName,
       null,
@@ -120,15 +123,15 @@ export class SatisfiabilityError extends Error {
 }
 
 /**
-* The main job of this class is to collect errors in a lazy fashion.
-* This is useful because we can collect errors in different parts of the code
-* and only evaluate them when we need to report them.
-* A lot of times we don't even need those errors.
-*
-* Everything being lazy means we do not compute anything until we need to.
-* Thanks to this change,
-* I was able to go from 2s to 600ms at quite a large scale supergraph.
-*/
+ * The main job of this class is to collect errors in a lazy fashion.
+ * This is useful because we can collect errors in different parts of the code
+ * and only evaluate them when we need to report them.
+ * A lot of times we don't even need those errors.
+ *
+ * Everything being lazy means we do not compute anything until we need to.
+ * Thanks to this change,
+ * I was able to go from 2s to 600ms at quite a large scale supergraph.
+ */
 export class LazyErrors<T> {
   private lazyError: Lazy<T | T[]>[] = [];
 
@@ -147,7 +150,7 @@ export class LazyErrors<T> {
   }
 
   toArray(): T[] {
-    return this.lazyError.flatMap(error => error.get()).filter(isDefined);
+    return this.lazyError.flatMap((error) => error.get()).filter(isDefined);
   }
 
   isEmpty() {

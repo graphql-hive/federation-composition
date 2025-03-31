@@ -1,10 +1,10 @@
-import { parse, print } from 'graphql';
-import { describe, expect, test } from 'vitest';
-import { transformSupergraphToPublicSchema } from '../../src/graphql/transform-supergraph-to-public-schema';
+import { parse, print } from "graphql";
+import { describe, expect, test } from "vitest";
+import { transformSupergraphToPublicSchema } from "../../src/graphql/transform-supergraph-to-public-schema";
 
-describe('transformSupergraphToPublicSchema', () => {
-  describe('@inaccessible', () => {
-    test('scalar removal', () => {
+describe("transformSupergraphToPublicSchema", () => {
+  describe("@inaccessible", () => {
+    test("scalar removal", () => {
       const sdl = parse(/* GraphQL */ `
         scalar Scalar1 @inaccessible
         scalar Scalar2
@@ -12,7 +12,7 @@ describe('transformSupergraphToPublicSchema', () => {
       const resultSdl = transformSupergraphToPublicSchema(sdl);
       expect(print(resultSdl)).toMatchInlineSnapshot('"scalar Scalar2"');
     });
-    test('enum removal', () => {
+    test("enum removal", () => {
       const sdl = parse(/* GraphQL */ `
         enum Enum1 @inaccessible {
           VALUE1
@@ -31,7 +31,7 @@ describe('transformSupergraphToPublicSchema', () => {
         }"
       `);
     });
-    test('enum value removal', () => {
+    test("enum value removal", () => {
       const sdl = parse(/* GraphQL */ `
         enum Enum {
           VALUE1 @inaccessible
@@ -44,8 +44,8 @@ describe('transformSupergraphToPublicSchema', () => {
           VALUE2
         }"
       `);
-    })
-    test('object type removal', () => {
+    });
+    test("object type removal", () => {
       const sdl = parse(/* GraphQL */ `
         type Object1 @inaccessible {
           field1: String
@@ -61,7 +61,7 @@ describe('transformSupergraphToPublicSchema', () => {
         }"
       `);
     });
-    test('object field removal', () => {
+    test("object field removal", () => {
       const sdl = parse(/* GraphQL */ `
         type Object {
           field1: String @inaccessible
@@ -75,7 +75,7 @@ describe('transformSupergraphToPublicSchema', () => {
         }"
       `);
     });
-    test('interface type removal', () => {
+    test("interface type removal", () => {
       const sdl = parse(/* GraphQL */ `
         interface Interface1 @inaccessible {
           field1: String
@@ -91,7 +91,7 @@ describe('transformSupergraphToPublicSchema', () => {
         }"
       `);
     });
-    test('interface field removal', () => {
+    test("interface field removal", () => {
       const sdl = parse(/* GraphQL */ `
         interface Interface {
           field1: String @inaccessible
@@ -105,15 +105,17 @@ describe('transformSupergraphToPublicSchema', () => {
         }"
       `);
     });
-    test('union type removal', () => {
+    test("union type removal", () => {
       const sdl = parse(/* GraphQL */ `
         union Union1 @inaccessible = Type1 | Type2
         union Union2 = Type1 | Type2
       `);
       const resultSdl = transformSupergraphToPublicSchema(sdl);
-      expect(print(resultSdl)).toMatchInlineSnapshot('"union Union2 = Type1 | Type2"');
+      expect(print(resultSdl)).toMatchInlineSnapshot(
+        '"union Union2 = Type1 | Type2"',
+      );
     });
-    test('object field argument removal', () => {
+    test("object field argument removal", () => {
       const sdl = parse(/* GraphQL */ `
         type Object {
           field1(arg1: String @inaccessible): String
@@ -128,7 +130,7 @@ describe('transformSupergraphToPublicSchema', () => {
         }"
       `);
     });
-    test('interface field argument removal', () => {
+    test("interface field argument removal", () => {
       const sdl = parse(/* GraphQL */ `
         interface Object {
           field1(arg1: String @inaccessible): String
@@ -143,7 +145,7 @@ describe('transformSupergraphToPublicSchema', () => {
         }"
       `);
     });
-    test('input object type removal', () => {
+    test("input object type removal", () => {
       const sdl = parse(/* GraphQL */ `
         input Input1 @inaccessible {
           field1: String
@@ -159,7 +161,7 @@ describe('transformSupergraphToPublicSchema', () => {
         }"
       `);
     });
-    test('input object field removal', () => {
+    test("input object field removal", () => {
       const sdl = parse(/* GraphQL */ `
         input Input {
           field1: String @inaccessible
@@ -174,7 +176,7 @@ describe('transformSupergraphToPublicSchema', () => {
       `);
     });
   });
-  test('strips out all federation directives and types', () => {
+  test("strips out all federation directives and types", () => {
     const sdl = parse(/* GraphQL */ `
       schema
         @link(url: "https://specs.apollo.dev/link/v1.0")
@@ -218,7 +220,10 @@ describe('transformSupergraphToPublicSchema', () => {
         isInterfaceObject: Boolean! = false
       ) repeatable on OBJECT | INTERFACE | UNION | ENUM | INPUT_OBJECT | SCALAR
 
-      directive @join__unionMember(graph: join__Graph!, member: String!) repeatable on UNION
+      directive @join__unionMember(
+        graph: join__Graph!
+        member: String!
+      ) repeatable on UNION
 
       directive @link(
         url: String
@@ -271,16 +276,20 @@ describe('transformSupergraphToPublicSchema', () => {
       }"
     `);
   });
-  test('graphql specification directives are omitted from the SDL', () => {
+  test("graphql specification directives are omitted from the SDL", () => {
     const sdl = parse(/* GraphQL */ `
       directive @skip(if: Boolean!) on FIELD | FRAGMENT_SPREAD | INLINE_FRAGMENT
-      directive @include(if: Boolean!) on FIELD | FRAGMENT_SPREAD | INLINE_FRAGMENT
-      directive @deprecated(reason: String = "No longer supported") on FIELD_DEFINITION | ENUM_VALUE
+      directive @include(
+        if: Boolean!
+      ) on FIELD | FRAGMENT_SPREAD | INLINE_FRAGMENT
+      directive @deprecated(
+        reason: String = "No longer supported"
+      ) on FIELD_DEFINITION | ENUM_VALUE
     `);
     const resultSdl = transformSupergraphToPublicSchema(sdl);
     expect(print(resultSdl)).toMatchInlineSnapshot('""');
   });
-  test('does not omit @deprecated directive', () => {
+  test("does not omit @deprecated directive", () => {
     const sdl = parse(/* GraphQL */ `
       type Query {
         foo: String @deprecated(reason: "jooo")

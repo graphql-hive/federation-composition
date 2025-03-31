@@ -1,9 +1,13 @@
-import { GraphQLError } from 'graphql';
-import type { SubgraphState } from '../../subgraph/state.js';
+import { GraphQLError } from "graphql";
+import type { SubgraphState } from "../../subgraph/state.js";
 
-export type SupergraphValidationContext = ReturnType<typeof createSupergraphValidationContext>;
+export type SupergraphValidationContext = ReturnType<
+  typeof createSupergraphValidationContext
+>;
 
-export function createSupergraphValidationContext(subgraphStates: Map<string, SubgraphState>) {
+export function createSupergraphValidationContext(
+  subgraphStates: Map<string, SubgraphState>,
+) {
   let reportedErrors: GraphQLError[] = [];
 
   const subgraphNameToIdMap: Record<string, string | undefined> = {};

@@ -1,18 +1,20 @@
-import { ASTVisitor, Kind } from 'graphql';
-import { validateDirectiveAgainstOriginal } from '../../../helpers.js';
-import type { SubgraphValidationContext } from '../../validation-context.js';
+import { ASTVisitor, Kind } from "graphql";
+import { validateDirectiveAgainstOriginal } from "../../../helpers.js";
+import type { SubgraphValidationContext } from "../../validation-context.js";
 
-export function InaccessibleRules(context: SubgraphValidationContext): ASTVisitor {
+export function InaccessibleRules(
+  context: SubgraphValidationContext,
+): ASTVisitor {
   return {
     DirectiveDefinition(node) {
-      validateDirectiveAgainstOriginal(node, 'inaccessible', context);
+      validateDirectiveAgainstOriginal(node, "inaccessible", context);
     },
     Directive(node, _key, _parent, paths, ancestors) {
-      if (!context.isAvailableFederationDirective('inaccessible', node)) {
+      if (!context.isAvailableFederationDirective("inaccessible", node)) {
         return;
       }
 
-      const directivesKeyAt = paths.findIndex(path => path === 'directives');
+      const directivesKeyAt = paths.findIndex((path) => path === "directives");
 
       if (directivesKeyAt === -1) {
         throw new Error('Could not find "directives" key in ancestors');
@@ -22,15 +24,15 @@ export function InaccessibleRules(context: SubgraphValidationContext): ASTVisito
       const parent = ancestors[directivesKeyAt];
 
       if (!parent) {
-        throw new Error('Could not find the node annotated with @inaccessible');
+        throw new Error("Could not find the node annotated with @inaccessible");
       }
 
       if (Array.isArray(parent)) {
-        throw new Error('Expected parent to be a single node');
+        throw new Error("Expected parent to be a single node");
       }
 
-      if (!('kind' in parent)) {
-        throw new Error('Expected parent to be a node');
+      if (!("kind" in parent)) {
+        throw new Error("Expected parent to be a node");
       }
 
       switch (parent.kind) {
@@ -43,7 +45,7 @@ export function InaccessibleRules(context: SubgraphValidationContext): ASTVisito
 
           if (!typeDef) {
             throw new Error(
-              'Could not find the parent type of the field annotated with @inaccessible',
+              "Could not find the parent type of the field annotated with @inaccessible",
             );
           }
 
@@ -68,7 +70,7 @@ export function InaccessibleRules(context: SubgraphValidationContext): ASTVisito
 
           if (!typeDef) {
             throw new Error(
-              'Could not find the parent type of the field annotated with @inaccessible',
+              "Could not find the parent type of the field annotated with @inaccessible",
             );
           }
 
@@ -87,7 +89,7 @@ export function InaccessibleRules(context: SubgraphValidationContext): ASTVisito
             const fieldDef = context.typeNodeInfo.getFieldDef();
             if (!fieldDef) {
               throw new Error(
-                'Could not find the parent field of the input value annotated with @inaccessible',
+                "Could not find the parent field of the input value annotated with @inaccessible",
               );
             }
 
@@ -103,7 +105,7 @@ export function InaccessibleRules(context: SubgraphValidationContext): ASTVisito
             const fieldDef = context.typeNodeInfo.getFieldDef();
             if (!fieldDef) {
               throw new Error(
-                'Could not find the parent field of the input value annotated with @inaccessible',
+                "Could not find the parent field of the input value annotated with @inaccessible",
               );
             }
 
@@ -135,7 +137,9 @@ export function InaccessibleRules(context: SubgraphValidationContext): ASTVisito
           break;
         case Kind.INPUT_OBJECT_TYPE_DEFINITION:
         case Kind.INPUT_OBJECT_TYPE_EXTENSION:
-          context.stateBuilder.inputObjectType.setInaccessible(parent.name.value);
+          context.stateBuilder.inputObjectType.setInaccessible(
+            parent.name.value,
+          );
           break;
         case Kind.ENUM_TYPE_DEFINITION:
         case Kind.ENUM_TYPE_EXTENSION:
@@ -147,16 +151,19 @@ export function InaccessibleRules(context: SubgraphValidationContext): ASTVisito
 
           if (!typeDef) {
             throw new Error(
-              'Could not find the parent type of the enum value annotated with @inaccessible',
+              "Could not find the parent type of the enum value annotated with @inaccessible",
             );
           }
 
-          context.stateBuilder.enumType.value.setInaccessible(typeDef.name.value, enumValue);
+          context.stateBuilder.enumType.value.setInaccessible(
+            typeDef.name.value,
+            enumValue,
+          );
           break;
         }
       }
 
-      context.stateBuilder.markSpecAsUsed('inaccessible');
+      context.stateBuilder.markSpecAsUsed("inaccessible");
     },
   };
 }

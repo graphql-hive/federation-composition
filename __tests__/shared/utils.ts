@@ -1,7 +1,7 @@
-import { parse } from 'graphql';
+import { parse } from "graphql";
 
 export function graphql(literals: string | readonly string[], ...args: any[]) {
-  if (typeof literals === 'string') {
+  if (typeof literals === "string") {
     literals = [literals];
   }
 

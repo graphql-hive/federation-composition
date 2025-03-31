@@ -1,12 +1,16 @@
-import { expect, test } from 'vitest';
-import { ensureCompositionSuccess, graphql, testVersions } from '../../shared/testkit.js';
+import { expect, test } from "vitest";
+import {
+  ensureCompositionSuccess,
+  graphql,
+  testVersions,
+} from "../../shared/testkit.js";
 
 testVersions((api, version) => {
-  test('EXTERNAL_TYPE_MISMATCH', () => {
+  test("EXTERNAL_TYPE_MISMATCH", () => {
     expect(
       api.composeServices([
         {
-          name: 'users',
+          name: "users",
           typeDefs: graphql`
             extend schema @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@key"])
 
@@ -21,7 +25,7 @@ testVersions((api, version) => {
           `,
         },
         {
-          name: 'feed',
+          name: "feed",
           typeDefs: graphql`
             extend schema
               @link(
@@ -53,7 +57,7 @@ testVersions((api, version) => {
               `Type of field "User.tags" is incompatible across subgraphs (where marked @external): it has type "[String!]" in subgraph "users" but type "[String]!" in subgraph "feed"`,
             ),
             extensions: expect.objectContaining({
-              code: 'EXTERNAL_TYPE_MISMATCH',
+              code: "EXTERNAL_TYPE_MISMATCH",
             }),
           }),
         ]),
@@ -63,7 +67,7 @@ testVersions((api, version) => {
     expect(
       api.composeServices([
         {
-          name: 'scores',
+          name: "scores",
           typeDefs: graphql`
               extend schema @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@key", "@external", "@requires"])
 
@@ -75,7 +79,7 @@ testVersions((api, version) => {
           `,
         },
         {
-          name: 'users',
+          name: "users",
           typeDefs: graphql`
               extend schema
               @link(
@@ -94,7 +98,7 @@ testVersions((api, version) => {
           `,
         },
         {
-          name: 'comments',
+          name: "comments",
           typeDefs: graphql`
               extend schema
               @link(
@@ -118,7 +122,7 @@ testVersions((api, version) => {
               `Type of field "User.name" is incompatible across subgraphs (where marked @external): it has type "String!" in subgraphs "scores" and "users" but type "String" in subgraph "comments"`,
             ),
             extensions: expect.objectContaining({
-              code: 'EXTERNAL_TYPE_MISMATCH',
+              code: "EXTERNAL_TYPE_MISMATCH",
             }),
           }),
         ]),
@@ -129,7 +133,7 @@ testVersions((api, version) => {
       ensureCompositionSuccess(
         api.composeServices([
           {
-            name: 'b',
+            name: "b",
             typeDefs: graphql`
               type User @key(fields: "id") {
                 id: ID!
@@ -149,7 +153,7 @@ testVersions((api, version) => {
             `,
           },
           {
-            name: 'a',
+            name: "a",
             typeDefs: graphql`
               extend type User @key(fields: "id") {
                 id: ID @external
@@ -167,7 +171,7 @@ testVersions((api, version) => {
             `,
           },
           {
-            name: 'c',
+            name: "c",
             typeDefs: graphql`
               extend type User @key(fields: "id") {
                 id: ID! @external

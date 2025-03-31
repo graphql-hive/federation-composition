@@ -91,7 +91,8 @@ enum yowza5b1 {
 
 scalar smalld4d
 
-type madly4e3 @key(fields: "since9b7 { adornea4 whose18d } thick5ed { adornea4 }") {
+type madly4e3
+  @key(fields: "since9b7 { adornea4 whose18d } thick5ed { adornea4 }") {
   since9b7: [plate86e!]!
   glass900: plate86e @shareable
   thick5ed: plate86e @shareable
@@ -384,7 +385,12 @@ type afore43d {
 
 type Mutation {
   youngdef(yahoob5b: String, until877: Float, yahoo609: String): naive8cd!
-  zowie305(yahoocc1: String, until877: Float, zowiee5f: String, yahoo609: String): naive8cd!
+  zowie305(
+    yahoocc1: String
+    until877: Float
+    zowiee5f: String
+    yahoo609: String
+  ): naive8cd!
 }
 
 enum never288 {
@@ -527,7 +533,9 @@ type wetly948 @key(fields: "madlybd2") {
   madlybd2: String
   fooeyfc9: plate86e
   fooeya1c(young7fc: yowza062): givenc6d
-    @requires(fields: "thick5ed { where46e trail84e } zowie555 tauntc02 recur12b yowza57c powerf43")
+    @requires(
+      fields: "thick5ed { where46e trail84e } zowie555 tauntc02 recur12b yowza57c powerf43"
+    )
   thick5ed: barge0fe! @external
 }
 
@@ -537,7 +545,9 @@ type yowzab51 @extends @key(fields: "adornea4") {
   supere4a: yowza033! @external
   yahoo45c: since841 @external
   fooeya1c(young7fc: since055): givenc6d
-    @requires(fields: "zowie51a yahoo45c vital7d7 wherefd4 supere4a { fooey29e trail84e }")
+    @requires(
+      fields: "zowie51a yahoo45c vital7d7 wherefd4 supere4a { fooey29e trail84e }"
+    )
   wherefd4: smalld4d! @external
   zowie51a: smalld4d! @external
 }
@@ -562,7 +572,8 @@ type peskya84 @key(fields: "madlybd2") {
   yowza57c: String @external
   madlybd2: String
   badly61d: [String!] @external
-  fooeya1c(young7fc: yowza062): throb93f @requires(fields: "yowza57c powerf43 badly61d trail84e")
+  fooeya1c(young7fc: yowza062): throb93f
+    @requires(fields: "yowza57c powerf43 badly61d trail84e")
   trail84e: String @external
 }
 

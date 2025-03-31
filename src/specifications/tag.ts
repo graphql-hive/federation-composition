@@ -1,5 +1,5 @@
-import { parse } from 'graphql';
-import { isDirectiveDefinition } from '../graphql/helpers.js';
+import { parse } from "graphql";
+import { isDirectiveDefinition } from "../graphql/helpers.js";
 
 export const sdl = /* GraphQL */ `
   directive @tag(

@@ -1,12 +1,14 @@
-import { GraphQLError } from 'graphql';
-import { andList } from '../../../utils/format.js';
-import type { SupergraphValidationContext } from '../validation-context.js';
+import { GraphQLError } from "graphql";
+import { andList } from "../../../utils/format.js";
+import type { SupergraphValidationContext } from "../validation-context.js";
 
-export function LinkImportNameMismatchRule(context: SupergraphValidationContext) {
+export function LinkImportNameMismatchRule(
+  context: SupergraphValidationContext,
+) {
   // "<originalName>": { "<name>": ["<subgraphName>"] }
   const namesToSubgraphs = new Map<string, Map<string, string[]>>();
 
-  const namesToCheck = ['@cost', '@listSize'];
+  const namesToCheck = ["@cost", "@listSize"];
 
   for (const [subgraphId, subgraphState] of context.subgraphStates) {
     for (const imp of subgraphState.federation.imports) {
@@ -44,12 +46,12 @@ export function LinkImportNameMismatchRule(context: SupergraphValidationContext)
           andList(
             Array.from(aliases).map(
               ([name, subgraphIds]) =>
-                ` "${name}" in subgraph${subgraphIds.length > 1 ? 's' : ''} ${andList(subgraphIds.map(context.graphIdToName), false, '"')}`,
+                ` "${name}" in subgraph${subgraphIds.length > 1 ? "s" : ""} ${andList(subgraphIds.map(context.graphIdToName), false, '"')}`,
             ),
           ),
         {
           extensions: {
-            code: 'LINK_IMPORT_NAME_MISMATCH',
+            code: "LINK_IMPORT_NAME_MISMATCH",
           },
         },
       ),

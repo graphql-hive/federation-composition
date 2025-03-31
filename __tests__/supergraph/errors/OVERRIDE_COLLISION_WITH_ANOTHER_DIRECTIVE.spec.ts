@@ -1,12 +1,12 @@
-import { expect, test } from 'vitest';
-import { graphql, testVersions } from '../../shared/testkit.js';
+import { expect, test } from "vitest";
+import { graphql, testVersions } from "../../shared/testkit.js";
 
 testVersions((api, version) => {
-  test('OVERRIDE_COLLISION_WITH_ANOTHER_DIRECTIVE', () => {
+  test("OVERRIDE_COLLISION_WITH_ANOTHER_DIRECTIVE", () => {
     expect(
       api.composeServices([
         {
-          name: 'billing',
+          name: "billing",
           typeDefs: graphql`
             extend schema
               @link(
@@ -27,7 +27,7 @@ testVersions((api, version) => {
           `,
         },
         {
-          name: 'payments',
+          name: "payments",
           typeDefs: graphql`
             extend schema @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@key"])
 
@@ -48,11 +48,11 @@ testVersions((api, version) => {
           expect.objectContaining({
             message: expect.stringContaining(
               `@override cannot be used on field "Payment.amount" on subgraph "billing" since "Payment.amount" on "billing" is marked with directive "@${
-                api.library === 'apollo' ? 'federation__external' : 'external'
+                api.library === "apollo" ? "federation__external" : "external"
               }"`,
             ),
             extensions: expect.objectContaining({
-              code: 'OVERRIDE_COLLISION_WITH_ANOTHER_DIRECTIVE',
+              code: "OVERRIDE_COLLISION_WITH_ANOTHER_DIRECTIVE",
             }),
           }),
         ]),

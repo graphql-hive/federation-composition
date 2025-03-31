@@ -1,17 +1,17 @@
-import { expect, test } from 'vitest';
+import { expect, test } from "vitest";
 import {
   assertCompositionSuccess,
   createStarsStuff,
   graphql,
   testVersions,
-} from '../shared/testkit.js';
+} from "../shared/testkit.js";
 
 testVersions((api, version) => {
-  test('__typename allowed in @provides', () => {
+  test("__typename allowed in @provides", () => {
     expect(
       api.composeServices([
         {
-          name: 'users',
+          name: "users",
           typeDefs: graphql`
             extend schema @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@key"])
 
@@ -31,7 +31,7 @@ testVersions((api, version) => {
           `,
         },
         {
-          name: 'reviews',
+          name: "reviews",
           typeDefs: graphql`
             extend schema
               @link(
@@ -71,11 +71,11 @@ testVersions((api, version) => {
     );
   });
 
-  test('__typename allowed in @requires', () => {
+  test("__typename allowed in @requires", () => {
     expect(
       api.composeServices([
         {
-          name: 'users',
+          name: "users",
           typeDefs: graphql`
             extend schema @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@key"])
 
@@ -95,7 +95,7 @@ testVersions((api, version) => {
           `,
         },
         {
-          name: 'reviews',
+          name: "reviews",
           typeDefs: graphql`
             extend schema
               @link(
@@ -136,13 +136,13 @@ testVersions((api, version) => {
     );
   });
 
-  test('fragments in @requires', () => {
+  test("fragments in @requires", () => {
     const starsStuff = createStarsStuff();
 
     assertCompositionSuccess(
       api.composeServices([
         {
-          name: 'inventory',
+          name: "inventory",
           typeDefs: graphql`
             extend schema
               @link(
@@ -188,11 +188,11 @@ testVersions((api, version) => {
     );
   });
 
-  test('missing _FieldSet definition', () => {
+  test("missing _FieldSet definition", () => {
     expect(
       api.composeServices([
         {
-          name: 'foo',
+          name: "foo",
           typeDefs: graphql`
             directive @key(fields: _FieldSet!) repeatable on OBJECT | INTERFACE
 
@@ -213,7 +213,7 @@ testVersions((api, version) => {
           expect.objectContaining({
             message: expect.stringContaining(`[foo] Unknown type _FieldSet`),
             extensions: expect.objectContaining({
-              code: 'INVALID_GRAPHQL',
+              code: "INVALID_GRAPHQL",
             }),
           }),
         ]),

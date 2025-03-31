@@ -1,6 +1,6 @@
-import { GraphQLError } from 'graphql';
-import type { SupergraphVisitorMap } from '../../composition/visitor.js';
-import type { SupergraphValidationContext } from '../validation-context.js';
+import { GraphQLError } from "graphql";
+import type { SupergraphVisitorMap } from "../../composition/visitor.js";
+import type { SupergraphValidationContext } from "../validation-context.js";
 
 export function OnlyInaccessibleChildrenRule(
   context: SupergraphValidationContext,
@@ -10,13 +10,16 @@ export function OnlyInaccessibleChildrenRule(
 
   return {
     EnumType(enumState) {
-      if (enumState.inaccessible === false && areAllInaccessible(enumState.values)) {
+      if (
+        enumState.inaccessible === false &&
+        areAllInaccessible(enumState.values)
+      ) {
         context.reportError(
           new GraphQLError(
             `Type "${enumState.name}" is in the API schema but all of its values are @inaccessible.`,
             {
               extensions: {
-                code: 'ONLY_INACCESSIBLE_CHILDREN',
+                code: "ONLY_INACCESSIBLE_CHILDREN",
               },
             },
           ),
@@ -24,13 +27,16 @@ export function OnlyInaccessibleChildrenRule(
       }
     },
     ObjectType(objectState) {
-      if (objectState.inaccessible === false && areAllInaccessible(objectState.fields)) {
+      if (
+        objectState.inaccessible === false &&
+        areAllInaccessible(objectState.fields)
+      ) {
         context.reportError(
           new GraphQLError(
             `Type "${objectState.name}" is in the API schema but all of its fields are @inaccessible.`,
             {
               extensions: {
-                code: 'ONLY_INACCESSIBLE_CHILDREN',
+                code: "ONLY_INACCESSIBLE_CHILDREN",
               },
             },
           ),
@@ -38,13 +44,16 @@ export function OnlyInaccessibleChildrenRule(
       }
     },
     InterfaceType(interfaceState) {
-      if (interfaceState.inaccessible === false && areAllInaccessible(interfaceState.fields)) {
+      if (
+        interfaceState.inaccessible === false &&
+        areAllInaccessible(interfaceState.fields)
+      ) {
         context.reportError(
           new GraphQLError(
             `Type "${interfaceState.name}" is in the API schema but all of its fields are @inaccessible.`,
             {
               extensions: {
-                code: 'ONLY_INACCESSIBLE_CHILDREN',
+                code: "ONLY_INACCESSIBLE_CHILDREN",
               },
             },
           ),
@@ -61,7 +70,7 @@ export function OnlyInaccessibleChildrenRule(
             `Type "${inputObjectTypeState.name}" is in the API schema but all of its fields are @inaccessible.`,
             {
               extensions: {
-                code: 'ONLY_INACCESSIBLE_CHILDREN',
+                code: "ONLY_INACCESSIBLE_CHILDREN",
               },
             },
           ),
@@ -76,5 +85,5 @@ function areAllInaccessible<
     inaccessible?: boolean;
   },
 >(childrenMap: Map<string, T>): boolean {
-  return Array.from(childrenMap.values()).every(f => f.inaccessible === true);
+  return Array.from(childrenMap.values()).every((f) => f.inaccessible === true);
 }

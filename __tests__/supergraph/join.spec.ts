@@ -1,19 +1,19 @@
-import { describe, expect, test } from 'vitest';
+import { describe, expect, test } from "vitest";
 import {
   assertCompositionSuccess,
   federationVersionToJoinSpecVersion,
   graphql,
   testImplementations,
-} from '../shared/testkit.js';
+} from "../shared/testkit.js";
 
-describe('join spec version', () => {
-  testImplementations(api => {
+describe("join spec version", () => {
+  testImplementations((api) => {
     test.each(Object.entries(federationVersionToJoinSpecVersion))(
-      'Federation %s == Join %s',
+      "Federation %s == Join %s",
       (fedVersion, joinVersion) => {
         const result = api.composeServices([
           {
-            name: 'a',
+            name: "a",
             typeDefs: graphql`
             extend schema
               @link(url: "https://specs.apollo.dev/federation/${fedVersion}" import: ["@key"])
@@ -38,10 +38,10 @@ describe('join spec version', () => {
       },
     );
 
-    test('Federation v1.0 == Join v0.3', () => {
+    test("Federation v1.0 == Join v0.3", () => {
       const result = api.composeServices([
         {
-          name: 'a',
+          name: "a",
           typeDefs: graphql`
             type User @key(fields: "id") {
               id: ID!

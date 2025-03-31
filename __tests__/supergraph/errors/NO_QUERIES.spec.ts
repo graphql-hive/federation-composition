@@ -1,12 +1,16 @@
-import { expect, test } from 'vitest';
-import { assertCompositionSuccess, graphql, testVersions } from '../../shared/testkit.js';
+import { expect, test } from "vitest";
+import {
+  assertCompositionSuccess,
+  graphql,
+  testVersions,
+} from "../../shared/testkit.js";
 
 testVersions((api, version) => {
-  test('NO_QUERIES', () => {
+  test("NO_QUERIES", () => {
     expect(
       api.composeServices([
         {
-          name: 'users',
+          name: "users",
           typeDefs: graphql`
             extend schema @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@key"])
             
@@ -24,7 +28,7 @@ testVersions((api, version) => {
               `No queries found in any subgraph: a supergraph must have a query root type.`,
             ),
             extensions: expect.objectContaining({
-              code: 'NO_QUERIES',
+              code: "NO_QUERIES",
             }),
           }),
         ]),
@@ -34,7 +38,7 @@ testVersions((api, version) => {
     assertCompositionSuccess(
       api.composeServices([
         {
-          name: 'users',
+          name: "users",
           typeDefs: graphql`
             extend schema @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@key"])
             
@@ -53,7 +57,7 @@ testVersions((api, version) => {
     assertCompositionSuccess(
       api.composeServices([
         {
-          name: 'users',
+          name: "users",
           typeDefs: graphql`
             extend schema @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@key"])
             

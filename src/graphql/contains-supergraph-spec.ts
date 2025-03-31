@@ -1,9 +1,9 @@
-import { Kind } from 'graphql';
+import { Kind } from "graphql";
 import {
   extraFederationDirectiveNames,
   extraFederationTypeNames,
   getSupergraphSpecNodes,
-} from './supergraph-spec.js';
+} from "./supergraph-spec.js";
 
 let containsSupergraphSpecRegex: RegExp | null = null;
 
@@ -24,15 +24,15 @@ export function containsSupergraphSpec(sdl: string): boolean {
     }
   }
 
-  extraFederationTypeNames.forEach(name => {
+  extraFederationTypeNames.forEach((name) => {
     patterns.push(`\\[${name}`, `\\s${name}`);
   });
 
-  extraFederationDirectiveNames.forEach(name => {
+  extraFederationDirectiveNames.forEach((name) => {
     patterns.push(`@${name}`);
   });
 
-  containsSupergraphSpecRegex = new RegExp(patterns.join('|'));
+  containsSupergraphSpecRegex = new RegExp(patterns.join("|"));
 
   return containsSupergraphSpecRegex.test(sdl);
 }

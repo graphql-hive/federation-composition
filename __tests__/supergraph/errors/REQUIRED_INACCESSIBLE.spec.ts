@@ -1,12 +1,12 @@
-import { expect, test } from 'vitest';
-import { graphql, testVersions } from '../../shared/testkit.js';
+import { expect, test } from "vitest";
+import { graphql, testVersions } from "../../shared/testkit.js";
 
 testVersions((api, version) => {
-  test('REQUIRED_INACCESSIBLE', () => {
+  test("REQUIRED_INACCESSIBLE", () => {
     expect(
       api.composeServices([
         {
-          name: 'users',
+          name: "users",
           typeDefs: graphql`
             extend schema
               @link(
@@ -26,7 +26,7 @@ testVersions((api, version) => {
             message:
               'Argument "Query.a(id:)" is @inaccessible but is a required argument of its field.',
             extensions: expect.objectContaining({
-              code: 'REQUIRED_INACCESSIBLE',
+              code: "REQUIRED_INACCESSIBLE",
             }),
           }),
         ]),
@@ -35,7 +35,7 @@ testVersions((api, version) => {
     expect(
       api.composeServices([
         {
-          name: 'users',
+          name: "users",
           typeDefs: graphql`
             extend schema
               @link(
@@ -60,7 +60,7 @@ testVersions((api, version) => {
             message:
               'Input field "A.id" is @inaccessible but is a required input field of its type.',
             extensions: expect.objectContaining({
-              code: 'REQUIRED_INACCESSIBLE',
+              code: "REQUIRED_INACCESSIBLE",
             }),
           }),
         ]),
@@ -70,7 +70,7 @@ testVersions((api, version) => {
     expect(
       api.composeServices([
         {
-          name: 'users',
+          name: "users",
           typeDefs: graphql`
           extend schema
             @link(
@@ -90,7 +90,7 @@ testVersions((api, version) => {
     expect(
       api.composeServices([
         {
-          name: 'users',
+          name: "users",
           typeDefs: graphql`
           extend schema
             @link(

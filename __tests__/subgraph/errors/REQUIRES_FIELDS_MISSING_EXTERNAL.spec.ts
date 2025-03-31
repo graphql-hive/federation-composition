@@ -1,12 +1,16 @@
-import { expect, test } from 'vitest';
-import { assertCompositionSuccess, graphql, testVersions } from '../../shared/testkit.js';
+import { expect, test } from "vitest";
+import {
+  assertCompositionSuccess,
+  graphql,
+  testVersions,
+} from "../../shared/testkit.js";
 
 testVersions((api, version) => {
-  test('REQUIRES_FIELDS_MISSING_EXTERNAL', () => {
+  test("REQUIRES_FIELDS_MISSING_EXTERNAL", () => {
     expect(
       api.composeServices([
         {
-          name: 'users',
+          name: "users",
           typeDefs: graphql`
             extend schema
               @link(
@@ -38,7 +42,7 @@ testVersions((api, version) => {
               `[users] On field "User.profile", for @requires(fields: "internalId"): field "User.internalId" should not be part of a @requires since it is already provided by this subgraph (it is not marked @external)`,
             ),
             extensions: expect.objectContaining({
-              code: 'REQUIRES_FIELDS_MISSING_EXTERNAL',
+              code: "REQUIRES_FIELDS_MISSING_EXTERNAL",
             }),
           }),
         ]),
@@ -49,7 +53,7 @@ testVersions((api, version) => {
   assertCompositionSuccess(
     api.composeServices([
       {
-        name: 'users',
+        name: "users",
         typeDefs: graphql`
           type Query {
             users: [User]

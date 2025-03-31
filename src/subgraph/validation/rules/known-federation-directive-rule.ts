@@ -1,7 +1,9 @@
-import { ASTVisitor, GraphQLError, Kind } from 'graphql';
-import type { SubgraphValidationContext } from '../validation-context.js';
+import { ASTVisitor, GraphQLError, Kind } from "graphql";
+import type { SubgraphValidationContext } from "../validation-context.js";
 
-export function KnownFederationDirectivesRule(context: SubgraphValidationContext): ASTVisitor {
+export function KnownFederationDirectivesRule(
+  context: SubgraphValidationContext,
+): ASTVisitor {
   const availableDirectivesSet = new Set<string>();
   const knownDirectivesSet = new Set<string>();
 
@@ -26,11 +28,11 @@ export function KnownFederationDirectivesRule(context: SubgraphValidationContext
     Directive(node) {
       const name = node.name.value;
 
-      if (!availableDirectivesSet.has(name) && name === 'interfaceObject') {
+      if (!availableDirectivesSet.has(name) && name === "interfaceObject") {
         context.reportError(
           new GraphQLError(
             `Unknown directive "@interfaceObject". If you meant the "@interfaceObject" federation 2 directive, note that this schema is a federation 1 schema. To be a federation 2 schema, it needs to @link to the federation specification v2.`,
-            { nodes: node, extensions: { code: 'INVALID_GRAPHQL' } },
+            { nodes: node, extensions: { code: "INVALID_GRAPHQL" } },
           ),
         );
         return;
@@ -39,12 +41,12 @@ export function KnownFederationDirectivesRule(context: SubgraphValidationContext
       if (
         !availableDirectivesSet.has(name) &&
         knownDirectivesSet.has(name) &&
-        !name.startsWith('federation__')
+        !name.startsWith("federation__")
       ) {
         context.reportError(
           new GraphQLError(
             `Unknown directive "@${name}". If you meant the "@${name}" federation directive, you should use fully-qualified name "@federation__${name}" or add "@${name}" to the \`import\` argument of the @link to the federation specification.`,
-            { nodes: node, extensions: { code: 'INVALID_GRAPHQL' } },
+            { nodes: node, extensions: { code: "INVALID_GRAPHQL" } },
           ),
         );
         return;

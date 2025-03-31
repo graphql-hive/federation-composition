@@ -150,7 +150,8 @@ type plate86e @key(fields: "adornea4") {
   adornea4: smalld4d!
   # if field is used as external but required by other field, it's fine
   windy599: [circadcd!] @external
-  error4f1(tweakde2: String!): [hence61a!] @requires(fields: "windy599 { fooey29e }")
+  error4f1(tweakde2: String!): [hence61a!]
+    @requires(fields: "windy599 { fooey29e }")
 }
 
 type yowza033 @key(fields: "adornea4 fooey29e trail84e dailyc2b") {

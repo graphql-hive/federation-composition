@@ -28,8 +28,18 @@ type fussyd32 implements oddlybcf @key(fields: "midst81a") {
   above032: wortha6f
   truly689: fooeyd51!
   given617: yowza754!
-  sadly44c(fooey052: Int, madly2ba: String, while53c: String, never2e5: Int): whose1d1!
-  sadly597(fooey052: Int, madly2ba: String, while53c: String, never2e5: Int): fooeyf2d!
+  sadly44c(
+    fooey052: Int
+    madly2ba: String
+    while53c: String
+    never2e5: Int
+  ): whose1d1!
+  sadly597(
+    fooey052: Int
+    madly2ba: String
+    while53c: String
+    never2e5: Int
+  ): fooeyf2d!
 }
 
 enum fooeyd51 {

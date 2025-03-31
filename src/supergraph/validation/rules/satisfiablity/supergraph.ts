@@ -1,26 +1,26 @@
-import { OperationTypeNode } from 'graphql';
-import { Logger, LoggerContext } from '../../../../utils/logger.js';
-import type { SupergraphState } from '../../../state.js';
-import { MERGEDGRAPH_ID, SUPERGRAPH_ID } from './constants.js';
-import { Graph } from './graph.js';
-import { MoveValidator } from './move-validator.js';
-import type { Step } from './operation-path.js';
-import { SelectionResolver } from './selection.js';
-import { Walker } from './walker.js';
+import { OperationTypeNode } from "graphql";
+import { Logger, LoggerContext } from "../../../../utils/logger.js";
+import type { SupergraphState } from "../../../state.js";
+import { MERGEDGRAPH_ID, SUPERGRAPH_ID } from "./constants.js";
+import { Graph } from "./graph.js";
+import { MoveValidator } from "./move-validator.js";
+import type { Step } from "./operation-path.js";
+import { SelectionResolver } from "./selection.js";
+import { Walker } from "./walker.js";
 
 export class Supergraph {
   private supergraph: Graph;
   private mergedGraph: Graph;
   private selectionResolver: SelectionResolver;
   private moveRequirementChecker: MoveValidator;
-  private logger = new Logger('Supergraph', new LoggerContext());
+  private logger = new Logger("Supergraph", new LoggerContext());
 
   constructor(supergraphState: SupergraphState) {
     this.selectionResolver = new SelectionResolver(supergraphState);
     this.supergraph = new Graph(
       this.logger,
       SUPERGRAPH_ID,
-      'supergraph',
+      "supergraph",
       supergraphState,
       this.selectionResolver,
       true,
@@ -28,7 +28,7 @@ export class Supergraph {
     this.mergedGraph = new Graph(
       this.logger,
       MERGEDGRAPH_ID,
-      'merged',
+      "merged",
       supergraphState,
       this.selectionResolver,
     );
@@ -51,9 +51,15 @@ export class Supergraph {
     this.mergedGraph.joinSubgraphs();
     this.mergedGraph.addOverriddenFields();
 
-    this.supergraph.addFromRoots().addOverriddenFields().addInterfaceObjectFields();
+    this.supergraph
+      .addFromRoots()
+      .addOverriddenFields()
+      .addInterfaceObjectFields();
 
-    this.moveRequirementChecker = new MoveValidator(this.logger, this.mergedGraph);
+    this.moveRequirementChecker = new MoveValidator(
+      this.logger,
+      this.mergedGraph,
+    );
   }
 
   validate() {
@@ -62,7 +68,7 @@ export class Supergraph {
       this.moveRequirementChecker,
       this.supergraph,
       this.mergedGraph,
-    ).walk('dfs');
+    ).walk("dfs");
   }
 
   validateOperation(operation: OperationTypeNode, steps: Step[]) {

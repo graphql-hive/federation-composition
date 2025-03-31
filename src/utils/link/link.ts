@@ -1,44 +1,59 @@
-import { ConstArgumentNode, DocumentNode, Kind, StringValueNode } from 'graphql';
-import { FederatedLinkImport } from './link-import.js';
-import { FederatedLinkUrl } from './link-url.js';
+import {
+  ConstArgumentNode,
+  DocumentNode,
+  Kind,
+  StringValueNode,
+} from "graphql";
+import { FederatedLinkImport } from "./link-import.js";
+import { FederatedLinkUrl } from "./link-url.js";
 
 /**
  * Supports federation 1
  */
-function linkFromCoreArgs(args: readonly ConstArgumentNode[]): FederatedLink | undefined {
+function linkFromCoreArgs(
+  args: readonly ConstArgumentNode[],
+): FederatedLink | undefined {
   const feature = args.find(
-    ({ name, value }) => name.value === 'feature' && value.kind === Kind.STRING,
+    ({ name, value }) => name.value === "feature" && value.kind === Kind.STRING,
   );
   if (feature) {
-    const url = FederatedLinkUrl.fromUrl((feature.value as StringValueNode).value);
+    const url = FederatedLinkUrl.fromUrl(
+      (feature.value as StringValueNode).value,
+    );
     return new FederatedLink(url, null, []);
   }
   return;
 }
 
-function linkFromArgs(args: readonly ConstArgumentNode[]): FederatedLink | undefined {
+function linkFromArgs(
+  args: readonly ConstArgumentNode[],
+): FederatedLink | undefined {
   let url: FederatedLinkUrl | undefined,
     imports: FederatedLinkImport[] = [],
     as: string | null = null;
   for (const arg of args) {
     switch (arg.name.value) {
-      case 'url': {
+      case "url": {
         if (arg.value.kind === Kind.STRING) {
           url = FederatedLinkUrl.fromUrl(arg.value.value);
         } else {
-          console.warn(`Unexpected kind, ${arg.value.kind}, for argument "url" in @link.`);
+          console.warn(
+            `Unexpected kind, ${arg.value.kind}, for argument "url" in @link.`,
+          );
         }
         break;
       }
-      case 'import': {
+      case "import": {
         imports = FederatedLinkImport.fromTypedefs(arg.value);
         break;
       }
-      case 'as': {
+      case "as": {
         if (arg.value.kind === Kind.STRING) {
           as = arg.value.value ?? null;
         } else {
-          console.warn(`Unexpected kind, ${arg.value.kind}, for argument "as" in @link.`);
+          console.warn(
+            `Unexpected kind, ${arg.value.kind}, for argument "as" in @link.`,
+          );
         }
         break;
       }
@@ -55,7 +70,7 @@ function linkFromArgs(args: readonly ConstArgumentNode[]): FederatedLink | undef
 
 function namespaced(namespace: string | null, name: string) {
   if (namespace?.length) {
-    if (name.startsWith('@')) {
+    if (name.startsWith("@")) {
       return `@${namespace}__${name.substring(1)}`;
     }
     return `${namespace}__${name}`;
@@ -74,20 +89,27 @@ export class FederatedLink {
   static fromTypedefs(typeDefs: DocumentNode): FederatedLink[] {
     let links: FederatedLink[] = [];
     for (const definition of typeDefs.definitions) {
-      if (definition.kind === Kind.SCHEMA_EXTENSION || definition.kind === Kind.SCHEMA_DEFINITION) {
+      if (
+        definition.kind === Kind.SCHEMA_EXTENSION ||
+        definition.kind === Kind.SCHEMA_DEFINITION
+      ) {
         const defLinks = definition.directives?.filter(
-          directive => directive.name.value === 'link',
+          (directive) => directive.name.value === "link",
         );
         const parsedLinks =
-          defLinks?.map(l => linkFromArgs(l.arguments ?? [])).filter(l => l !== undefined) ?? [];
+          defLinks
+            ?.map((l) => linkFromArgs(l.arguments ?? []))
+            .filter((l) => l !== undefined) ?? [];
         links = links.concat(parsedLinks);
 
         // Federation 1 support... Federation 1 uses "@core" instead of "@link", but behavior is similar enough that
         //  it can be translated.
-        const defCores = definition.directives?.filter(({ name }) => name.value === 'core');
+        const defCores = definition.directives?.filter(
+          ({ name }) => name.value === "core",
+        );
         const coreLinks = defCores
-          ?.map(c => linkFromCoreArgs(c.arguments ?? []))
-          .filter(l => l !== undefined);
+          ?.map((c) => linkFromCoreArgs(c.arguments ?? []))
+          .filter((l) => l !== undefined);
         if (coreLinks) {
           links = links.concat(...coreLinks);
         }
@@ -106,7 +128,7 @@ export class FederatedLink {
   }
 
   toString(): string {
-    return `@link(url: "${this._url}"${this._as ? `, as: "${this._as}"` : ''}${this._imports.length ? `, import: [${this._imports.join(', ')}]` : ''})`;
+    return `@link(url: "${this._url}"${this._as ? `, as: "${this._as}"` : ""}${this._imports.length ? `, import: [${this._imports.join(", ")}]` : ""})`;
   }
 
   private get defaultImport(): string | null {
@@ -122,7 +144,9 @@ export class FederatedLink {
   supports(major: number, minor: number): boolean;
   supports(version: FederatedLinkUrl): boolean;
   supports(version: null): boolean;
-  supports(...args: [string] | [number, number] | [FederatedLinkUrl] | [null]): boolean {
+  supports(
+    ...args: [string] | [number, number] | [FederatedLinkUrl] | [null]
+  ): boolean {
     /** @ts-expect-error: ignore tuple error. These are tuples and can be spread. tsc is wrong. */
     return this._url.supports(...args);
   }
@@ -145,11 +169,14 @@ export class FederatedLink {
       // @note: default is a directive... So remove the `@`
       return this.defaultImport!.substring(1);
     }
-    const imported = this._imports.find(i => i.name === elementName);
-    let resolvedName = imported?.as ?? imported?.name ?? namespaced(this.namespace, elementName);
+    const imported = this._imports.find((i) => i.name === elementName);
+    let resolvedName =
+      imported?.as ?? imported?.name ?? namespaced(this.namespace, elementName);
     // Strip the `@` prefix for directives because in all implementations of mapping or visiting a schema,
     // directive names are not prefixed with `@`. The `@` is only for SDL.
-    return resolvedName.startsWith('@') ? resolvedName.substring(1) : resolvedName;
+    return resolvedName.startsWith("@")
+      ? resolvedName.substring(1)
+      : resolvedName;
   }
 
   get imports(): readonly FederatedLinkImport[] {

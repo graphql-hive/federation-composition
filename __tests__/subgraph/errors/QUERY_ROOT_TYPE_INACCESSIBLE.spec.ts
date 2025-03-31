@@ -1,12 +1,12 @@
-import { expect, test } from 'vitest';
-import { graphql, testVersions } from '../../shared/testkit.js';
+import { expect, test } from "vitest";
+import { graphql, testVersions } from "../../shared/testkit.js";
 
 testVersions((api, version) => {
-  test('QUERY_ROOT_TYPE_INACCESSIBLE', () => {
+  test("QUERY_ROOT_TYPE_INACCESSIBLE", () => {
     expect(
       api.composeServices([
         {
-          name: 'book',
+          name: "book",
           typeDefs: graphql`
             extend schema
               @link(
@@ -32,7 +32,7 @@ testVersions((api, version) => {
               `Type "Query" is @inaccessible but is the root query type, which must be in the API schema.`,
             ),
             extensions: expect.objectContaining({
-              code: 'QUERY_ROOT_TYPE_INACCESSIBLE',
+              code: "QUERY_ROOT_TYPE_INACCESSIBLE",
             }),
           }),
         ]),
@@ -42,7 +42,7 @@ testVersions((api, version) => {
     expect(
       api.composeServices([
         {
-          name: 'book',
+          name: "book",
           typeDefs: graphql`
             extend schema
               @link(
@@ -64,7 +64,7 @@ testVersions((api, version) => {
               `Type "Query" is @inaccessible but is the root query type, which must be in the API schema.`,
             ),
             extensions: expect.objectContaining({
-              code: 'QUERY_ROOT_TYPE_INACCESSIBLE',
+              code: "QUERY_ROOT_TYPE_INACCESSIBLE",
             }),
           }),
         ]),

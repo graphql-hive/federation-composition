@@ -1,8 +1,8 @@
-import { expect, test } from 'vitest';
-import { graphql, testVersions } from '../../shared/testkit.js';
+import { expect, test } from "vitest";
+import { graphql, testVersions } from "../../shared/testkit.js";
 
 testVersions((api, version) => {
-  test('KEY_FIELDS_SELECT_INVALID_TYPE', () => {
+  test("KEY_FIELDS_SELECT_INVALID_TYPE", () => {
     expect(
       api.composeServices([
         {
@@ -18,7 +18,7 @@ testVersions((api, version) => {
               id: ID!
             }
           `,
-          name: 'serviceA',
+          name: "serviceA",
         },
         {
           typeDefs: graphql`
@@ -29,7 +29,7 @@ testVersions((api, version) => {
               price: Int! @requires(fields: "sku")
             }
           `,
-          name: 'serviceB',
+          name: "serviceB",
         },
       ]),
     ).toEqual(
@@ -40,7 +40,7 @@ testVersions((api, version) => {
               `[serviceA] On type "Product", for @key(fields: "featuredItem { id }"): field "Product.featuredItem" is a Interface type which is not allowed in @key`,
             ),
             extensions: expect.objectContaining({
-              code: 'KEY_FIELDS_SELECT_INVALID_TYPE',
+              code: "KEY_FIELDS_SELECT_INVALID_TYPE",
             }),
           }),
         ]),

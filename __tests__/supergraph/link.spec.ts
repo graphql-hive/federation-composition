@@ -1,16 +1,16 @@
-import { expect, test } from 'vitest';
+import { expect, test } from "vitest";
 import {
   assertCompositionFailure,
   assertCompositionSuccess,
   graphql,
   testVersions,
-} from '../shared/testkit.js';
+} from "../shared/testkit.js";
 
 testVersions((api, version) => {
-  test('error if directive is defined without overlapping locations across subgraphs and all included in @composeDirective', () => {
+  test("error if directive is defined without overlapping locations across subgraphs and all included in @composeDirective", () => {
     const result = api.composeServices([
       {
-        name: 'a',
+        name: "a",
         typeDefs: graphql`
             extend schema
               @link(url: "https://specs.apollo.dev/federation/${version}" import: ["@key", "@composeDirective"])
@@ -30,7 +30,7 @@ testVersions((api, version) => {
           `,
       },
       {
-        name: 'b',
+        name: "b",
         typeDefs: graphql`
             extend schema
               @link(url: "https://specs.apollo.dev/federation/${version}" import: ["@key", "@composeDirective"])
@@ -58,12 +58,12 @@ testVersions((api, version) => {
 
     assertCompositionFailure(result);
 
-    if (version === 'v2.0') {
+    if (version === "v2.0") {
       expect(result.errors).toContainEqual(
         expect.objectContaining({
           message: '[a] Cannot import unknown element "@composeDirective".',
           extensions: expect.objectContaining({
-            code: 'INVALID_LINK_DIRECTIVE_USAGE',
+            code: "INVALID_LINK_DIRECTIVE_USAGE",
           }),
         }),
       );
@@ -71,7 +71,7 @@ testVersions((api, version) => {
         expect.objectContaining({
           message: '[b] Cannot import unknown element "@composeDirective".',
           extensions: expect.objectContaining({
-            code: 'INVALID_LINK_DIRECTIVE_USAGE',
+            code: "INVALID_LINK_DIRECTIVE_USAGE",
           }),
         }),
       );
@@ -79,7 +79,7 @@ testVersions((api, version) => {
       expect(result.errors).toContainEqual(
         expect.objectContaining({
           message:
-            api.library === 'apollo'
+            api.library === "apollo"
               ? // I don't understand why @apollo/composition gives that error.
                 // Why it's not 'Directive "@lowercase" may not be used on OBJECT' instead...
                 // What is the logic here...
@@ -90,10 +90,10 @@ testVersions((api, version) => {
     }
   });
 
-  test('error if two different major versions of the same spec were used to import the same directive', () => {
+  test("error if two different major versions of the same spec were used to import the same directive", () => {
     const result = api.composeServices([
       {
-        name: 'a',
+        name: "a",
         typeDefs: graphql`
             extend schema
               @link(url: "https://specs.apollo.dev/federation/${version}" import: ["@key", "@composeDirective"])
@@ -109,7 +109,7 @@ testVersions((api, version) => {
           `,
       },
       {
-        name: 'b',
+        name: "b",
         typeDefs: graphql`
             extend schema
               @link(url: "https://specs.apollo.dev/federation/${version}" import: ["@key", "@composeDirective"])
@@ -137,12 +137,12 @@ testVersions((api, version) => {
 
     assertCompositionFailure(result);
 
-    if (version === 'v2.0') {
+    if (version === "v2.0") {
       expect(result.errors).toContainEqual(
         expect.objectContaining({
           message: '[a] Cannot import unknown element "@composeDirective".',
           extensions: expect.objectContaining({
-            code: 'INVALID_LINK_DIRECTIVE_USAGE',
+            code: "INVALID_LINK_DIRECTIVE_USAGE",
           }),
         }),
       );
@@ -150,7 +150,7 @@ testVersions((api, version) => {
         expect.objectContaining({
           message: '[b] Cannot import unknown element "@composeDirective".',
           extensions: expect.objectContaining({
-            code: 'INVALID_LINK_DIRECTIVE_USAGE',
+            code: "INVALID_LINK_DIRECTIVE_USAGE",
           }),
         }),
       );
@@ -160,18 +160,18 @@ testVersions((api, version) => {
           message:
             'Core feature "https://myspecs.dev/lowercase" requested to be merged has major version mismatch across subgraphs',
           extensions: expect.objectContaining({
-            code: 'DIRECTIVE_COMPOSITION_ERROR',
+            code: "DIRECTIVE_COMPOSITION_ERROR",
           }),
         }),
       );
     }
   });
 
-  test('DIRECTIVE_COMPOSITION_ERROR: the same composed directive used under different names (alias)', () => {
+  test("DIRECTIVE_COMPOSITION_ERROR: the same composed directive used under different names (alias)", () => {
     const compose = () =>
       api.composeServices([
         {
-          name: 'a',
+          name: "a",
           typeDefs: graphql`
           extend schema
             @link(url: "https://specs.apollo.dev/federation/${version}" import: ["@key", "@composeDirective"])
@@ -187,7 +187,7 @@ testVersions((api, version) => {
         `,
         },
         {
-          name: 'b',
+          name: "b",
           typeDefs: graphql`
           extend schema
             @link(url: "https://specs.apollo.dev/federation/${version}" import: ["@key", "@composeDirective"])
@@ -212,7 +212,7 @@ testVersions((api, version) => {
         `,
         },
         {
-          name: 'c',
+          name: "c",
           typeDefs: graphql`
           extend schema
             @link(url: "https://specs.apollo.dev/federation/${version}" import: ["@key", "@composeDirective"])
@@ -238,14 +238,14 @@ testVersions((api, version) => {
         },
       ]);
 
-    if (version === 'v2.0') {
+    if (version === "v2.0") {
       const result = compose();
       assertCompositionFailure(result);
       expect(result.errors).toContainEqual(
         expect.objectContaining({
           message: '[a] Cannot import unknown element "@composeDirective".',
           extensions: expect.objectContaining({
-            code: 'INVALID_LINK_DIRECTIVE_USAGE',
+            code: "INVALID_LINK_DIRECTIVE_USAGE",
           }),
         }),
       );
@@ -253,7 +253,7 @@ testVersions((api, version) => {
         expect.objectContaining({
           message: '[b] Cannot import unknown element "@composeDirective".',
           extensions: expect.objectContaining({
-            code: 'INVALID_LINK_DIRECTIVE_USAGE',
+            code: "INVALID_LINK_DIRECTIVE_USAGE",
           }),
         }),
       );
@@ -261,11 +261,11 @@ testVersions((api, version) => {
         expect.objectContaining({
           message: '[c] Cannot import unknown element "@composeDirective".',
           extensions: expect.objectContaining({
-            code: 'INVALID_LINK_DIRECTIVE_USAGE',
+            code: "INVALID_LINK_DIRECTIVE_USAGE",
           }),
         }),
       );
-    } else if (api.library === 'apollo') {
+    } else if (api.library === "apollo") {
       // Apollo Composition throws an error here, but I don't think we should, it should be a composition error instead.
       expect(compose).toThrowError();
     } else {
@@ -276,17 +276,17 @@ testVersions((api, version) => {
           message:
             'Composed directive "@lowercase" has incompatible name across subgraphs: it has name "@lowercase" in subgraph "a" but name "@lower" in subgraph "b" and name "@lower_case" in subgraph "c". Composed directive must have the same name across all subgraphs.',
           extensions: expect.objectContaining({
-            code: 'DIRECTIVE_COMPOSITION_ERROR',
+            code: "DIRECTIVE_COMPOSITION_ERROR",
           }),
         }),
       );
     }
   });
 
-  test('error if two different major versions of the same spec were used to import two different directives', () => {
+  test("error if two different major versions of the same spec were used to import two different directives", () => {
     const result = api.composeServices([
       {
-        name: 'a',
+        name: "a",
         typeDefs: graphql`
             extend schema
               @link(url: "https://specs.apollo.dev/federation/${version}" import: ["@key", "@composeDirective"])
@@ -302,7 +302,7 @@ testVersions((api, version) => {
           `,
       },
       {
-        name: 'b',
+        name: "b",
         typeDefs: graphql`
             extend schema
               @link(url: "https://specs.apollo.dev/federation/${version}" import: ["@key", "@composeDirective"])
@@ -330,12 +330,12 @@ testVersions((api, version) => {
 
     assertCompositionFailure(result);
 
-    if (version === 'v2.0') {
+    if (version === "v2.0") {
       expect(result.errors).toContainEqual(
         expect.objectContaining({
           message: '[a] Cannot import unknown element "@composeDirective".',
           extensions: expect.objectContaining({
-            code: 'INVALID_LINK_DIRECTIVE_USAGE',
+            code: "INVALID_LINK_DIRECTIVE_USAGE",
           }),
         }),
       );
@@ -343,7 +343,7 @@ testVersions((api, version) => {
         expect.objectContaining({
           message: '[b] Cannot import unknown element "@composeDirective".',
           extensions: expect.objectContaining({
-            code: 'INVALID_LINK_DIRECTIVE_USAGE',
+            code: "INVALID_LINK_DIRECTIVE_USAGE",
           }),
         }),
       );
@@ -353,17 +353,17 @@ testVersions((api, version) => {
           message:
             'Core feature "https://myspecs.dev/casing" requested to be merged has major version mismatch across subgraphs',
           extensions: expect.objectContaining({
-            code: 'DIRECTIVE_COMPOSITION_ERROR',
+            code: "DIRECTIVE_COMPOSITION_ERROR",
           }),
         }),
       );
     }
   });
 
-  test('error if two different major versions of the same spec were used to import two different kind of definitions', () => {
+  test("error if two different major versions of the same spec were used to import two different kind of definitions", () => {
     const result = api.composeServices([
       {
-        name: 'a',
+        name: "a",
         typeDefs: graphql`
             extend schema
               @link(url: "https://specs.apollo.dev/federation/${version}" import: ["@key", "@composeDirective"])
@@ -379,7 +379,7 @@ testVersions((api, version) => {
           `,
       },
       {
-        name: 'b',
+        name: "b",
         typeDefs: graphql`
             extend schema
               @link(url: "https://specs.apollo.dev/federation/${version}" import: ["@key"])
@@ -404,13 +404,13 @@ testVersions((api, version) => {
       },
     ]);
 
-    if (version === 'v2.0') {
+    if (version === "v2.0") {
       assertCompositionFailure(result);
       expect(result.errors).toContainEqual(
         expect.objectContaining({
           message: '[a] Cannot import unknown element "@composeDirective".',
           extensions: expect.objectContaining({
-            code: 'INVALID_LINK_DIRECTIVE_USAGE',
+            code: "INVALID_LINK_DIRECTIVE_USAGE",
           }),
         }),
       );
@@ -419,10 +419,10 @@ testVersions((api, version) => {
     }
   });
 
-  test('error if two different specs were used to import the same directive', () => {
+  test("error if two different specs were used to import the same directive", () => {
     const result = api.composeServices([
       {
-        name: 'a',
+        name: "a",
         typeDefs: graphql`
             extend schema
               @link(url: "https://specs.apollo.dev/federation/${version}" import: ["@key", "@composeDirective"])
@@ -438,7 +438,7 @@ testVersions((api, version) => {
           `,
       },
       {
-        name: 'b',
+        name: "b",
         typeDefs: graphql`
             extend schema
               @link(url: "https://specs.apollo.dev/federation/${version}" import: ["@key", "@composeDirective"])
@@ -466,12 +466,12 @@ testVersions((api, version) => {
 
     assertCompositionFailure(result);
 
-    if (version === 'v2.0') {
+    if (version === "v2.0") {
       expect(result.errors).toContainEqual(
         expect.objectContaining({
           message: '[a] Cannot import unknown element "@composeDirective".',
           extensions: expect.objectContaining({
-            code: 'INVALID_LINK_DIRECTIVE_USAGE',
+            code: "INVALID_LINK_DIRECTIVE_USAGE",
           }),
         }),
       );
@@ -479,7 +479,7 @@ testVersions((api, version) => {
         expect.objectContaining({
           message: '[b] Cannot import unknown element "@composeDirective".',
           extensions: expect.objectContaining({
-            code: 'INVALID_LINK_DIRECTIVE_USAGE',
+            code: "INVALID_LINK_DIRECTIVE_USAGE",
           }),
         }),
       );
@@ -489,17 +489,17 @@ testVersions((api, version) => {
           message:
             'Composed directive "@lowercase" is not linked by the same core feature in every subgraph',
           extensions: expect.objectContaining({
-            code: 'DIRECTIVE_COMPOSITION_ERROR',
+            code: "DIRECTIVE_COMPOSITION_ERROR",
           }),
         }),
       );
     }
   });
 
-  test('error if two different specs were used to import the same directive (alias)', () => {
+  test("error if two different specs were used to import the same directive (alias)", () => {
     const result = api.composeServices([
       {
-        name: 'a',
+        name: "a",
         typeDefs: graphql`
             extend schema
               @link(url: "https://specs.apollo.dev/federation/${version}" import: ["@key", "@composeDirective"])
@@ -515,7 +515,7 @@ testVersions((api, version) => {
           `,
       },
       {
-        name: 'b',
+        name: "b",
         typeDefs: graphql`
             extend schema
               @link(url: "https://specs.apollo.dev/federation/${version}" import: ["@key", "@composeDirective"])
@@ -543,12 +543,12 @@ testVersions((api, version) => {
 
     assertCompositionFailure(result);
 
-    if (version === 'v2.0') {
+    if (version === "v2.0") {
       expect(result.errors).toContainEqual(
         expect.objectContaining({
           message: '[a] Cannot import unknown element "@composeDirective".',
           extensions: expect.objectContaining({
-            code: 'INVALID_LINK_DIRECTIVE_USAGE',
+            code: "INVALID_LINK_DIRECTIVE_USAGE",
           }),
         }),
       );
@@ -556,7 +556,7 @@ testVersions((api, version) => {
         expect.objectContaining({
           message: '[b] Cannot import unknown element "@composeDirective".',
           extensions: expect.objectContaining({
-            code: 'INVALID_LINK_DIRECTIVE_USAGE',
+            code: "INVALID_LINK_DIRECTIVE_USAGE",
           }),
         }),
       );
@@ -566,7 +566,7 @@ testVersions((api, version) => {
           message:
             'Composed directive "@lowercase" is not linked by the same core feature in every subgraph',
           extensions: expect.objectContaining({
-            code: 'DIRECTIVE_COMPOSITION_ERROR',
+            code: "DIRECTIVE_COMPOSITION_ERROR",
           }),
         }),
       );

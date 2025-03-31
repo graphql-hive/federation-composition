@@ -1,29 +1,32 @@
-import { DirectiveNode } from 'graphql';
-import type { FederationVersion } from '../../specifications/federation.js';
+import { DirectiveNode } from "graphql";
+import type { FederationVersion } from "../../specifications/federation.js";
 import {
   ArgumentKind,
   Deprecated,
   Description,
   ListSize,
   ObjectType,
-} from '../../subgraph/state.js';
+} from "../../subgraph/state.js";
 import {
   ensureValue,
   isDefined,
   mathMax,
   mathMaxNullable,
   nullableArrayUnion,
-} from '../../utils/helpers.js';
-import { createObjectTypeNode, JoinFieldAST } from './ast.js';
-import type { Key, MapByGraph, TypeBuilder } from './common.js';
-import { convertToConst } from './common.js';
-import { InterfaceTypeFieldState } from './interface-type.js';
+} from "../../utils/helpers.js";
+import { createObjectTypeNode, JoinFieldAST } from "./ast.js";
+import type { Key, MapByGraph, TypeBuilder } from "./common.js";
+import { convertToConst } from "./common.js";
+import { InterfaceTypeFieldState } from "./interface-type.js";
 
-export function isRealExtension(meta: ObjectTypeStateInGraph, version: FederationVersion) {
-  const hasExtendsDirective = meta.extensionType === '@extends';
+export function isRealExtension(
+  meta: ObjectTypeStateInGraph,
+  version: FederationVersion,
+) {
+  const hasExtendsDirective = meta.extensionType === "@extends";
 
   if (meta.extension) {
-    if (version === 'v1.0' && !hasExtendsDirective) {
+    if (version === "v1.0" && !hasExtendsDirective) {
       return false;
     }
 
@@ -46,7 +49,7 @@ export function objectTypeBuilder(): TypeBuilder<ObjectType, ObjectTypeState> {
     visitSubgraphState(graph, state, typeName, type) {
       const objectTypeState = getOrCreateObjectType(state, typeName);
 
-      type.tags.forEach(tag => objectTypeState.tags.add(tag));
+      type.tags.forEach((tag) => objectTypeState.tags.add(tag));
 
       if (type.inaccessible) {
         objectTypeState.inaccessible = true;
@@ -69,7 +72,8 @@ export function objectTypeBuilder(): TypeBuilder<ObjectType, ObjectTypeState> {
       }
 
       const isDefinition =
-        type.isDefinition && (graph.version === 'v1.0' ? type.extensionType !== '@extends' : true);
+        type.isDefinition &&
+        (graph.version === "v1.0" ? type.extensionType !== "@extends" : true);
 
       if (type.description && !objectTypeState.description) {
         objectTypeState.description = type.description;
@@ -80,12 +84,14 @@ export function objectTypeBuilder(): TypeBuilder<ObjectType, ObjectTypeState> {
       }
 
       if (type.ast.directives) {
-        type.ast.directives.forEach(directive => {
+        type.ast.directives.forEach((directive) => {
           objectTypeState.ast.directives.push(directive);
         });
       }
 
-      type.interfaces.forEach(interfaceName => objectTypeState.interfaces.add(interfaceName));
+      type.interfaces.forEach((interfaceName) =>
+        objectTypeState.interfaces.add(interfaceName),
+      );
 
       if (type.keys.length) {
         objectTypeState.isEntity = true;
@@ -105,9 +111,13 @@ export function objectTypeBuilder(): TypeBuilder<ObjectType, ObjectTypeState> {
       const typeInGraph = objectTypeState.byGraph.get(graph.id)!;
 
       for (const field of type.fields.values()) {
-        const fieldState = getOrCreateField(objectTypeState, field.name, field.type);
+        const fieldState = getOrCreateField(
+          objectTypeState,
+          field.name,
+          field.type,
+        );
 
-        field.tags.forEach(tag => fieldState.tags.add(tag));
+        field.tags.forEach((tag) => fieldState.tags.add(tag));
 
         const usedAsKey = type.fieldsUsedAsKeys.has(field.name);
 
@@ -117,7 +127,7 @@ export function objectTypeBuilder(): TypeBuilder<ObjectType, ObjectTypeState> {
 
         // It's the first time we visited a non-external field, we should force the type on that field to match the local type
         const isExternal =
-          graph.version === 'v1.0'
+          graph.version === "v1.0"
             ? field.external && isRealExtension(typeInGraph, graph.version)
             : field.external;
         const shouldForceType =
@@ -138,7 +148,7 @@ export function objectTypeBuilder(): TypeBuilder<ObjectType, ObjectTypeState> {
             // [A!]     -> [A]      -> [A]
             // [A]!     -> [A!]     -> [A!]
             // Least nullable wins
-            fieldState.type.lastIndexOf('!') > field.type.lastIndexOf('!'));
+            fieldState.type.lastIndexOf("!") > field.type.lastIndexOf("!"));
 
         if (shouldChangeType) {
           // Replace the non-null type with a nullable type
@@ -204,7 +214,7 @@ export function objectTypeBuilder(): TypeBuilder<ObjectType, ObjectTypeState> {
         }
 
         if (field.overrideLabel) {
-          fieldState.overrideLabel = field.overrideLabel
+          fieldState.overrideLabel = field.overrideLabel;
         }
 
         // First deprecation wins
@@ -212,7 +222,7 @@ export function objectTypeBuilder(): TypeBuilder<ObjectType, ObjectTypeState> {
           fieldState.deprecated = field.deprecated;
         }
 
-        field.ast.directives.forEach(directive => {
+        field.ast.directives.forEach((directive) => {
           fieldState.ast.directives.push(directive);
         });
 
@@ -235,11 +245,16 @@ export function objectTypeBuilder(): TypeBuilder<ObjectType, ObjectTypeState> {
         });
 
         for (const arg of field.args.values()) {
-          const argState = getOrCreateArg(fieldState, arg.name, arg.type, arg.kind);
+          const argState = getOrCreateArg(
+            fieldState,
+            arg.name,
+            arg.type,
+            arg.kind,
+          );
 
-          arg.tags.forEach(tag => argState.tags.add(tag));
+          arg.tags.forEach((tag) => argState.tags.add(tag));
 
-          if (arg.type.endsWith('!')) {
+          if (arg.type.endsWith("!")) {
             argState.type = arg.type;
           }
 
@@ -260,11 +275,11 @@ export function objectTypeBuilder(): TypeBuilder<ObjectType, ObjectTypeState> {
             argState.deprecated = arg.deprecated;
           }
 
-          arg.ast.directives.forEach(directive => {
+          arg.ast.directives.forEach((directive) => {
             argState.ast.directives.push(directive);
           });
 
-          if (typeof arg.defaultValue !== 'undefined') {
+          if (typeof arg.defaultValue !== "undefined") {
             argState.defaultValue = arg.defaultValue;
           }
 
@@ -284,23 +299,30 @@ export function objectTypeBuilder(): TypeBuilder<ObjectType, ObjectTypeState> {
         }
       }
     },
-    composeSupergraphNode(objectType, graphs, { graphNameToId, supergraphState }) {
-      const isQuery = objectType.name === 'Query';
+    composeSupergraphNode(
+      objectType,
+      graphs,
+      { graphNameToId, supergraphState },
+    ) {
+      const isQuery = objectType.name === "Query";
 
       const joinTypes = isQuery
         ? // if it's a Query, we need to annotate the object type with `@join__type` pointing to all subgraphs
-          Array.from(graphs.values()).map(graph => ({
+          Array.from(graphs.values()).map((graph) => ({
             graph: graph.graph.id,
           }))
         : // If it's not a Query, we follow the regular logic
           Array.from(objectType.byGraph.entries())
             .map(([graphId, meta]) => {
               if (meta.keys.length) {
-                return meta.keys.map(key => ({
+                return meta.keys.map((key) => ({
                   graph: graphId,
                   key: key.fields,
                   // To support Fed v1, we need to only apply `extension: true` when it's a type annotated with @extends (not by using `extend type` syntax, this needs to be ignored)
-                  extension: isRealExtension(meta, graphs.get(graphId)!.federation.version),
+                  extension: isRealExtension(
+                    meta,
+                    graphs.get(graphId)!.federation.version,
+                  ),
                   resolvable: key.resolvable,
                 }));
               }
@@ -317,16 +339,23 @@ export function objectTypeBuilder(): TypeBuilder<ObjectType, ObjectTypeState> {
       const fieldNamesOfImplementedInterfaces: {
         [fieldName: string]: /* Graph IDs */ Set<string>;
       } = {};
-      const resolvableFieldsFromInterfaceObjects: InterfaceTypeFieldState[] = [];
+      const resolvableFieldsFromInterfaceObjects: InterfaceTypeFieldState[] =
+        [];
 
       for (const interfaceName of objectType.interfaces) {
-        const interfaceState = supergraphState.interfaceTypes.get(interfaceName);
+        const interfaceState =
+          supergraphState.interfaceTypes.get(interfaceName);
 
         if (!interfaceState) {
-          throw new Error(`Interface "${interfaceName}" not found in Supergraph state`);
+          throw new Error(
+            `Interface "${interfaceName}" not found in Supergraph state`,
+          );
         }
 
-        for (const [interfaceFieldName, interfaceField] of interfaceState.fields) {
+        for (const [
+          interfaceFieldName,
+          interfaceField,
+        ] of interfaceState.fields) {
           const found = fieldNamesOfImplementedInterfaces[interfaceFieldName];
 
           if (found) {
@@ -343,7 +372,11 @@ export function objectTypeBuilder(): TypeBuilder<ObjectType, ObjectTypeState> {
             continue;
           }
 
-          if (!resolvableFieldsFromInterfaceObjects.some(f => f.name === interfaceFieldName)) {
+          if (
+            !resolvableFieldsFromInterfaceObjects.some(
+              (f) => f.name === interfaceFieldName,
+            )
+          ) {
             resolvableFieldsFromInterfaceObjects.push(interfaceField);
           }
         }
@@ -385,7 +418,10 @@ export function objectTypeBuilder(): TypeBuilder<ObjectType, ObjectTypeState> {
         }
 
         // mark field as external if it's annotated with @external, but it's not used as a key on the extension type
-        if (fieldState.usedAsKey && objectType.byGraph.get(graphId)!.extension === true) {
+        if (
+          fieldState.usedAsKey &&
+          objectType.byGraph.get(graphId)!.extension === true
+        ) {
           return false;
         }
 
@@ -418,7 +454,11 @@ export function objectTypeBuilder(): TypeBuilder<ObjectType, ObjectTypeState> {
             const requires = meta.requires ?? undefined;
 
             const definesSomething =
-              !!type || !!override || !!provides || !!requires || !!usedOverridden;
+              !!type ||
+              !!override ||
+              !!provides ||
+              !!requires ||
+              !!usedOverridden;
             const isRequiredOrProvided = meta.provided || meta.required;
 
             if (
@@ -456,20 +496,21 @@ export function objectTypeBuilder(): TypeBuilder<ObjectType, ObjectTypeState> {
                 cost: objectType.cost,
                 directiveName: ensureValue(
                   supergraphState.specs.cost.names.cost,
-                  'Directive name of @cost is not defined',
+                  "Directive name of @cost is not defined",
                 ),
               }
             : null,
         description: objectType.description,
         fields: Array.from(objectType.fields.values())
-          .map(field => {
+          .map((field) => {
             const fieldInGraphs = Array.from(field.byGraph.entries());
 
             const hasDifferentOutputType = fieldInGraphs.some(
               ([_, meta]) => meta.type !== field.type,
             );
             const isDefinedEverywhere =
-              field.byGraph.size === (isQuery ? graphs.size : objectType.byGraph.size);
+              field.byGraph.size ===
+              (isQuery ? graphs.size : objectType.byGraph.size);
             let joinFields: JoinFieldAST[] = [];
 
             const differencesBetweenGraphs = {
@@ -526,7 +567,7 @@ export function objectTypeBuilder(): TypeBuilder<ObjectType, ObjectTypeState> {
                   graphNameToId,
                 ) &&
                 // and it's Federation v1
-                graphs.get(graphId)!.federation.version === 'v1.0'
+                graphs.get(graphId)!.federation.version === "v1.0"
               ) {
                 // drop the field
                 return null;
@@ -551,7 +592,7 @@ export function objectTypeBuilder(): TypeBuilder<ObjectType, ObjectTypeState> {
 
                   const fromGraphId = graphNameToId(meta.override);
 
-                  if(!fromGraphId) {
+                  if (!fromGraphId) {
                     continue;
                   }
 
@@ -598,9 +639,9 @@ export function objectTypeBuilder(): TypeBuilder<ObjectType, ObjectTypeState> {
                     : [];
               }
             } else if (isDefinedEverywhere) {
-              const hasDifferencesBetweenGraphs = Object.values(differencesBetweenGraphs).some(
-                value => value === true,
-              );
+              const hasDifferencesBetweenGraphs = Object.values(
+                differencesBetweenGraphs,
+              ).some((value) => value === true);
 
               // We probably need to emit `@join__field` for every graph, except the one where the override was applied
               if (differencesBetweenGraphs.override) {
@@ -617,7 +658,7 @@ export function objectTypeBuilder(): TypeBuilder<ObjectType, ObjectTypeState> {
 
                   const fromGraphId = graphNameToId(meta.override);
 
-                  if(!fromGraphId) {
+                  if (!fromGraphId) {
                     continue;
                   }
 
@@ -634,7 +675,9 @@ export function objectTypeBuilder(): TypeBuilder<ObjectType, ObjectTypeState> {
                 const graphsToEmit = fieldInGraphs.filter(([graphId, f]) => {
                   const isExternal = f.external === true;
                   const isOverridden = overriddenGraphs.includes(graphId);
-                  const needsToPrintOverrideLabel = typeof f.overrideLabel === 'string' || !!overrideLabels[graphId];
+                  const needsToPrintOverrideLabel =
+                    typeof f.overrideLabel === "string" ||
+                    !!overrideLabels[graphId];
                   const needsToPrintUsedOverridden = provideUsedOverriddenValue(
                     field,
                     f,
@@ -644,7 +687,12 @@ export function objectTypeBuilder(): TypeBuilder<ObjectType, ObjectTypeState> {
                   );
                   const isRequired = f.required === true;
 
-                  return (isExternal && isRequired) || needsToPrintOverrideLabel || needsToPrintUsedOverridden || !isOverridden;
+                  return (
+                    (isExternal && isRequired) ||
+                    needsToPrintOverrideLabel ||
+                    needsToPrintUsedOverridden ||
+                    !isOverridden
+                  );
                 });
 
                 // Do not emit `@join__field` if there's only one graph left
@@ -694,7 +742,7 @@ export function objectTypeBuilder(): TypeBuilder<ObjectType, ObjectTypeState> {
 
                   const fromGraphId = graphNameToId(meta.override);
 
-                  if(!fromGraphId) {
+                  if (!fromGraphId) {
                     continue;
                   }
 
@@ -710,18 +758,26 @@ export function objectTypeBuilder(): TypeBuilder<ObjectType, ObjectTypeState> {
                   ([graphId, meta]) => {
                     const isExternal = meta.external === true;
                     const isOverridden = overriddenGraphs.includes(graphId);
-                    const needsToPrintOverrideLabel = typeof meta.overrideLabel === 'string' || !!overrideLabels[graphId];
-                    const needsToPrintUsedOverridden = provideUsedOverriddenValue(
-                      field,
-                      meta,
-                      fieldNamesOfImplementedInterfaces,
-                      graphId,
-                      graphNameToId,
-                    );
+                    const needsToPrintOverrideLabel =
+                      typeof meta.overrideLabel === "string" ||
+                      !!overrideLabels[graphId];
+                    const needsToPrintUsedOverridden =
+                      provideUsedOverriddenValue(
+                        field,
+                        meta,
+                        fieldNamesOfImplementedInterfaces,
+                        graphId,
+                        graphNameToId,
+                      );
                     const isRequired = meta.required === true;
 
-                    return (isExternal && isRequired) || needsToPrintOverrideLabel || needsToPrintUsedOverridden || !isOverridden;
-                  }
+                    return (
+                      (isExternal && isRequired) ||
+                      needsToPrintOverrideLabel ||
+                      needsToPrintUsedOverridden ||
+                      !isOverridden
+                    );
+                  },
                 );
 
                 joinFields = graphsToPrintJoinField.map(([graphId, meta]) => ({
@@ -763,7 +819,7 @@ export function objectTypeBuilder(): TypeBuilder<ObjectType, ObjectTypeState> {
                       cost: field.cost,
                       directiveName: ensureValue(
                         supergraphState.specs.cost.names.cost,
-                        'Directive name of @cost is not defined',
+                        "Directive name of @cost is not defined",
                       ),
                     }
                   : null,
@@ -773,7 +829,7 @@ export function objectTypeBuilder(): TypeBuilder<ObjectType, ObjectTypeState> {
                       ...field.listSize,
                       directiveName: ensureValue(
                         supergraphState.specs.cost.names.listSize,
-                        'Directive name of @listSize is not defined',
+                        "Directive name of @listSize is not defined",
                       ),
                     }
                   : null,
@@ -797,7 +853,7 @@ export function objectTypeBuilder(): TypeBuilder<ObjectType, ObjectTypeState> {
                     : joinFields,
               },
               arguments: Array.from(field.args.values())
-                .filter(arg => {
+                .filter((arg) => {
                   // ignore the argument if it's not available in all subgraphs implementing the field
                   if (arg.byGraph.size !== field.byGraph.size) {
                     return false;
@@ -805,7 +861,7 @@ export function objectTypeBuilder(): TypeBuilder<ObjectType, ObjectTypeState> {
 
                   return true;
                 })
-                .map(arg => {
+                .map((arg) => {
                   return {
                     name: arg.name,
                     type: arg.type,
@@ -817,7 +873,7 @@ export function objectTypeBuilder(): TypeBuilder<ObjectType, ObjectTypeState> {
                             cost: arg.cost,
                             directiveName: ensureValue(
                               supergraphState.specs.cost.names.cost,
-                              'Directive name of @cost is not defined',
+                              "Directive name of @cost is not defined",
                             ),
                           }
                         : null,
@@ -835,8 +891,8 @@ export function objectTypeBuilder(): TypeBuilder<ObjectType, ObjectTypeState> {
           .filter(isDefined)
           .concat(
             resolvableFieldsFromInterfaceObjects
-              .filter(f => !objectType.fields.has(f.name))
-              .map(field => {
+              .filter((f) => !objectType.fields.has(f.name))
+              .map((field) => {
                 return {
                   name: field.name,
                   type: field.type,
@@ -850,7 +906,7 @@ export function objectTypeBuilder(): TypeBuilder<ObjectType, ObjectTypeState> {
                           cost: field.cost,
                           directiveName: ensureValue(
                             supergraphState.specs.cost.names.cost,
-                            'Directive name of @cost is not defined',
+                            "Directive name of @cost is not defined",
                           ),
                         }
                       : null,
@@ -860,7 +916,7 @@ export function objectTypeBuilder(): TypeBuilder<ObjectType, ObjectTypeState> {
                           ...field.listSize,
                           directiveName: ensureValue(
                             supergraphState.specs.cost.names.listSize,
-                            'Directive name of @listSize is not defined',
+                            "Directive name of @listSize is not defined",
                           ),
                         }
                       : null,
@@ -874,7 +930,7 @@ export function objectTypeBuilder(): TypeBuilder<ObjectType, ObjectTypeState> {
                     field: [{}],
                   },
                   arguments: Array.from(field.args.values())
-                    .filter(arg => {
+                    .filter((arg) => {
                       // ignore the argument if it's not available in all subgraphs implementing the field
                       if (arg.byGraph.size !== field.byGraph.size) {
                         return false;
@@ -882,7 +938,7 @@ export function objectTypeBuilder(): TypeBuilder<ObjectType, ObjectTypeState> {
 
                       return true;
                     })
-                    .map(arg => {
+                    .map((arg) => {
                       return {
                         name: arg.name,
                         type: arg.type,
@@ -894,7 +950,7 @@ export function objectTypeBuilder(): TypeBuilder<ObjectType, ObjectTypeState> {
                                 cost: arg.cost,
                                 directiveName: ensureValue(
                                   supergraphState.specs.cost.names.cost,
-                                  'Directive name of @cost is not defined',
+                                  "Directive name of @cost is not defined",
                                 ),
                               }
                             : null,
@@ -923,10 +979,12 @@ export function objectTypeBuilder(): TypeBuilder<ObjectType, ObjectTypeState> {
               ? Array.from(objectType.byGraph.entries())
                   .map(([graph, meta]) => {
                     if (meta.interfaces.size > 0) {
-                      return Array.from(meta.interfaces).map(interfaceName => ({
-                        graph: graph.toUpperCase(),
-                        interface: interfaceName,
-                      }));
+                      return Array.from(meta.interfaces).map(
+                        (interfaceName) => ({
+                          graph: graph.toUpperCase(),
+                          interface: interfaceName,
+                        }),
+                      );
                     }
 
                     return [];
@@ -949,11 +1007,17 @@ function provideUsedOverriddenValue(
   graphNameToId: (graphId: string) => string | null,
 ): boolean {
   const inGraphs = fieldNamesOfImplementedInterfaces[field.name];
-  const hasMatchingInterfaceFieldInGraph: boolean = inGraphs && inGraphs.has(graphId);
-  const isUsedAsNonExternalKey = fieldStateInGraph.usedAsKey && !fieldStateInGraph.external;
-  const isOverridden = field.override && graphNameToId(field.override) === graphId;
+  const hasMatchingInterfaceFieldInGraph: boolean =
+    inGraphs && inGraphs.has(graphId);
+  const isUsedAsNonExternalKey =
+    fieldStateInGraph.usedAsKey && !fieldStateInGraph.external;
+  const isOverridden =
+    field.override && graphNameToId(field.override) === graphId;
 
-  if (isOverridden && (isUsedAsNonExternalKey || hasMatchingInterfaceFieldInGraph)) {
+  if (
+    isOverridden &&
+    (isUsedAsNonExternalKey || hasMatchingInterfaceFieldInGraph)
+  ) {
     return true;
   }
 
@@ -961,7 +1025,7 @@ function provideUsedOverriddenValue(
 }
 
 export type ObjectTypeState = {
-  kind: 'object';
+  kind: "object";
   name: string;
   tags: Set<string>;
   inaccessible: boolean;
@@ -1025,7 +1089,7 @@ export type ObjectTypeFieldArgState = {
 export type ObjectTypeStateInGraph = {
   hasDefinition: boolean;
   extension: boolean;
-  extensionType?: '@extends' | 'extend';
+  extensionType?: "@extends" | "extend";
   external: boolean;
   keys: Key[];
   interfaces: Set<string>;
@@ -1041,7 +1105,7 @@ type FieldStateInGraph = {
   inaccessible: boolean;
   used: boolean;
   override: string | null;
-  overrideLabel: string | null,
+  overrideLabel: string | null;
   provides: string | null;
   requires: string | null;
   provided: boolean;
@@ -1060,7 +1124,10 @@ type ArgStateInGraph = {
   version: FederationVersion;
 };
 
-function getOrCreateObjectType(state: Map<string, ObjectTypeState>, typeName: string) {
+function getOrCreateObjectType(
+  state: Map<string, ObjectTypeState>,
+  typeName: string,
+) {
   const existing = state.get(typeName);
 
   if (existing) {
@@ -1068,7 +1135,7 @@ function getOrCreateObjectType(state: Map<string, ObjectTypeState>, typeName: st
   }
 
   const def: ObjectTypeState = {
-    kind: 'object',
+    kind: "object",
     name: typeName,
     tags: new Set(),
     hasDefinition: false,
@@ -1091,7 +1158,11 @@ function getOrCreateObjectType(state: Map<string, ObjectTypeState>, typeName: st
   return def;
 }
 
-function getOrCreateField(objectTypeState: ObjectTypeState, fieldName: string, fieldType: string) {
+function getOrCreateField(
+  objectTypeState: ObjectTypeState,
+  fieldName: string,
+  fieldType: string,
+) {
   const existing = objectTypeState.fields.get(fieldName);
 
   if (existing) {

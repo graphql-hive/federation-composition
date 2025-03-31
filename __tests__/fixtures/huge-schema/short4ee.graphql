@@ -25,7 +25,12 @@ type round516 {
 }
 
 type round57a {
-  until2d9(fooey052: Int, madly2ba: String, never2e5: Int, while53c: String): cheapcef
+  until2d9(
+    fooey052: Int
+    madly2ba: String
+    never2e5: Int
+    while53c: String
+  ): cheapcef
   hovel932(
     hence249: String!
     fully8af: String!

@@ -1,19 +1,19 @@
-import { describe, expect, test } from 'vitest';
+import { describe, expect, test } from "vitest";
 import {
   assertCompositionFailure,
   assertCompositionSuccess,
   createStarsStuff,
   graphql,
   testVersions,
-} from '../../shared/testkit.js';
+} from "../../shared/testkit.js";
 
 testVersions((api, version) => {
-  describe('@extends', () => {
-    test('different location should be ignored if not imported', () => {
+  describe("@extends", () => {
+    test("different location should be ignored if not imported", () => {
       assertCompositionSuccess(
         api.composeServices([
           {
-            name: 'users',
+            name: "users",
             typeDefs: graphql`
                 extend schema
                   @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@key"])
@@ -28,7 +28,7 @@ testVersions((api, version) => {
               `,
           },
           {
-            name: 'profiles',
+            name: "profiles",
             typeDefs: graphql`
                 extend schema
                   @link(
@@ -52,10 +52,10 @@ testVersions((api, version) => {
       );
     });
 
-    test('different location should be ignored if imported but not used', () => {
+    test("different location should be ignored if imported but not used", () => {
       const result = api.composeServices([
         {
-          name: 'users',
+          name: "users",
           typeDefs: graphql`
                 extend schema
                   @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@key"])
@@ -70,7 +70,7 @@ testVersions((api, version) => {
               `,
         },
         {
-          name: 'profiles',
+          name: "profiles",
           typeDefs: graphql`
                 extend schema
                   @link(
@@ -99,19 +99,19 @@ testVersions((api, version) => {
           message:
             '[profiles] Invalid definition for directive "@extends": "@extends" should have locations OBJECT, INTERFACE, but found (non-subset) FIELD_DEFINITION',
           extensions: expect.objectContaining({
-            code: 'DIRECTIVE_DEFINITION_INVALID',
+            code: "DIRECTIVE_DEFINITION_INVALID",
           }),
         }),
       );
     });
   });
 
-  describe('@external', () => {
-    test('exact same definition without an import should be ignored', () => {
+  describe("@external", () => {
+    test("exact same definition without an import should be ignored", () => {
       assertCompositionSuccess(
         api.composeServices([
           {
-            name: 'users',
+            name: "users",
             typeDefs: graphql`
                 extend schema
                   @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@key"])
@@ -132,11 +132,11 @@ testVersions((api, version) => {
       );
     });
 
-    test('exact same definition with an import', () => {
+    test("exact same definition with an import", () => {
       expect(
         api.composeServices([
           {
-            name: 'users',
+            name: "users",
             typeDefs: graphql`
                 extend schema
                   @link(
@@ -165,7 +165,7 @@ testVersions((api, version) => {
                 `[users] Field "User.name" is marked @external but is not used in any federation directive (@key, @provides, @requires) or to satisfy an interface; the field declaration has no use and should be removed (or the field should not be @external).`,
               ),
               extensions: expect.objectContaining({
-                code: 'EXTERNAL_UNUSED',
+                code: "EXTERNAL_UNUSED",
               }),
             }),
           ]),
@@ -173,11 +173,11 @@ testVersions((api, version) => {
       );
     });
 
-    test('no OBJECT', () => {
+    test("no OBJECT", () => {
       expect(
         api.composeServices([
           {
-            name: 'users',
+            name: "users",
             typeDefs: graphql`
                 extend schema
                   @link(
@@ -206,7 +206,7 @@ testVersions((api, version) => {
                 `[users] Field "User.name" is marked @external but is not used in any federation directive (@key, @provides, @requires) or to satisfy an interface; the field declaration has no use and should be removed (or the field should not be @external).`,
               ),
               extensions: expect.objectContaining({
-                code: 'EXTERNAL_UNUSED',
+                code: "EXTERNAL_UNUSED",
               }),
             }),
           ]),
@@ -214,11 +214,11 @@ testVersions((api, version) => {
       );
     });
 
-    test('no FIELD_DEFINITION', () => {
+    test("no FIELD_DEFINITION", () => {
       expect(
         api.composeServices([
           {
-            name: 'users',
+            name: "users",
             typeDefs: graphql`
                 extend schema
                   @link(
@@ -247,7 +247,7 @@ testVersions((api, version) => {
                 `[users] Field "User.name" is marked @external but is not used in any federation directive (@key, @provides, @requires) or to satisfy an interface; the field declaration has no use and should be removed (or the field should not be @external).`,
               ),
               extensions: expect.objectContaining({
-                code: 'EXTERNAL_UNUSED',
+                code: "EXTERNAL_UNUSED",
               }),
             }),
           ]),
@@ -256,12 +256,12 @@ testVersions((api, version) => {
     });
   });
 
-  describe('@tag', () => {
-    test('exact same definition should be ignored if not imported', () => {
+  describe("@tag", () => {
+    test("exact same definition should be ignored if not imported", () => {
       expect(
         api.composeServices([
           {
-            name: 'users',
+            name: "users",
             typeDefs: graphql`
                 extend schema
                   @link(
@@ -289,7 +289,7 @@ testVersions((api, version) => {
               `,
           },
           {
-            name: 'ext',
+            name: "ext",
             typeDefs: graphql`
                 extend schema
                   @link(
@@ -316,7 +316,7 @@ testVersions((api, version) => {
                 `[users] Cannot apply merged directive @tag(name: "public") to external field "User.internalId"`,
               ),
               extensions: expect.objectContaining({
-                code: 'MERGED_DIRECTIVE_APPLICATION_ON_EXTERNAL',
+                code: "MERGED_DIRECTIVE_APPLICATION_ON_EXTERNAL",
               }),
             }),
           ]),
@@ -324,11 +324,11 @@ testVersions((api, version) => {
       );
     });
 
-    test('exact same definition with import', () => {
+    test("exact same definition with import", () => {
       expect(
         api.composeServices([
           {
-            name: 'users',
+            name: "users",
             typeDefs: graphql`
                 extend schema
                   @link(
@@ -363,7 +363,7 @@ testVersions((api, version) => {
               `,
           },
           {
-            name: 'ext',
+            name: "ext",
             typeDefs: graphql`
                 extend schema
                   @link(
@@ -390,7 +390,7 @@ testVersions((api, version) => {
                 `[users] Cannot apply merged directive @tag(name: "public") to external field "User.internalId"`,
               ),
               extensions: expect.objectContaining({
-                code: 'MERGED_DIRECTIVE_APPLICATION_ON_EXTERNAL',
+                code: "MERGED_DIRECTIVE_APPLICATION_ON_EXTERNAL",
               }),
             }),
           ]),
@@ -399,12 +399,12 @@ testVersions((api, version) => {
     });
   });
 
-  describe('@inaccessible', () => {
-    test('exact same definition and imported', () => {
+  describe("@inaccessible", () => {
+    test("exact same definition and imported", () => {
       expect(
         api.composeServices([
           {
-            name: 'users',
+            name: "users",
             typeDefs: graphql`
                 extend schema
                   @link(
@@ -430,7 +430,7 @@ testVersions((api, version) => {
               `,
           },
           {
-            name: 'ext',
+            name: "ext",
             typeDefs: graphql`
                 extend schema
                   @link(
@@ -457,7 +457,7 @@ testVersions((api, version) => {
                 `[users] Cannot apply merged directive @inaccessible to external field "User.internalId"`,
               ),
               extensions: expect.objectContaining({
-                code: 'MERGED_DIRECTIVE_APPLICATION_ON_EXTERNAL',
+                code: "MERGED_DIRECTIVE_APPLICATION_ON_EXTERNAL",
               }),
             }),
           ]),
@@ -465,11 +465,11 @@ testVersions((api, version) => {
       );
     });
 
-    test('exact same definition should be ignored when not imported', () => {
+    test("exact same definition should be ignored when not imported", () => {
       expect(
         api.composeServices([
           {
-            name: 'users',
+            name: "users",
             typeDefs: graphql`
                 extend schema
                   @link(
@@ -495,7 +495,7 @@ testVersions((api, version) => {
               `,
           },
           {
-            name: 'ext',
+            name: "ext",
             typeDefs: graphql`
                 extend schema
                   @link(
@@ -524,7 +524,7 @@ testVersions((api, version) => {
                 `[users] Cannot apply merged directive @inaccessible to external field "User.internalId"`,
               ),
               extensions: expect.objectContaining({
-                code: 'MERGED_DIRECTIVE_APPLICATION_ON_EXTERNAL',
+                code: "MERGED_DIRECTIVE_APPLICATION_ON_EXTERNAL",
               }),
             }),
           ]),
@@ -533,12 +533,12 @@ testVersions((api, version) => {
     });
   });
 
-  describe('@override', () => {
-    test('exact same definition and imported', () => {
+  describe("@override", () => {
+    test("exact same definition and imported", () => {
       expect(
         api.composeServices([
           {
-            name: 'billing',
+            name: "billing",
             typeDefs: graphql`
                 extend schema
                   @link(
@@ -567,7 +567,7 @@ testVersions((api, version) => {
                 `Source and destination subgraphs "billing" are the same for overridden field "Bill.amount"`,
               ),
               extensions: expect.objectContaining({
-                code: 'OVERRIDE_FROM_SELF_ERROR',
+                code: "OVERRIDE_FROM_SELF_ERROR",
               }),
             }),
           ]),
@@ -575,11 +575,11 @@ testVersions((api, version) => {
       );
     });
 
-    test('exact same definition should be ignored if not imported', () => {
+    test("exact same definition should be ignored if not imported", () => {
       expect(
         api.composeServices([
           {
-            name: 'billing',
+            name: "billing",
             typeDefs: graphql`
                 extend schema
                   @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@key"])
@@ -605,7 +605,7 @@ testVersions((api, version) => {
                 `Source and destination subgraphs "billing" are the same for overridden field "Bill.amount"`,
               ),
               extensions: expect.objectContaining({
-                code: 'OVERRIDE_FROM_SELF_ERROR',
+                code: "OVERRIDE_FROM_SELF_ERROR",
               }),
             }),
           ]),
@@ -614,12 +614,12 @@ testVersions((api, version) => {
     });
   });
 
-  describe('@key', () => {
-    test('exact same definition should be ignored if not imported', () => {
+  describe("@key", () => {
+    test("exact same definition should be ignored if not imported", () => {
       assertCompositionSuccess(
         api.composeServices([
           {
-            name: 'users',
+            name: "users",
             typeDefs: graphql`
                 schema
                   @link(
@@ -650,11 +650,11 @@ testVersions((api, version) => {
       );
     });
 
-    test('fields of String type', () => {
+    test("fields of String type", () => {
       assertCompositionSuccess(
         api.composeServices([
           {
-            name: 'users',
+            name: "users",
             typeDefs: graphql`
                 schema
                   @link(
@@ -683,11 +683,11 @@ testVersions((api, version) => {
       );
     });
 
-    test('fields of different type', () => {
+    test("fields of different type", () => {
       assertCompositionSuccess(
         api.composeServices([
           {
-            name: 'users',
+            name: "users",
             typeDefs: graphql`
                 schema
                   @link(
@@ -718,7 +718,7 @@ testVersions((api, version) => {
       expect(
         api.composeServices([
           {
-            name: 'users',
+            name: "users",
             typeDefs: graphql`
                 schema
                   @link(
@@ -752,11 +752,11 @@ testVersions((api, version) => {
             expect.objectContaining({
               message: expect.stringContaining(
                 `[users] Invalid definition for directive "@key": argument "fields" should have type "${
-                  api.library === 'apollo' ? 'federation__FieldSet' : 'FieldSet'
+                  api.library === "apollo" ? "federation__FieldSet" : "FieldSet"
                 }!" but found type "Str!"`,
               ),
               extensions: expect.objectContaining({
-                code: 'DIRECTIVE_DEFINITION_INVALID',
+                code: "DIRECTIVE_DEFINITION_INVALID",
               }),
             }),
           ]),
@@ -764,11 +764,11 @@ testVersions((api, version) => {
       );
     });
 
-    test('federation__FieldSet should be accepted', () => {
+    test("federation__FieldSet should be accepted", () => {
       assertCompositionSuccess(
         api.composeServices([
           {
-            name: 'users',
+            name: "users",
             typeDefs: graphql`
           schema @link(url: "https://specs.apollo.dev/link/v1.0") {
           query: Query
@@ -795,11 +795,11 @@ testVersions((api, version) => {
       );
     });
 
-    test('Fed v1: fields of [String!]! type should be accepted', () => {
+    test("Fed v1: fields of [String!]! type should be accepted", () => {
       assertCompositionSuccess(
         api.composeServices([
           {
-            name: 'users',
+            name: "users",
             typeDefs: graphql`
               directive @key(fields: [String!]!) on OBJECT
 
@@ -817,11 +817,11 @@ testVersions((api, version) => {
       );
     });
 
-    test('missing default value for resolvable', () => {
+    test("missing default value for resolvable", () => {
       expect(
         api.composeServices([
           {
-            name: 'users',
+            name: "users",
             typeDefs: graphql`
                 schema
                   @link(
@@ -857,7 +857,7 @@ testVersions((api, version) => {
                 `[users] Invalid definition for directive "@key": argument "resolvable" should have default value true but found default value null`,
               ),
               extensions: expect.objectContaining({
-                code: 'DIRECTIVE_DEFINITION_INVALID',
+                code: "DIRECTIVE_DEFINITION_INVALID",
               }),
             }),
           ]),
@@ -865,11 +865,11 @@ testVersions((api, version) => {
       );
     });
 
-    test('missing resolvable', () => {
+    test("missing resolvable", () => {
       assertCompositionSuccess(
         api.composeServices([
           {
-            name: 'users',
+            name: "users",
             typeDefs: graphql`
                 schema
                   @link(
@@ -896,11 +896,11 @@ testVersions((api, version) => {
       );
     });
 
-    test('missing fields', () => {
+    test("missing fields", () => {
       expect(
         api.composeServices([
           {
-            name: 'users',
+            name: "users",
             typeDefs: graphql`
                 schema
                   @link(
@@ -932,7 +932,7 @@ testVersions((api, version) => {
                 `[users] Invalid definition for directive "@key": missing required argument "fields"`,
               ),
               extensions: expect.objectContaining({
-                code: 'DIRECTIVE_DEFINITION_INVALID',
+                code: "DIRECTIVE_DEFINITION_INVALID",
               }),
             }),
           ]),
@@ -940,11 +940,11 @@ testVersions((api, version) => {
       );
     });
 
-    test('missing repeatable', () => {
+    test("missing repeatable", () => {
       assertCompositionSuccess(
         api.composeServices([
           {
-            name: 'users',
+            name: "users",
             typeDefs: graphql`
                 schema
                   @link(
@@ -975,11 +975,11 @@ testVersions((api, version) => {
       );
     });
 
-    test('not on INTERFACE', () => {
+    test("not on INTERFACE", () => {
       assertCompositionSuccess(
         api.composeServices([
           {
-            name: 'users',
+            name: "users",
             typeDefs: graphql`
                 schema
                   @link(
@@ -1006,11 +1006,11 @@ testVersions((api, version) => {
       );
     });
 
-    test('not on OBJECT', () => {
+    test("not on OBJECT", () => {
       assertCompositionSuccess(
         api.composeServices([
           {
-            name: 'users',
+            name: "users",
             typeDefs: graphql`
                 schema
                   @link(
@@ -1035,11 +1035,11 @@ testVersions((api, version) => {
       );
     });
 
-    test('on FIELD', () => {
+    test("on FIELD", () => {
       expect(
         api.composeServices([
           {
-            name: 'users',
+            name: "users",
             typeDefs: graphql`
                 schema
                   @link(
@@ -1071,7 +1071,7 @@ testVersions((api, version) => {
                 `[users] Invalid definition for directive "@key": "@key" should have locations OBJECT, INTERFACE, but found (non-subset) FIELD`,
               ),
               extensions: expect.objectContaining({
-                code: 'DIRECTIVE_DEFINITION_INVALID',
+                code: "DIRECTIVE_DEFINITION_INVALID",
               }),
             }),
           ]),
@@ -1079,11 +1079,11 @@ testVersions((api, version) => {
       );
     });
 
-    test('fed v1: uses FieldSet', () => {
+    test("fed v1: uses FieldSet", () => {
       expect(
         api.composeServices([
           {
-            name: 'users',
+            name: "users",
             typeDefs: graphql`
               scalar FieldSet
               directive @key(
@@ -1110,7 +1110,7 @@ testVersions((api, version) => {
                 '[users] Invalid definition for directive "@key": argument "fields" should have type "_FieldSet!" but found type "FieldSet!"',
               ),
               extensions: expect.objectContaining({
-                code: 'DIRECTIVE_DEFINITION_INVALID',
+                code: "DIRECTIVE_DEFINITION_INVALID",
               }),
             }),
           ]),
@@ -1119,8 +1119,8 @@ testVersions((api, version) => {
     });
   });
 
-  describe('@requires', () => {
-    test('should be ignored if not imported', () => {
+  describe("@requires", () => {
+    test("should be ignored if not imported", () => {
       const starsStuff = createStarsStuff();
 
       assertCompositionSuccess(
@@ -1130,7 +1130,7 @@ testVersions((api, version) => {
           starsStuff.products,
           starsStuff.reviews,
           {
-            name: 'inventory',
+            name: "inventory",
             typeDefs: graphql`
               extend schema
                 @link(
@@ -1174,7 +1174,7 @@ testVersions((api, version) => {
       );
     });
 
-    test('exact definition', () => {
+    test("exact definition", () => {
       const starsStuff = createStarsStuff();
 
       assertCompositionSuccess(
@@ -1184,7 +1184,7 @@ testVersions((api, version) => {
           starsStuff.products,
           starsStuff.reviews,
           {
-            name: 'inventory',
+            name: "inventory",
             typeDefs: graphql`
                 extend schema
                   @link(
@@ -1229,7 +1229,7 @@ testVersions((api, version) => {
       );
     });
 
-    test('fields of String type', () => {
+    test("fields of String type", () => {
       const starsStuff = createStarsStuff();
 
       assertCompositionSuccess(
@@ -1239,7 +1239,7 @@ testVersions((api, version) => {
           starsStuff.products,
           starsStuff.reviews,
           {
-            name: 'inventory',
+            name: "inventory",
             typeDefs: graphql`
                 extend schema
                   @link(
@@ -1283,7 +1283,7 @@ testVersions((api, version) => {
       );
     });
 
-    test('fields of different type', () => {
+    test("fields of different type", () => {
       const starsStuff = createStarsStuff();
 
       expect(
@@ -1293,7 +1293,7 @@ testVersions((api, version) => {
           starsStuff.products,
           starsStuff.reviews,
           {
-            name: 'inventory',
+            name: "inventory",
             typeDefs: graphql`
                 extend schema
                   @link(
@@ -1341,11 +1341,11 @@ testVersions((api, version) => {
             expect.objectContaining({
               message: expect.stringContaining(
                 `[inventory] Invalid definition for directive "@requires": argument "fields" should have type "${
-                  api.library === 'apollo' ? 'federation__FieldSet' : 'FieldSet'
+                  api.library === "apollo" ? "federation__FieldSet" : "FieldSet"
                 }!" but found type "Str!"`,
               ),
               extensions: expect.objectContaining({
-                code: 'DIRECTIVE_DEFINITION_INVALID',
+                code: "DIRECTIVE_DEFINITION_INVALID",
               }),
             }),
           ]),
@@ -1353,7 +1353,7 @@ testVersions((api, version) => {
       );
     });
 
-    test('missing fields', () => {
+    test("missing fields", () => {
       const starsStuff = createStarsStuff();
 
       expect(
@@ -1363,7 +1363,7 @@ testVersions((api, version) => {
           starsStuff.products,
           starsStuff.reviews,
           {
-            name: 'inventory',
+            name: "inventory",
             typeDefs: graphql`
                 extend schema
                   @link(
@@ -1413,7 +1413,7 @@ testVersions((api, version) => {
                 `[inventory] Invalid definition for directive "@requires": missing required argument "fields"`,
               ),
               extensions: expect.objectContaining({
-                code: 'DIRECTIVE_DEFINITION_INVALID',
+                code: "DIRECTIVE_DEFINITION_INVALID",
               }),
             }),
           ]),
@@ -1421,7 +1421,7 @@ testVersions((api, version) => {
       );
     });
 
-    test('on OBJECT', () => {
+    test("on OBJECT", () => {
       const starsStuff = createStarsStuff();
 
       expect(
@@ -1431,7 +1431,7 @@ testVersions((api, version) => {
           starsStuff.products,
           starsStuff.reviews,
           {
-            name: 'inventory',
+            name: "inventory",
             typeDefs: graphql`
                 extend schema
                   @link(
@@ -1481,7 +1481,7 @@ testVersions((api, version) => {
                 `[inventory] Invalid definition for directive "@requires": "@requires" should have locations FIELD_DEFINITION, but found (non-subset) OBJECT`,
               ),
               extensions: expect.objectContaining({
-                code: 'DIRECTIVE_DEFINITION_INVALID',
+                code: "DIRECTIVE_DEFINITION_INVALID",
               }),
             }),
           ]),

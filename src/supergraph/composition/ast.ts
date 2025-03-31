@@ -32,9 +32,9 @@ import {
   UnionTypeDefinitionNode,
   visit,
   visitInParallel,
-} from 'graphql';
-import { print } from '../../graphql/printer.js';
-import { ArgumentKind } from '../../subgraph/state.js';
+} from "graphql";
+import { print } from "../../graphql/printer.js";
+import { ArgumentKind } from "../../subgraph/state.js";
 
 type inferArgument<T> = T extends (arg: infer A) => any ? A : never;
 
@@ -45,10 +45,16 @@ export type FieldArgumentAST = inferArgument<typeof createFieldArgumentNode>;
 export type InputFieldAST = inferArgument<typeof createInputFieldNode>;
 export type EnumValueAST = inferArgument<typeof createEnumValueNode>;
 export type JoinTypeAST = inferArgument<typeof createJoinTypeDirectiveNode>;
-export type JoinImplementsAST = inferArgument<typeof createJoinImplementsDirectiveNode>;
+export type JoinImplementsAST = inferArgument<
+  typeof createJoinImplementsDirectiveNode
+>;
 export type JoinFieldAST = inferArgument<typeof createJoinFieldDirectiveNode>;
-export type JoinUnionMemberAST = inferArgument<typeof createJoinUnionMemberDirectiveNode>;
-export type JoinEnumValueAST = inferArgument<typeof createJoinEnumValueDirectiveNode>;
+export type JoinUnionMemberAST = inferArgument<
+  typeof createJoinUnionMemberDirectiveNode
+>;
+export type JoinEnumValueAST = inferArgument<
+  typeof createJoinEnumValueDirectiveNode
+>;
 type Link = inferArgument<typeof createLinkDirectiveNode>;
 type Cost = inferArgument<typeof createCostDirectiveNode>;
 type ListSize = inferArgument<typeof createListSizeDirectiveNode>;
@@ -106,7 +112,7 @@ export function createDirectiveNode(directive: {
       kind: Kind.NAME,
       value: directive.name,
     },
-    locations: Array.from(directive.locations).map(location => ({
+    locations: Array.from(directive.locations).map((location) => ({
       kind: Kind.NAME,
       value: location,
     })),
@@ -142,7 +148,9 @@ export function createObjectTypeNode(objectType: {
     },
     directives: applyDirectives(objectType),
     fields: objectType.fields.map(createFieldNode),
-    description: objectType.description ? createDescriptionNode(objectType.description) : undefined,
+    description: objectType.description
+      ? createDescriptionNode(objectType.description)
+      : undefined,
     interfaces: objectType.interfaces?.map(createNamedTypeNode),
   };
 }
@@ -228,8 +236,10 @@ export function createUnionTypeNode(unionType: {
       value: unionType.name,
     },
     directives: applyDirectives(unionType),
-    description: unionType.description ? createDescriptionNode(unionType.description) : undefined,
-    types: unionType.members.map(member => ({
+    description: unionType.description
+      ? createDescriptionNode(unionType.description)
+      : undefined,
+    types: unionType.members.map((member) => ({
       kind: Kind.NAMED_TYPE,
       name: {
         kind: Kind.NAME,
@@ -263,7 +273,9 @@ export function createEnumTypeNode(enumType: {
       value: enumType.name,
     },
     directives: applyDirectives(enumType),
-    description: enumType.description ? createDescriptionNode(enumType.description) : undefined,
+    description: enumType.description
+      ? createDescriptionNode(enumType.description)
+      : undefined,
     values: enumType.values.map(createEnumValueNode),
   };
 }
@@ -291,7 +303,9 @@ export function createScalarTypeNode(scalarType: {
       kind: Kind.NAME,
       value: scalarType.name,
     },
-    description: scalarType.description ? createDescriptionNode(scalarType.description) : undefined,
+    description: scalarType.description
+      ? createDescriptionNode(scalarType.description)
+      : undefined,
     directives: applyDirectives(scalarType),
   };
 }
@@ -304,9 +318,9 @@ export function createJoinGraphEnumTypeNode(
   }>,
 ) {
   return createEnumTypeNode({
-    name: 'join__Graph',
+    name: "join__Graph",
     cost: null,
-    values: graphs.map(graph => ({
+    values: graphs.map((graph) => ({
       name: graph.enumValue,
       ast: {
         directives: [createJoinGraphDirectiveNode(graph)],
@@ -340,7 +354,9 @@ function createFieldNode(field: {
     },
     type: parseType(field.type),
     directives: applyDirectives(field),
-    description: field.description ? createDescriptionNode(field.description) : undefined,
+    description: field.description
+      ? createDescriptionNode(field.description)
+      : undefined,
     arguments: field.arguments?.map(createFieldArgumentNode),
   };
 }
@@ -368,9 +384,11 @@ function createInputFieldNode(inputField: {
     },
     type: parseType(inputField.type),
     directives: applyDirectives(inputField),
-    description: inputField.description ? createDescriptionNode(inputField.description) : undefined,
+    description: inputField.description
+      ? createDescriptionNode(inputField.description)
+      : undefined,
     defaultValue:
-      typeof inputField.defaultValue === 'string'
+      typeof inputField.defaultValue === "string"
         ? parseConstValue(inputField.defaultValue)
         : undefined,
   };
@@ -396,7 +414,9 @@ function createEnumValueNode(enumValue: {
       value: enumValue.name,
     },
     directives: applyDirectives(enumValue),
-    description: enumValue.description ? createDescriptionNode(enumValue.description) : undefined,
+    description: enumValue.description
+      ? createDescriptionNode(enumValue.description)
+      : undefined,
   };
 }
 
@@ -404,7 +424,7 @@ function createDefaultValue(
   defaultValue: string | undefined,
   kind: ArgumentKind,
 ): ConstValueNode | undefined {
-  if (typeof defaultValue !== 'string') {
+  if (typeof defaultValue !== "string") {
     return undefined;
   }
 
@@ -444,7 +464,9 @@ function createFieldArgumentNode(argument: {
     defaultValue: createDefaultValue(argument.defaultValue, argument.kind),
     type: parseType(argument.type),
     directives: applyDirectives(argument),
-    description: argument.description ? createDescriptionNode(argument.description) : undefined,
+    description: argument.description
+      ? createDescriptionNode(argument.description)
+      : undefined,
   };
 }
 
@@ -459,14 +481,14 @@ function createJoinTypeDirectiveNode(join: {
     kind: Kind.DIRECTIVE,
     name: {
       kind: Kind.NAME,
-      value: 'join__type',
+      value: "join__type",
     },
     arguments: [
       {
         kind: Kind.ARGUMENT,
         name: {
           kind: Kind.NAME,
-          value: 'graph',
+          value: "graph",
         },
         value: {
           kind: Kind.ENUM,
@@ -478,7 +500,7 @@ function createJoinTypeDirectiveNode(join: {
             kind: Kind.ARGUMENT,
             name: {
               kind: Kind.NAME,
-              value: 'key',
+              value: "key",
             },
             value: {
               kind: Kind.STRING,
@@ -491,7 +513,7 @@ function createJoinTypeDirectiveNode(join: {
             kind: Kind.ARGUMENT,
             name: {
               kind: Kind.NAME,
-              value: 'resolvable',
+              value: "resolvable",
             },
             value: {
               kind: Kind.BOOLEAN,
@@ -504,7 +526,7 @@ function createJoinTypeDirectiveNode(join: {
             kind: Kind.ARGUMENT,
             name: {
               kind: Kind.NAME,
-              value: 'isInterfaceObject',
+              value: "isInterfaceObject",
             },
             value: {
               kind: Kind.BOOLEAN,
@@ -517,7 +539,7 @@ function createJoinTypeDirectiveNode(join: {
             kind: Kind.ARGUMENT,
             name: {
               kind: Kind.NAME,
-              value: 'extension',
+              value: "extension",
             },
             value: {
               kind: Kind.BOOLEAN,
@@ -537,14 +559,14 @@ function createJoinImplementsDirectiveNode(join: {
     kind: Kind.DIRECTIVE,
     name: {
       kind: Kind.NAME,
-      value: 'join__implements',
+      value: "join__implements",
     },
     arguments: [
       {
         kind: Kind.ARGUMENT,
         name: {
           kind: Kind.NAME,
-          value: 'graph',
+          value: "graph",
         },
         value: {
           kind: Kind.ENUM,
@@ -555,7 +577,7 @@ function createJoinImplementsDirectiveNode(join: {
         kind: Kind.ARGUMENT,
         name: {
           kind: Kind.NAME,
-          value: 'interface',
+          value: "interface",
         },
         value: {
           kind: Kind.STRING,
@@ -580,7 +602,7 @@ function createJoinFieldDirectiveNode(join: {
     kind: Kind.DIRECTIVE,
     name: {
       kind: Kind.NAME,
-      value: 'join__field',
+      value: "join__field",
     },
     arguments: [
       join.graph
@@ -588,7 +610,7 @@ function createJoinFieldDirectiveNode(join: {
             kind: Kind.ARGUMENT,
             name: {
               kind: Kind.NAME,
-              value: 'graph',
+              value: "graph",
             },
             value: {
               kind: Kind.ENUM,
@@ -601,7 +623,7 @@ function createJoinFieldDirectiveNode(join: {
             kind: Kind.ARGUMENT,
             name: {
               kind: Kind.NAME,
-              value: 'type',
+              value: "type",
             },
             value: {
               kind: Kind.STRING,
@@ -614,7 +636,7 @@ function createJoinFieldDirectiveNode(join: {
             kind: Kind.ARGUMENT,
             name: {
               kind: Kind.NAME,
-              value: 'override',
+              value: "override",
             },
             value: {
               kind: Kind.STRING,
@@ -622,25 +644,25 @@ function createJoinFieldDirectiveNode(join: {
             },
           } as const)
         : null,
-        join.overrideLabel
-          ? ({
-              kind: Kind.ARGUMENT,
-              name: {
-                kind: Kind.NAME,
-                value: 'overrideLabel',
-              },
-              value: {
-                kind: Kind.STRING,
-                value: join.overrideLabel,
-              },
-            } as const)
-          : null,
+      join.overrideLabel
+        ? ({
+            kind: Kind.ARGUMENT,
+            name: {
+              kind: Kind.NAME,
+              value: "overrideLabel",
+            },
+            value: {
+              kind: Kind.STRING,
+              value: join.overrideLabel,
+            },
+          } as const)
+        : null,
       join.usedOverridden
         ? ({
             kind: Kind.ARGUMENT,
             name: {
               kind: Kind.NAME,
-              value: 'usedOverridden',
+              value: "usedOverridden",
             },
             value: {
               kind: Kind.BOOLEAN,
@@ -653,7 +675,7 @@ function createJoinFieldDirectiveNode(join: {
             kind: Kind.ARGUMENT,
             name: {
               kind: Kind.NAME,
-              value: 'external',
+              value: "external",
             },
             value: {
               kind: Kind.BOOLEAN,
@@ -666,7 +688,7 @@ function createJoinFieldDirectiveNode(join: {
             kind: Kind.ARGUMENT,
             name: {
               kind: Kind.NAME,
-              value: 'provides',
+              value: "provides",
             },
             value: {
               kind: Kind.STRING,
@@ -679,7 +701,7 @@ function createJoinFieldDirectiveNode(join: {
             kind: Kind.ARGUMENT,
             name: {
               kind: Kind.NAME,
-              value: 'requires',
+              value: "requires",
             },
             value: {
               kind: Kind.STRING,
@@ -699,14 +721,14 @@ function createJoinUnionMemberDirectiveNode(join: {
     kind: Kind.DIRECTIVE,
     name: {
       kind: Kind.NAME,
-      value: 'join__unionMember',
+      value: "join__unionMember",
     },
     arguments: [
       {
         kind: Kind.ARGUMENT,
         name: {
           kind: Kind.NAME,
-          value: 'graph',
+          value: "graph",
         },
         value: {
           kind: Kind.ENUM,
@@ -717,7 +739,7 @@ function createJoinUnionMemberDirectiveNode(join: {
         kind: Kind.ARGUMENT,
         name: {
           kind: Kind.NAME,
-          value: 'member',
+          value: "member",
         },
         value: {
           kind: Kind.STRING,
@@ -728,19 +750,21 @@ function createJoinUnionMemberDirectiveNode(join: {
   };
 }
 
-function createJoinEnumValueDirectiveNode(join: { graph: string }): ConstDirectiveNode {
+function createJoinEnumValueDirectiveNode(join: {
+  graph: string;
+}): ConstDirectiveNode {
   return {
     kind: Kind.DIRECTIVE,
     name: {
       kind: Kind.NAME,
-      value: 'join__enumValue',
+      value: "join__enumValue",
     },
     arguments: [
       {
         kind: Kind.ARGUMENT,
         name: {
           kind: Kind.NAME,
-          value: 'graph',
+          value: "graph",
         },
         value: {
           kind: Kind.ENUM,
@@ -756,7 +780,7 @@ function createInaccessibleDirectiveNode(): ConstDirectiveNode {
     kind: Kind.DIRECTIVE,
     name: {
       kind: Kind.NAME,
-      value: 'inaccessible',
+      value: "inaccessible",
     },
     arguments: [],
   };
@@ -767,14 +791,14 @@ function createAuthenticatedDirectiveNode(): ConstDirectiveNode {
     kind: Kind.DIRECTIVE,
     name: {
       kind: Kind.NAME,
-      value: 'authenticated',
+      value: "authenticated",
     },
     arguments: [],
   };
 }
 
 function deduplicatePoliciesOrScopes(items: string[][]) {
-  const stringified = items.map(group => group.sort().join('ɵ'));
+  const stringified = items.map((group) => group.sort().join("ɵ"));
   const indexesToRemove: number[] = [];
 
   for (let index = 0; index < stringified.length; index++) {
@@ -790,23 +814,23 @@ function createPolicyDirectiveNode(policies: string[][]): ConstDirectiveNode {
     kind: Kind.DIRECTIVE,
     name: {
       kind: Kind.NAME,
-      value: 'policy',
+      value: "policy",
     },
     arguments: [
       {
         kind: Kind.ARGUMENT,
         name: {
           kind: Kind.NAME,
-          value: 'policies',
+          value: "policies",
         },
         value: {
           kind: Kind.LIST,
           values: deduplicatePoliciesOrScopes(policies).map(
-            group =>
+            (group) =>
               ({
                 kind: Kind.LIST,
                 values: group.map(
-                  policy =>
+                  (policy) =>
                     ({
                       kind: Kind.STRING,
                       value: policy,
@@ -820,28 +844,30 @@ function createPolicyDirectiveNode(policies: string[][]): ConstDirectiveNode {
   };
 }
 
-function createRequiresScopesDirectiveNode(scopes: string[][]): ConstDirectiveNode {
+function createRequiresScopesDirectiveNode(
+  scopes: string[][],
+): ConstDirectiveNode {
   return {
     kind: Kind.DIRECTIVE,
     name: {
       kind: Kind.NAME,
-      value: 'requiresScopes',
+      value: "requiresScopes",
     },
     arguments: [
       {
         kind: Kind.ARGUMENT,
         name: {
           kind: Kind.NAME,
-          value: 'scopes',
+          value: "scopes",
         },
         value: {
           kind: Kind.LIST,
           values: deduplicatePoliciesOrScopes(scopes).map(
-            group =>
+            (group) =>
               ({
                 kind: Kind.LIST,
                 values: group.map(
-                  scope =>
+                  (scope) =>
                     ({
                       kind: Kind.STRING,
                       value: scope,
@@ -860,14 +886,14 @@ function createTagDirectiveNode(name: string): ConstDirectiveNode {
     kind: Kind.DIRECTIVE,
     name: {
       kind: Kind.NAME,
-      value: 'tag',
+      value: "tag",
     },
     arguments: [
       {
         kind: Kind.ARGUMENT,
         name: {
           kind: Kind.NAME,
-          value: 'name',
+          value: "name",
         },
         value: {
           kind: Kind.STRING,
@@ -878,19 +904,22 @@ function createTagDirectiveNode(name: string): ConstDirectiveNode {
   };
 }
 
-function createJoinGraphDirectiveNode(join: { name: string; url?: string }): ConstDirectiveNode {
+function createJoinGraphDirectiveNode(join: {
+  name: string;
+  url?: string;
+}): ConstDirectiveNode {
   return {
     kind: Kind.DIRECTIVE,
     name: {
       kind: Kind.NAME,
-      value: 'join__graph',
+      value: "join__graph",
     },
     arguments: [
       {
         kind: Kind.ARGUMENT,
         name: {
           kind: Kind.NAME,
-          value: 'name',
+          value: "name",
         },
         value: {
           kind: Kind.STRING,
@@ -901,18 +930,21 @@ function createJoinGraphDirectiveNode(join: { name: string; url?: string }): Con
         kind: Kind.ARGUMENT,
         name: {
           kind: Kind.NAME,
-          value: 'url',
+          value: "url",
         },
         value: {
           kind: Kind.STRING,
-          value: join.url ?? '',
+          value: join.url ?? "",
         },
       },
     ],
   };
 }
 
-function createDescriptionNode(description: { value: string; block: boolean }): StringValueNode {
+function createDescriptionNode(description: {
+  value: string;
+  block: boolean;
+}): StringValueNode {
   return {
     kind: Kind.STRING,
     value: description.value,
@@ -920,21 +952,23 @@ function createDescriptionNode(description: { value: string; block: boolean }): 
   };
 }
 
-function createDeprecatedDirectiveNode(deprecated: Deprecated): ConstDirectiveNode {
+function createDeprecatedDirectiveNode(
+  deprecated: Deprecated,
+): ConstDirectiveNode {
   return {
     kind: Kind.DIRECTIVE,
     name: {
       kind: Kind.NAME,
-      value: 'deprecated',
+      value: "deprecated",
     },
     arguments:
-      typeof deprecated.reason === 'string'
+      typeof deprecated.reason === "string"
         ? [
             {
               kind: Kind.ARGUMENT,
               name: {
                 kind: Kind.NAME,
-                value: 'reason',
+                value: "reason",
               },
               value: {
                 kind: Kind.STRING,
@@ -951,14 +985,14 @@ function createSpecifiedByDirectiveNode(url: string): ConstDirectiveNode {
     kind: Kind.DIRECTIVE,
     name: {
       kind: Kind.NAME,
-      value: 'specifiedBy',
+      value: "specifiedBy",
     },
     arguments: [
       {
         kind: Kind.ARGUMENT,
         name: {
           kind: Kind.NAME,
-          value: 'url',
+          value: "url",
         },
         value: {
           kind: Kind.STRING,
@@ -984,7 +1018,7 @@ function createCostDirectiveNode(input: {
         kind: Kind.ARGUMENT,
         name: {
           kind: Kind.NAME,
-          value: 'weight',
+          value: "weight",
         },
         value: {
           kind: Kind.INT,
@@ -1009,7 +1043,7 @@ function createListSizeDirectiveNode(input: {
       kind: Kind.ARGUMENT,
       name: {
         kind: Kind.NAME,
-        value: 'requireOneSlicingArgument',
+        value: "requireOneSlicingArgument",
       },
       value: {
         kind: Kind.BOOLEAN,
@@ -1018,12 +1052,12 @@ function createListSizeDirectiveNode(input: {
     });
   }
 
-  if (typeof input.assumedSize === 'number') {
+  if (typeof input.assumedSize === "number") {
     args.push({
       kind: Kind.ARGUMENT,
       name: {
         kind: Kind.NAME,
-        value: 'assumedSize',
+        value: "assumedSize",
       },
       value: {
         kind: Kind.INT,
@@ -1037,11 +1071,11 @@ function createListSizeDirectiveNode(input: {
       kind: Kind.ARGUMENT,
       name: {
         kind: Kind.NAME,
-        value: 'slicingArguments',
+        value: "slicingArguments",
       },
       value: {
         kind: Kind.LIST,
-        values: input.slicingArguments.map(arg => ({
+        values: input.slicingArguments.map((arg) => ({
           kind: Kind.STRING,
           value: arg,
         })),
@@ -1054,11 +1088,11 @@ function createListSizeDirectiveNode(input: {
       kind: Kind.ARGUMENT,
       name: {
         kind: Kind.NAME,
-        value: 'sizedFields',
+        value: "sizedFields",
       },
       value: {
         kind: Kind.LIST,
-        values: input.sizedFields.map(arg => ({
+        values: input.sizedFields.map((arg) => ({
           kind: Kind.STRING,
           value: arg,
           block: false,
@@ -1089,7 +1123,7 @@ function createLinkDirectiveNode(link: {
     kind: Kind.DIRECTIVE,
     name: {
       kind: Kind.NAME,
-      value: 'link',
+      value: "link",
     },
     arguments: ([] as ConstArgumentNode[]).concat(
       [
@@ -1097,7 +1131,7 @@ function createLinkDirectiveNode(link: {
           kind: Kind.ARGUMENT,
           name: {
             kind: Kind.NAME,
-            value: 'url',
+            value: "url",
           },
           value: {
             kind: Kind.STRING,
@@ -1111,7 +1145,7 @@ function createLinkDirectiveNode(link: {
               kind: Kind.ARGUMENT,
               name: {
                 kind: Kind.NAME,
-                value: 'for',
+                value: "for",
               },
               value: {
                 kind: Kind.ENUM,
@@ -1126,11 +1160,11 @@ function createLinkDirectiveNode(link: {
               kind: Kind.ARGUMENT,
               name: {
                 kind: Kind.NAME,
-                value: 'import',
+                value: "import",
               },
               value: {
                 kind: Kind.LIST,
-                values: link.import.map(imported => {
+                values: link.import.map((imported) => {
                   if (imported.alias) {
                     return {
                       kind: Kind.OBJECT,
@@ -1139,7 +1173,7 @@ function createLinkDirectiveNode(link: {
                           kind: Kind.OBJECT_FIELD,
                           name: {
                             kind: Kind.NAME,
-                            value: 'name',
+                            value: "name",
                           },
                           value: {
                             kind: Kind.STRING,
@@ -1195,14 +1229,17 @@ function applyDirectives(common: {
   listSize?: ListSize | null;
 }) {
   const deduplicatedDirectives = (common.ast?.directives ?? [])
-    .map(directive => {
+    .map((directive) => {
       return {
         ast: directive,
         string: print(directive),
       };
     })
-    .filter((directive, index, all) => all.findIndex(d => d.string === directive.string) === index)
-    .map(d => d.ast);
+    .filter(
+      (directive, index, all) =>
+        all.findIndex((d) => d.string === directive.string) === index,
+    )
+    .map((d) => d.ast);
 
   return ([] as ConstDirectiveNode[]).concat(
     deduplicatedDirectives,
@@ -1215,11 +1252,15 @@ function applyDirectives(common: {
     common.inaccessible ? [createInaccessibleDirectiveNode()] : [],
     common.authenticated ? [createAuthenticatedDirectiveNode()] : [],
     common.policies?.length ? [createPolicyDirectiveNode(common.policies)] : [],
-    common.scopes?.length ? [createRequiresScopesDirectiveNode(common.scopes)] : [],
+    common.scopes?.length
+      ? [createRequiresScopesDirectiveNode(common.scopes)]
+      : [],
     common.cost ? [createCostDirectiveNode(common.cost)] : [],
     common.listSize ? [createListSizeDirectiveNode(common.listSize)] : [],
     common.deprecated ? [createDeprecatedDirectiveNode(common.deprecated)] : [],
-    common.specifiedBy ? [createSpecifiedByDirectiveNode(common.specifiedBy)] : [],
+    common.specifiedBy
+      ? [createSpecifiedByDirectiveNode(common.specifiedBy)]
+      : [],
   );
 }
 
@@ -1227,7 +1268,9 @@ function nonEmpty<T>(value: T | null | undefined): value is T {
   return value != null;
 }
 
-const buildInDirectives = new Set(specifiedDirectives.map(directive => directive.name));
+const buildInDirectives = new Set(
+  specifiedDirectives.map((directive) => directive.name),
+);
 
 function isBuiltInDirective(directiveName: string) {
   return buildInDirectives.has(directiveName);
@@ -1235,32 +1278,35 @@ function isBuiltInDirective(directiveName: string) {
 
 function isFederationDirective(name: string) {
   return (
-    name === 'tag' || name === 'link' || name.startsWith('join__') || name.startsWith('link__')
+    name === "tag" ||
+    name === "link" ||
+    name.startsWith("join__") ||
+    name.startsWith("link__")
   );
 }
 
 function isFederationEnum(name: string) {
-  return name.startsWith('join__') || name.startsWith('link__');
+  return name.startsWith("join__") || name.startsWith("link__");
 }
 
 function isFederationScalar(name: string) {
-  return name.startsWith('join__') || name.startsWith('link__');
+  return name.startsWith("join__") || name.startsWith("link__");
 }
 
 export function schemaCoordinate(
   paths: readonly (string | number)[],
   nodes: readonly (ASTNode | readonly ASTNode[])[],
 ): string {
-  let coordinate = '';
+  let coordinate = "";
   for (let i = 0; i < Math.max(paths.length, nodes.length); i++) {
     const prop = paths[i];
     const current = nodes[i];
 
-    if (typeof prop === 'number' && Array.isArray(current)) {
+    if (typeof prop === "number" && Array.isArray(current)) {
       const node = current[prop];
 
       if (coordinate.length > 0) {
-        coordinate = coordinate + '.' + node.name.value;
+        coordinate = coordinate + "." + node.name.value;
       } else {
         coordinate = node.name.value;
       }
@@ -1279,12 +1325,18 @@ export function stripFederation(supergraph: DocumentNode): DocumentNode {
     visitInParallel([
       {
         DirectiveDefinition(node) {
-          if (isBuiltInDirective(node.name.value) || isFederationDirective(node.name.value)) {
+          if (
+            isBuiltInDirective(node.name.value) ||
+            isFederationDirective(node.name.value)
+          ) {
             return null;
           }
         },
         Directive(node) {
-          if (isBuiltInDirective(node.name.value) || isFederationDirective(node.name.value)) {
+          if (
+            isBuiltInDirective(node.name.value) ||
+            isFederationDirective(node.name.value)
+          ) {
             return null;
           }
         },
@@ -1301,7 +1353,7 @@ export function stripFederation(supergraph: DocumentNode): DocumentNode {
       },
       {
         Directive(directive, _, __, paths, nodes) {
-          if (directive.name.value === 'inaccessible') {
+          if (directive.name.value === "inaccessible") {
             inaccessible.add(schemaCoordinate(paths, nodes));
           }
         },
@@ -1340,12 +1392,16 @@ export function stripFederation(supergraph: DocumentNode): DocumentNode {
       return null;
     }
 
-    const inaccessibleInterfaces = node.interfaces?.filter(i => inaccessible.has(i.name.value));
+    const inaccessibleInterfaces = node.interfaces?.filter((i) =>
+      inaccessible.has(i.name.value),
+    );
 
     if (inaccessibleInterfaces?.length) {
       return {
         ...node,
-        interfaces: node.interfaces?.filter(i => !inaccessible.has(i.name.value)),
+        interfaces: node.interfaces?.filter(
+          (i) => !inaccessible.has(i.name.value),
+        ),
       };
     }
   }
@@ -1359,7 +1415,7 @@ export function stripFederation(supergraph: DocumentNode): DocumentNode {
   ) {
     if (
       // TODO: check why we need to add `node.name.value` here
-      inaccessible.has(schemaCoordinate(paths, nodes) + '.' + node.name.value)
+      inaccessible.has(schemaCoordinate(paths, nodes) + "." + node.name.value)
     ) {
       return null;
     }
@@ -1387,7 +1443,9 @@ export function stripFederation(supergraph: DocumentNode): DocumentNode {
     FieldDefinition: hideField,
     InputValueDefinition: hideField,
     EnumValueDefinition(node, _, __, paths, nodes) {
-      if (inaccessible.has(schemaCoordinate(paths, nodes) + '.' + node.name.value)) {
+      if (
+        inaccessible.has(schemaCoordinate(paths, nodes) + "." + node.name.value)
+      ) {
         return null;
       }
     },
@@ -1407,5 +1465,5 @@ function namedTypeFromTypeNode(type: TypeNode): NamedTypeNode {
     return namedTypeFromTypeNode(type.type);
   }
 
-  throw new Error('Unknown type node: ' + type);
+  throw new Error("Unknown type node: " + type);
 }

@@ -1,17 +1,17 @@
-import { expect, test } from 'vitest';
+import { expect, test } from "vitest";
 import {
   assertCompositionFailure,
   assertCompositionSuccess,
   graphql,
   normalizeErrorMessage,
   testVersions,
-} from '../../shared/testkit.js';
+} from "../../shared/testkit.js";
 
 testVersions((api, version) => {
-  test('cannot satisfy @require conditions', () => {
+  test("cannot satisfy @require conditions", () => {
     const result = api.composeServices([
       {
-        name: 'users',
+        name: "users",
         typeDefs: graphql`
           extend schema @link(url: "https://specs.apollo.dev/federation/${version}" import: ["@key"])
 
@@ -26,7 +26,7 @@ testVersions((api, version) => {
         `,
       },
       {
-        name: 'feed',
+        name: "feed",
         typeDefs: graphql`
           extend schema @link(url: "https://specs.apollo.dev/federation/${version}" import: ["@key", "@external", "@requires"])
 
@@ -60,7 +60,7 @@ testVersions((api, version) => {
               - cannot move to subgraph "users" using @key(fields: "id name") of "User", the key field(s) cannot be resolved from subgraph "feed".
         `),
         extensions: expect.objectContaining({
-          code: 'SATISFIABILITY_ERROR',
+          code: "SATISFIABILITY_ERROR",
         }),
       }),
     );
@@ -82,7 +82,7 @@ testVersions((api, version) => {
           `,
         ),
         extensions: expect.objectContaining({
-          code: 'SATISFIABILITY_ERROR',
+          code: "SATISFIABILITY_ERROR",
         }),
       }),
     );
@@ -101,19 +101,19 @@ testVersions((api, version) => {
           - from subgraph "feed": cannot satisfy @require conditions on field "User.comments".
         `),
         extensions: expect.objectContaining({
-          code: 'SATISFIABILITY_ERROR',
+          code: "SATISFIABILITY_ERROR",
         }),
       }),
     );
   });
 
-  test('insufficient key fields to move between graphs', () => {
+  test("insufficient key fields to move between graphs", () => {
     // Cannot resolve User.name from Query.randomUser because key field "id" from subgraph "feed"
     // is not enough to fullfil the @key(fields: "id name") of User from subgraph "users"
     expect(
       api.composeServices([
         {
-          name: 'users',
+          name: "users",
           typeDefs: graphql`
             extend schema @link(url: "https://specs.apollo.dev/federation/${version}" import: ["@key"])
 
@@ -128,7 +128,7 @@ testVersions((api, version) => {
           `,
         },
         {
-          name: 'feed',
+          name: "feed",
           typeDefs: graphql`
             extend schema @link(url: "https://specs.apollo.dev/federation/${version}" import: ["@key", "@external"])
 
@@ -148,19 +148,19 @@ testVersions((api, version) => {
         errors: [
           expect.objectContaining({
             message: expect.stringContaining(
-              'The following supergraph API query:\n' +
-                '{\n' +
-                '  randomUser {\n' +
-                '    name\n' +
-                '  }\n' +
-                '}\n' +
-                'cannot be satisfied by the subgraphs because:\n' +
+              "The following supergraph API query:\n" +
+                "{\n" +
+                "  randomUser {\n" +
+                "    name\n" +
+                "  }\n" +
+                "}\n" +
+                "cannot be satisfied by the subgraphs because:\n" +
                 '- from subgraph "feed":\n' +
                 '  - cannot find field "User.name".\n' +
                 '  - cannot move to subgraph "users" using @key(fields: "id name") of "User", the key field(s) cannot be resolved from subgraph "feed".',
             ),
             extensions: expect.objectContaining({
-              code: 'SATISFIABILITY_ERROR',
+              code: "SATISFIABILITY_ERROR",
             }),
           }),
         ],
@@ -172,7 +172,7 @@ testVersions((api, version) => {
     expect(
       api.composeServices([
         {
-          name: 'a',
+          name: "a",
           typeDefs: graphql`
             extend type User @key(fields: "id") {
               id: ID @external
@@ -185,7 +185,7 @@ testVersions((api, version) => {
           `,
         },
         {
-          name: 'b',
+          name: "b",
           typeDefs: graphql`
             type User @key(fields: "id email") {
               id: ID
@@ -206,61 +206,61 @@ testVersions((api, version) => {
           [
             expect.objectContaining({
               message: expect.stringContaining(
-                'The following supergraph API query:\n' +
-                  '{\n' +
-                  '  usersById(ids: []) {\n' +
-                  '    name\n' +
-                  '  }\n' +
-                  '}\n' +
-                  'cannot be satisfied by the subgraphs because:\n' +
+                "The following supergraph API query:\n" +
+                  "{\n" +
+                  "  usersById(ids: []) {\n" +
+                  "    name\n" +
+                  "  }\n" +
+                  "}\n" +
+                  "cannot be satisfied by the subgraphs because:\n" +
                   '- from subgraph "a":\n' +
                   '  - cannot find field "User.name".\n' +
                   '  - cannot move to subgraph "b" using @key(fields: "id email") of "User", the key field(s) cannot be resolved from subgraph "a".',
               ),
               extensions: expect.objectContaining({
-                code: 'SATISFIABILITY_ERROR',
+                code: "SATISFIABILITY_ERROR",
               }),
             }),
             // Show as first (when it's apollo) and second (when it's guild)
-            api.library === 'apollo' ? 1 : 2,
+            api.library === "apollo" ? 1 : 2,
           ],
           [
             expect.objectContaining({
               message: expect.stringContaining(
-                'The following supergraph API query:\n' +
-                  '{\n' +
-                  '  usersById(ids: []) {\n' +
-                  '    email\n' +
-                  '  }\n' +
-                  '}\n' +
-                  'cannot be satisfied by the subgraphs because:\n' +
+                "The following supergraph API query:\n" +
+                  "{\n" +
+                  "  usersById(ids: []) {\n" +
+                  "    email\n" +
+                  "  }\n" +
+                  "}\n" +
+                  "cannot be satisfied by the subgraphs because:\n" +
                   '- from subgraph "a":\n' +
                   '  - cannot find field "User.email".\n' +
                   '  - cannot move to subgraph "b" using @key(fields: "id email") of "User", the key field(s) cannot be resolved from subgraph "a".',
               ),
               extensions: expect.objectContaining({
-                code: 'SATISFIABILITY_ERROR',
+                code: "SATISFIABILITY_ERROR",
               }),
             }),
             // Show as second (when it's apollo) and first (when it's guild)
-            api.library === 'apollo' ? 2 : 1,
+            api.library === "apollo" ? 2 : 1,
           ],
           [
             expect.objectContaining({
               message: expect.stringContaining(
-                'The following supergraph API query:\n' +
-                  '{\n' +
-                  '  usersById(ids: []) {\n' +
-                  '    profile\n' +
-                  '  }\n' +
-                  '}\n' +
-                  'cannot be satisfied by the subgraphs because:\n' +
+                "The following supergraph API query:\n" +
+                  "{\n" +
+                  "  usersById(ids: []) {\n" +
+                  "    profile\n" +
+                  "  }\n" +
+                  "}\n" +
+                  "cannot be satisfied by the subgraphs because:\n" +
                   '- from subgraph "a":\n' +
                   '  - cannot find field "User.profile".\n' +
                   '  - cannot move to subgraph "b" using @key(fields: "id email") of "User", the key field(s) cannot be resolved from subgraph "a".',
               ),
               extensions: expect.objectContaining({
-                code: 'SATISFIABILITY_ERROR',
+                code: "SATISFIABILITY_ERROR",
               }),
             }),
             // Show as third in both cases
@@ -274,13 +274,13 @@ testVersions((api, version) => {
     );
   });
 
-  test('insufficient key fields to move between graphs (entity many level deep from root type)', () => {
+  test("insufficient key fields to move between graphs (entity many level deep from root type)", () => {
     // Same as above, but with an entity deep down the path.
     // Cannot resolve User.name from Query.randomUser because key field "id" from subgraph "feed"
     // is not enough to fullfil the @key(fields: "id name") of User from subgraph "users".
     const result = api.composeServices([
       {
-        name: 'users',
+        name: "users",
         typeDefs: graphql`
         extend schema @link(url: "https://specs.apollo.dev/federation/${version}" import: ["@key"])
 
@@ -295,7 +295,7 @@ testVersions((api, version) => {
       `,
       },
       {
-        name: 'feed',
+        name: "feed",
         typeDefs: graphql`
         extend schema @link(url: "https://specs.apollo.dev/federation/${version}" import: ["@key", "@external"])
 
@@ -325,7 +325,7 @@ testVersions((api, version) => {
     expect(result.errors).toContainEqual(
       expect.objectContaining({
         message: expect.stringContaining(
-          api.library === 'apollo'
+          api.library === "apollo"
             ? normalizeErrorMessage`
               The following supergraph API query:
               {
@@ -358,18 +358,18 @@ testVersions((api, version) => {
           `,
         ),
         extensions: expect.objectContaining({
-          code: 'SATISFIABILITY_ERROR',
+          code: "SATISFIABILITY_ERROR",
         }),
       }),
     );
   });
 
   // ADD IT TO THE COLLECTION
-  test('works with @override', () => {
+  test("works with @override", () => {
     assertCompositionSuccess(
       api.composeServices([
         {
-          name: 'foo',
+          name: "foo",
           typeDefs: graphql`
             directive @override(from: String!) on FIELD_DEFINITION
 
@@ -391,7 +391,7 @@ testVersions((api, version) => {
           `,
         },
         {
-          name: 'bar',
+          name: "bar",
           typeDefs: graphql`
             extend schema @link(url: "https://specs.apollo.dev/federation/${version}" import: ["@shareable", "@inaccessible"])
 
@@ -417,7 +417,7 @@ testVersions((api, version) => {
           `,
         },
         {
-          name: 'baz',
+          name: "baz",
           typeDefs: graphql`
             extend schema @link(url: "https://specs.apollo.dev/federation/${version}" import: ["@inaccessible", "@shareable"])
 
@@ -431,7 +431,7 @@ testVersions((api, version) => {
           `,
         },
         {
-          name: 'qux',
+          name: "qux",
           typeDefs: graphql`
             type Query {
               qux: String
@@ -439,7 +439,7 @@ testVersions((api, version) => {
           `,
         },
         {
-          name: 'quux',
+          name: "quux",
           typeDefs: graphql`
             extend schema @link(url: "https://specs.apollo.dev/federation/${version}" import: ["@inaccessible", "@shareable"])
 
@@ -514,7 +514,7 @@ testVersions((api, version) => {
     expect(
       api.composeServices([
         {
-          name: 'foo',
+          name: "foo",
           typeDefs: graphql`
             directive @override(from: String!) on FIELD_DEFINITION
 
@@ -536,7 +536,7 @@ testVersions((api, version) => {
           `,
         },
         {
-          name: 'bar',
+          name: "bar",
           typeDefs: graphql`
             extend schema @link(url: "https://specs.apollo.dev/federation/${version}" import: ["@shareable", "@inaccessible"])
 
@@ -562,7 +562,7 @@ testVersions((api, version) => {
           `,
         },
         {
-          name: 'baz',
+          name: "baz",
           typeDefs: graphql`
             extend schema @link(url: "https://specs.apollo.dev/federation/${version}" import: ["@inaccessible", "@shareable"])
 
@@ -576,7 +576,7 @@ testVersions((api, version) => {
           `,
         },
         {
-          name: 'qux',
+          name: "qux",
           typeDefs: graphql`
             type Query {
               qux: String
@@ -584,7 +584,7 @@ testVersions((api, version) => {
           `,
         },
         {
-          name: 'quux',
+          name: "quux",
           typeDefs: graphql`
             extend schema @link(url: "https://specs.apollo.dev/federation/${version}" import: ["@inaccessible", "@shareable"])
 
@@ -608,7 +608,7 @@ testVersions((api, version) => {
               `Non-shareable field "Query.view" is resolved from multiple subgraphs: it is resolved from subgraphs "bar", "foo" and "quux" and defined as non-shareable in subgraph "quux"`,
             ),
             extensions: expect.objectContaining({
-              code: 'INVALID_FIELD_SHARING',
+              code: "INVALID_FIELD_SHARING",
             }),
           }),
         ]),
@@ -616,11 +616,11 @@ testVersions((api, version) => {
     );
   });
 
-  test('insufficient key fields to move between graphs (completely different key fields)', () => {
+  test("insufficient key fields to move between graphs (completely different key fields)", () => {
     expect(
       api.composeServices([
         {
-          name: 'users',
+          name: "users",
           typeDefs: graphql`
             extend schema @link(url: "https://specs.apollo.dev/federation/${version}" import: ["@key"])
 
@@ -635,7 +635,7 @@ testVersions((api, version) => {
           `,
         },
         {
-          name: 'feed',
+          name: "feed",
           typeDefs: graphql`
             extend schema @link(url: "https://specs.apollo.dev/federation/${version}" import: ["@key"])
 
@@ -655,70 +655,70 @@ testVersions((api, version) => {
         errors: [
           expect.objectContaining({
             message: expect.stringContaining(
-              'The following supergraph API query:\n' +
-                '{\n' +
-                '  users {\n' +
-                '    email\n' +
-                '  }\n' +
-                '}\n' +
-                'cannot be satisfied by the subgraphs because:\n' +
+              "The following supergraph API query:\n" +
+                "{\n" +
+                "  users {\n" +
+                "    email\n" +
+                "  }\n" +
+                "}\n" +
+                "cannot be satisfied by the subgraphs because:\n" +
                 '- from subgraph "users":\n' +
                 '  - cannot find field "User.email".\n' +
                 '  - cannot move to subgraph "feed" using @key(fields: "email") of "User", the key field(s) cannot be resolved from subgraph "users".',
             ),
             extensions: expect.objectContaining({
-              code: 'SATISFIABILITY_ERROR',
+              code: "SATISFIABILITY_ERROR",
             }),
           }),
           expect.objectContaining({
             message: expect.stringContaining(
-              'The following supergraph API query:\n' +
-                '{\n' +
-                '  users {\n' +
-                '    comments\n' +
-                '  }\n' +
-                '}\n' +
-                'cannot be satisfied by the subgraphs because:\n' +
+              "The following supergraph API query:\n" +
+                "{\n" +
+                "  users {\n" +
+                "    comments\n" +
+                "  }\n" +
+                "}\n" +
+                "cannot be satisfied by the subgraphs because:\n" +
                 '- from subgraph "users":\n' +
                 '  - cannot find field "User.comments".\n' +
                 '  - cannot move to subgraph "feed" using @key(fields: "email") of "User", the key field(s) cannot be resolved from subgraph "users".',
             ),
             extensions: expect.objectContaining({
-              code: 'SATISFIABILITY_ERROR',
+              code: "SATISFIABILITY_ERROR",
             }),
           }),
           expect.objectContaining({
             message: expect.stringContaining(
-              'The following supergraph API query:\n' +
-                '{\n' +
-                '  usersByIds(ids: []) {\n' +
-                '    id\n' +
-                '  }\n' +
-                '}\n' +
-                'cannot be satisfied by the subgraphs because:\n' +
+              "The following supergraph API query:\n" +
+                "{\n" +
+                "  usersByIds(ids: []) {\n" +
+                "    id\n" +
+                "  }\n" +
+                "}\n" +
+                "cannot be satisfied by the subgraphs because:\n" +
                 '- from subgraph "feed":\n' +
                 '  - cannot find field "User.id".\n' +
                 '  - cannot move to subgraph "users" using @key(fields: "id") of "User", the key field(s) cannot be resolved from subgraph "feed".',
             ),
             extensions: expect.objectContaining({
-              code: 'SATISFIABILITY_ERROR',
+              code: "SATISFIABILITY_ERROR",
             }),
           }),
           expect.objectContaining({
             message: expect.stringContaining(
-              'The following supergraph API query:\n' +
-                '{\n' +
-                '  usersByIds(ids: []) {\n' +
-                '    name\n' +
-                '  }\n' +
-                '}\n' +
-                'cannot be satisfied by the subgraphs because:\n' +
+              "The following supergraph API query:\n" +
+                "{\n" +
+                "  usersByIds(ids: []) {\n" +
+                "    name\n" +
+                "  }\n" +
+                "}\n" +
+                "cannot be satisfied by the subgraphs because:\n" +
                 '- from subgraph "feed":\n' +
                 '  - cannot find field "User.name".\n' +
                 '  - cannot move to subgraph "users" using @key(fields: "id") of "User", the key field(s) cannot be resolved from subgraph "feed".',
             ),
             extensions: expect.objectContaining({
-              code: 'SATISFIABILITY_ERROR',
+              code: "SATISFIABILITY_ERROR",
             }),
           }),
         ],
@@ -726,13 +726,13 @@ testVersions((api, version) => {
     );
   });
 
-  test('cannot move as not shareable and no keys', () => {
+  test("cannot move as not shareable and no keys", () => {
     // Cannot resolve User.name from Query.usersByAge as User has no @key to move to subgraph "a"
     // Cannot resolve User.age from Query.users as User has no @key to move to subgraph "b"
     expect(
       api.composeServices([
         {
-          name: 'a',
+          name: "a",
           typeDefs: graphql`
             extend schema @link(url: "https://specs.apollo.dev/federation/${version}" import: ["@key"])
 
@@ -761,7 +761,7 @@ testVersions((api, version) => {
           `,
         },
         {
-          name: 'b',
+          name: "b",
           typeDefs: graphql`
             extend schema @link(url: "https://specs.apollo.dev/federation/${version}" import: ["@key"])
 
@@ -783,36 +783,36 @@ testVersions((api, version) => {
         errors: [
           expect.objectContaining({
             message: expect.stringContaining(
-              'The following supergraph API query:\n' +
-                '{\n' +
-                '  usersByAge(age: 0, limit: 0) {\n' +
-                '    name\n' +
-                '  }\n' +
-                '}\n' +
-                'cannot be satisfied by the subgraphs because:\n' +
+              "The following supergraph API query:\n" +
+                "{\n" +
+                "  usersByAge(age: 0, limit: 0) {\n" +
+                "    name\n" +
+                "  }\n" +
+                "}\n" +
+                "cannot be satisfied by the subgraphs because:\n" +
                 '- from subgraph "b":\n' +
                 '  - cannot find field "User.name".\n' +
                 '  - cannot move to subgraph "a", which has field "User.name", because type "User" has no @key defined in subgraph "a".',
             ),
             extensions: expect.objectContaining({
-              code: 'SATISFIABILITY_ERROR',
+              code: "SATISFIABILITY_ERROR",
             }),
           }),
           expect.objectContaining({
             message: expect.stringContaining(
-              'The following supergraph API query:\n' +
-                '{\n' +
+              "The following supergraph API query:\n" +
+                "{\n" +
                 '  users(filter: {limit: 0, after: "<any id>"}, role: ADMIN) {\n' +
-                '    age\n' +
-                '  }\n' +
-                '}\n' +
-                'cannot be satisfied by the subgraphs because:\n' +
+                "    age\n" +
+                "  }\n" +
+                "}\n" +
+                "cannot be satisfied by the subgraphs because:\n" +
                 '- from subgraph "a":\n' +
                 '  - cannot find field "User.age".\n' +
                 '  - cannot move to subgraph "b", which has field "User.age", because type "User" has no @key defined in subgraph "b".',
             ),
             extensions: expect.objectContaining({
-              code: 'SATISFIABILITY_ERROR',
+              code: "SATISFIABILITY_ERROR",
             }),
           }),
         ],
@@ -823,7 +823,7 @@ testVersions((api, version) => {
     expect(
       api.composeServices([
         {
-          name: 'a',
+          name: "a",
           typeDefs: graphql`
             extend schema @link(url: "https://specs.apollo.dev/federation/${version}" import: ["@key"])
 
@@ -833,7 +833,7 @@ testVersions((api, version) => {
           `,
         },
         {
-          name: 'b',
+          name: "b",
           typeDefs: graphql`
             extend schema @link(url: "https://specs.apollo.dev/federation/${version}" import: ["@key"])
 
@@ -852,19 +852,19 @@ testVersions((api, version) => {
         errors: [
           expect.objectContaining({
             message: expect.stringContaining(
-              'The following supergraph API query:\n' +
-                '{\n' +
-                '  usersByAge(age: 0) {\n' +
-                '    name\n' +
-                '  }\n' +
-                '}\n' +
-                'cannot be satisfied by the subgraphs because:\n' +
+              "The following supergraph API query:\n" +
+                "{\n" +
+                "  usersByAge(age: 0) {\n" +
+                "    name\n" +
+                "  }\n" +
+                "}\n" +
+                "cannot be satisfied by the subgraphs because:\n" +
                 '- from subgraph "b":\n' +
                 '  - cannot find field "User.name".\n' +
                 '  - cannot move to subgraph "a", which has field "User.name", because type "User" has no @key defined in subgraph "a".',
             ),
             extensions: expect.objectContaining({
-              code: 'SATISFIABILITY_ERROR',
+              code: "SATISFIABILITY_ERROR",
             }),
           }),
         ],
@@ -872,12 +872,12 @@ testVersions((api, version) => {
     );
   });
 
-  test('cannot move as not shareable and no keys (mutation and subscription)', () => {
+  test("cannot move as not shareable and no keys (mutation and subscription)", () => {
     // Cannot resolve User.name from Query.usersByAge as User has no @key to move to subgraph "a"
     // Cannot resolve User.age from Query.users as User has no @key to move to subgraph "b"
     const result = api.composeServices([
       {
-        name: 'a',
+        name: "a",
         typeDefs: graphql`
           extend schema @link(url: "https://specs.apollo.dev/federation/${version}" import: ["@key"])
 
@@ -891,7 +891,7 @@ testVersions((api, version) => {
         `,
       },
       {
-        name: 'b',
+        name: "b",
         typeDefs: graphql`
           extend schema @link(url: "https://specs.apollo.dev/federation/${version}" import: ["@key"])
 
@@ -912,25 +912,25 @@ testVersions((api, version) => {
 
     assertCompositionFailure(result);
 
-    if (api.library === 'guild') {
+    if (api.library === "guild") {
       // Why??????
       // Because Apollo does not throw an error for mutation if subscription is detected, LOL.
       expect(result.errors).toContainEqual(
         expect.objectContaining({
           message: expect.stringContaining(
-            'The following supergraph API query:\n' +
-              'mutation {\n' +
-              '  createRandomUser {\n' +
-              '    name\n' +
-              '  }\n' +
-              '}\n' +
-              'cannot be satisfied by the subgraphs because:\n' +
+            "The following supergraph API query:\n" +
+              "mutation {\n" +
+              "  createRandomUser {\n" +
+              "    name\n" +
+              "  }\n" +
+              "}\n" +
+              "cannot be satisfied by the subgraphs because:\n" +
               '- from subgraph "b":\n' +
               '  - cannot find field "User.name".\n' +
               '  - cannot move to subgraph "a", which has field "User.name", because type "User" has no @key defined in subgraph "a".',
           ),
           extensions: expect.objectContaining({
-            code: 'SATISFIABILITY_ERROR',
+            code: "SATISFIABILITY_ERROR",
           }),
         }),
       );
@@ -939,7 +939,7 @@ testVersions((api, version) => {
     expect(result.errors).toContainEqual(
       expect.objectContaining({
         message: expect.stringContaining(
-          api.library === 'apollo'
+          api.library === "apollo"
             ? normalizeErrorMessage`
             The following supergraph API query:
             subscription {
@@ -966,7 +966,7 @@ testVersions((api, version) => {
           `,
         ),
         extensions: expect.objectContaining({
-          code: 'SATISFIABILITY_ERROR',
+          code: "SATISFIABILITY_ERROR",
         }),
       }),
     );
@@ -974,31 +974,31 @@ testVersions((api, version) => {
     expect(result.errors).toContainEqual(
       expect.objectContaining({
         message: expect.stringContaining(
-          'The following supergraph API query:\n' +
-            '{\n' +
-            '  users {\n' +
-            '    age\n' +
-            '  }\n' +
-            '}\n' +
-            'cannot be satisfied by the subgraphs because:\n' +
+          "The following supergraph API query:\n" +
+            "{\n" +
+            "  users {\n" +
+            "    age\n" +
+            "  }\n" +
+            "}\n" +
+            "cannot be satisfied by the subgraphs because:\n" +
             '- from subgraph "a":\n' +
             '  - cannot find field "User.age".\n' +
             '  - cannot move to subgraph "b", which has field "User.age", because type "User" has no @key defined in subgraph "b".',
         ),
         extensions: expect.objectContaining({
-          code: 'SATISFIABILITY_ERROR',
+          code: "SATISFIABILITY_ERROR",
         }),
       }),
     );
   });
 
-  test('unreachable from root', () => {
+  test("unreachable from root", () => {
     // When User is not queryable (not referenced by a Query type and its dependencies, at any level)
     // it can be ignored by the SATISFIABILITY_ERROR check.
     assertCompositionSuccess(
       api.composeServices([
         {
-          name: 'a',
+          name: "a",
           typeDefs: graphql`
             extend schema @link(url: "https://specs.apollo.dev/federation/${version}" import: ["@key"])
 
@@ -1012,7 +1012,7 @@ testVersions((api, version) => {
           `,
         },
         {
-          name: 'b',
+          name: "b",
           typeDefs: graphql`
             extend schema @link(url: "https://specs.apollo.dev/federation/${version}" import: ["@key"])
 
@@ -1029,12 +1029,12 @@ testVersions((api, version) => {
     );
   });
 
-  test('identical keys fields', () => {
+  test("identical keys fields", () => {
     // User.{profile,email} can be resolved as Federation Gateway can move between subgraphs using identical @key
     assertCompositionSuccess(
       api.composeServices([
         {
-          name: 'a',
+          name: "a",
           typeDefs: graphql`
             extend schema @link(url: "https://specs.apollo.dev/federation/${version}" import: ["@key", "@external"])
 
@@ -1049,7 +1049,7 @@ testVersions((api, version) => {
           `,
         },
         {
-          name: 'b',
+          name: "b",
           typeDefs: graphql`
             extend schema @link(url: "https://specs.apollo.dev/federation/${version}" import: ["@key"])
 
@@ -1067,10 +1067,10 @@ testVersions((api, version) => {
     );
   });
 
-  test('unresolvable because of external (no idea...)', () => {
+  test("unresolvable because of external (no idea...)", () => {
     let result = api.composeServices([
       {
-        name: 'foo',
+        name: "foo",
         typeDefs: graphql`
             extend schema @link(url: "https://specs.apollo.dev/federation/${version}" import: ["@key", "@inaccessible"])
 
@@ -1097,7 +1097,7 @@ testVersions((api, version) => {
         `,
       },
       {
-        name: 'bar',
+        name: "bar",
         typeDefs: graphql`
             extend schema @link(url: "https://specs.apollo.dev/federation/${version}" import: ["@key", "@external"])
 
@@ -1112,7 +1112,7 @@ testVersions((api, version) => {
         `,
       },
       {
-        name: 'baz',
+        name: "baz",
         typeDefs: graphql`
             extend schema @link(url: "https://specs.apollo.dev/federation/${version}" import: ["@key"])
 
@@ -1128,7 +1128,7 @@ testVersions((api, version) => {
           `,
       },
       {
-        name: 'qux',
+        name: "qux",
         typeDefs: graphql`
             extend schema @link(url: "https://specs.apollo.dev/federation/${version}" import: ["@key", "@inaccessible"])
 
@@ -1148,7 +1148,7 @@ testVersions((api, version) => {
 
     // Query.productInBar (bar) can't resolve Product.publicId (foo, baz, qux)
     // because it's marked as @external
-    if (api.library === 'apollo') {
+    if (api.library === "apollo") {
       expect(result.errors).toContainEqual(
         expect.objectContaining({
           message: normalizeErrorMessage`
@@ -1167,7 +1167,7 @@ testVersions((api, version) => {
             - cannot move to subgraph "qux" using @key(fields: "publicId fooCriteria") of "Product", the key field(s) cannot be resolved from subgraph "bar".
           `,
           extensions: expect.objectContaining({
-            code: 'SATISFIABILITY_ERROR',
+            code: "SATISFIABILITY_ERROR",
           }),
         }),
       );
@@ -1190,7 +1190,7 @@ testVersions((api, version) => {
             - cannot move to subgraph "baz" using @key(fields: "publicId fooCriteria") of "Product", the key field(s) cannot be resolved from subgraph "bar".
           `,
           extensions: expect.objectContaining({
-            code: 'SATISFIABILITY_ERROR',
+            code: "SATISFIABILITY_ERROR",
           }),
         }),
       );
@@ -1201,7 +1201,7 @@ testVersions((api, version) => {
     // - Product.available does not exist in subgraph "bar"
     // - can't move to other subgraphs that can resolve that field (foo, baz, qux)
 
-    if (api.library === 'apollo') {
+    if (api.library === "apollo") {
       expect(result.errors).toContainEqual(
         expect.objectContaining({
           message: expect.stringContaining(
@@ -1222,7 +1222,7 @@ testVersions((api, version) => {
             `,
           ),
           extensions: expect.objectContaining({
-            code: 'SATISFIABILITY_ERROR',
+            code: "SATISFIABILITY_ERROR",
           }),
         }),
       );
@@ -1247,13 +1247,13 @@ testVersions((api, version) => {
             `,
           ),
           extensions: expect.objectContaining({
-            code: 'SATISFIABILITY_ERROR',
+            code: "SATISFIABILITY_ERROR",
           }),
         }),
       );
     }
 
-    if (api.library === 'apollo') {
+    if (api.library === "apollo") {
       expect(result.errors).toContainEqual(
         // Query.productInBar (bar) can't resolve Product.key (foo)
         // Because:
@@ -1280,7 +1280,7 @@ testVersions((api, version) => {
             `,
           ),
           extensions: expect.objectContaining({
-            code: 'SATISFIABILITY_ERROR',
+            code: "SATISFIABILITY_ERROR",
           }),
         }),
       );
@@ -1311,7 +1311,7 @@ testVersions((api, version) => {
             `,
           ),
           extensions: expect.objectContaining({
-            code: 'SATISFIABILITY_ERROR',
+            code: "SATISFIABILITY_ERROR",
           }),
         }),
       );
@@ -1319,7 +1319,7 @@ testVersions((api, version) => {
 
     result = api.composeServices([
       {
-        name: 'products',
+        name: "products",
         typeDefs: graphql`
             extend schema @link(url: "https://specs.apollo.dev/federation/${version}" import: ["@key", "@inaccessible"])
 
@@ -1335,7 +1335,7 @@ testVersions((api, version) => {
         `,
       },
       {
-        name: 'bar',
+        name: "bar",
         typeDefs: graphql`
             extend schema @link(url: "https://specs.apollo.dev/federation/${version}" import: ["@key", "@external"])
 
@@ -1350,7 +1350,7 @@ testVersions((api, version) => {
         `,
       },
       {
-        name: 'env',
+        name: "env",
         typeDefs: graphql`
             extend schema @link(url: "https://specs.apollo.dev/federation/${version}" import: ["@key"])
 
@@ -1365,7 +1365,7 @@ testVersions((api, version) => {
           `,
       },
       {
-        name: 'prices',
+        name: "prices",
         typeDefs: graphql`
             extend schema @link(url: "https://specs.apollo.dev/federation/${version}" import: ["@key", "@inaccessible"])
 
@@ -1383,7 +1383,7 @@ testVersions((api, version) => {
 
     assertCompositionFailure(result);
 
-    if (api.library === 'apollo') {
+    if (api.library === "apollo") {
       expect(result.errors).toContainEqual(
         expect.objectContaining({
           message: expect.stringContaining(
@@ -1404,7 +1404,7 @@ testVersions((api, version) => {
             `,
           ),
           extensions: expect.objectContaining({
-            code: 'SATISFIABILITY_ERROR',
+            code: "SATISFIABILITY_ERROR",
           }),
         }),
       );
@@ -1429,13 +1429,13 @@ testVersions((api, version) => {
             `,
           ),
           extensions: expect.objectContaining({
-            code: 'SATISFIABILITY_ERROR',
+            code: "SATISFIABILITY_ERROR",
           }),
         }),
       );
     }
 
-    if (api.library === 'apollo') {
+    if (api.library === "apollo") {
       expect(result.errors).toContainEqual(
         expect.objectContaining({
           message: expect.stringContaining(
@@ -1456,7 +1456,7 @@ testVersions((api, version) => {
           `,
           ),
           extensions: expect.objectContaining({
-            code: 'SATISFIABILITY_ERROR',
+            code: "SATISFIABILITY_ERROR",
           }),
         }),
       );
@@ -1481,7 +1481,7 @@ testVersions((api, version) => {
           `,
           ),
           extensions: expect.objectContaining({
-            code: 'SATISFIABILITY_ERROR',
+            code: "SATISFIABILITY_ERROR",
           }),
         }),
       );
@@ -1489,11 +1489,11 @@ testVersions((api, version) => {
   });
 
   // ADD IT TO THE COLLECTION
-  test('external but somehow resolvable', () => {
+  test("external but somehow resolvable", () => {
     assertCompositionSuccess(
       api.composeServices([
         {
-          name: 'products',
+          name: "products",
           typeDefs: graphql`
             extend schema @link(url: "https://specs.apollo.dev/federation/${version}" import: ["@key"])
 
@@ -1509,7 +1509,7 @@ testVersions((api, version) => {
         `,
         },
         {
-          name: 'bar',
+          name: "bar",
           typeDefs: graphql`
             extend schema @link(url: "https://specs.apollo.dev/federation/${version}" import: ["@key", "@external"])
 
@@ -1525,7 +1525,7 @@ testVersions((api, version) => {
         `,
         },
         {
-          name: 'env',
+          name: "env",
           typeDefs: graphql`
             extend schema @link(url: "https://specs.apollo.dev/federation/${version}" import: ["@key"])
 
@@ -1540,7 +1540,7 @@ testVersions((api, version) => {
           `,
         },
         {
-          name: 'random',
+          name: "random",
           typeDefs: graphql`
             extend schema @link(url: "https://specs.apollo.dev/federation/${version}" import: ["@key", "@external"])
 
@@ -1556,7 +1556,7 @@ testVersions((api, version) => {
             `,
         },
         {
-          name: 'prices',
+          name: "prices",
           typeDefs: graphql`
             extend schema @link(url: "https://specs.apollo.dev/federation/${version}" import: ["@key", "@external"])
 
@@ -1572,7 +1572,7 @@ testVersions((api, version) => {
             `,
         },
         {
-          name: 'base',
+          name: "base",
           typeDefs: graphql`
             extend schema @link(url: "https://specs.apollo.dev/federation/${version}" import: ["@key", "@external"])
 
@@ -1595,7 +1595,7 @@ testVersions((api, version) => {
     assertCompositionSuccess(
       api.composeServices([
         {
-          name: 'foo',
+          name: "foo",
           typeDefs: graphql`
             type Query {
               foo: Foo
@@ -1616,7 +1616,7 @@ testVersions((api, version) => {
           `,
         },
         {
-          name: 'bar',
+          name: "bar",
           typeDefs: graphql`
             type Query {
               bar: Bar
@@ -1641,11 +1641,11 @@ testVersions((api, version) => {
     );
   });
 
-  test('fed v1: same types but extra root field in a subgraph missing a field', () => {
+  test("fed v1: same types but extra root field in a subgraph missing a field", () => {
     expect(
       api.composeServices([
         {
-          name: 'a',
+          name: "a",
           typeDefs: graphql`
             type Query {
               userById(id: ID): User
@@ -1659,7 +1659,7 @@ testVersions((api, version) => {
           `,
         },
         {
-          name: 'b',
+          name: "b",
           typeDefs: graphql`
             type Query {
               userById(id: ID): User
@@ -1678,19 +1678,19 @@ testVersions((api, version) => {
         errors: [
           expect.objectContaining({
             message: expect.stringContaining(
-              'The following supergraph API query:\n' +
-                '{\n' +
-                '  randomUser {\n' +
-                '    nickname\n' +
-                '  }\n' +
-                '}\n' +
-                'cannot be satisfied by the subgraphs because:\n' +
+              "The following supergraph API query:\n" +
+                "{\n" +
+                "  randomUser {\n" +
+                "    nickname\n" +
+                "  }\n" +
+                "}\n" +
+                "cannot be satisfied by the subgraphs because:\n" +
                 '- from subgraph "a":\n' +
                 '  - cannot find field "User.nickname".\n' +
                 '  - cannot move to subgraph "b", which has field "User.nickname", because type "User" has no @key defined in subgraph "b".',
             ),
             extensions: expect.objectContaining({
-              code: 'SATISFIABILITY_ERROR',
+              code: "SATISFIABILITY_ERROR",
             }),
           }),
         ],
@@ -1698,11 +1698,11 @@ testVersions((api, version) => {
     );
   });
 
-  test('fed v1: same types but extra root field in a subgraph defining extra field', () => {
+  test("fed v1: same types but extra root field in a subgraph defining extra field", () => {
     assertCompositionSuccess(
       api.composeServices([
         {
-          name: 'a',
+          name: "a",
           typeDefs: graphql`
             type Query {
               userById(id: ID): User
@@ -1716,7 +1716,7 @@ testVersions((api, version) => {
           `,
         },
         {
-          name: 'b',
+          name: "b",
           typeDefs: graphql`
             type Query {
               userById(id: ID): User
@@ -1731,7 +1731,7 @@ testVersions((api, version) => {
           `,
         },
         {
-          name: 'c',
+          name: "c",
           typeDefs: graphql`
             type Query {
               userById(id: ID): User
@@ -1749,11 +1749,11 @@ testVersions((api, version) => {
     );
   });
 
-  test('fed v1: same root fields, same types, additional fields', () => {
+  test("fed v1: same root fields, same types, additional fields", () => {
     assertCompositionSuccess(
       api.composeServices([
         {
-          name: 'a',
+          name: "a",
           typeDefs: graphql`
             type Query {
               userById(id: ID): User
@@ -1770,7 +1770,7 @@ testVersions((api, version) => {
           `,
         },
         {
-          name: 'b',
+          name: "b",
           typeDefs: graphql`
             type Query {
               userById(id: ID): User
@@ -1791,10 +1791,10 @@ testVersions((api, version) => {
     );
   });
 
-  test('moving between entity with @key and without it', () => {
+  test("moving between entity with @key and without it", () => {
     const result = api.composeServices([
       {
-        name: 'a',
+        name: "a",
         typeDefs: graphql`
           extend schema @link(url: "https://specs.apollo.dev/federation/${version}" import: ["@key", "@external"])
 
@@ -1809,7 +1809,7 @@ testVersions((api, version) => {
         `,
       },
       {
-        name: 'b',
+        name: "b",
         typeDefs: graphql`
           extend schema @link(url: "https://specs.apollo.dev/federation/${version}" import: ["@key"])
 
@@ -1850,12 +1850,12 @@ testVersions((api, version) => {
         `,
         ),
         extensions: expect.objectContaining({
-          code: 'SATISFIABILITY_ERROR',
+          code: "SATISFIABILITY_ERROR",
         }),
       }),
     );
 
-    if (api.library === 'apollo') {
+    if (api.library === "apollo") {
       expect(result.errors).toContainEqual(
         expect.objectContaining({
           message: expect.stringContaining(
@@ -1875,7 +1875,7 @@ testVersions((api, version) => {
           `,
           ),
           extensions: expect.objectContaining({
-            code: 'SATISFIABILITY_ERROR',
+            code: "SATISFIABILITY_ERROR",
           }),
         }),
       );
@@ -1899,17 +1899,17 @@ testVersions((api, version) => {
           `,
           ),
           extensions: expect.objectContaining({
-            code: 'SATISFIABILITY_ERROR',
+            code: "SATISFIABILITY_ERROR",
           }),
         }),
       );
     }
   });
 
-  test('gateway can move from one graph to another through other subgraphs', () => {
+  test("gateway can move from one graph to another through other subgraphs", () => {
     const result = api.composeServices([
       {
-        name: 'foo',
+        name: "foo",
         typeDefs: graphql`
           extend schema @link(url: "https://specs.apollo.dev/federation/${version}" import: ["@key"])
 
@@ -1925,7 +1925,7 @@ testVersions((api, version) => {
       `,
       },
       {
-        name: 'bar',
+        name: "bar",
         typeDefs: graphql`
           extend schema @link(url: "https://specs.apollo.dev/federation/${version}" import: ["@key", "@external"])
 
@@ -1941,7 +1941,7 @@ testVersions((api, version) => {
       `,
       },
       {
-        name: 'baz',
+        name: "baz",
         typeDefs: graphql`
           extend schema @link(url: "https://specs.apollo.dev/federation/${version}" import: ["@key"])
 
@@ -1956,7 +1956,7 @@ testVersions((api, version) => {
         `,
       },
       {
-        name: 'qux',
+        name: "qux",
         typeDefs: graphql`
           extend schema @link(url: "https://specs.apollo.dev/federation/${version}" import: ["@key", "@external"])
 
@@ -1972,7 +1972,7 @@ testVersions((api, version) => {
           `,
       },
       {
-        name: 'qux2',
+        name: "qux2",
         typeDefs: graphql`
           extend schema @link(url: "https://specs.apollo.dev/federation/${version}" import: ["@key", "@external"])
 
@@ -1988,7 +1988,7 @@ testVersions((api, version) => {
           `,
       },
       {
-        name: 'qux3',
+        name: "qux3",
         typeDefs: graphql`
           extend schema @link(url: "https://specs.apollo.dev/federation/${version}" import: ["@key", "@external"])
 
@@ -2010,7 +2010,7 @@ testVersions((api, version) => {
     expect(result.errors).toContainEqual(
       expect.objectContaining({
         message: expect.stringContaining(
-          api.library === 'apollo'
+          api.library === "apollo"
             ? normalizeErrorMessage`
               The following supergraph API query:
               {
@@ -2040,7 +2040,7 @@ testVersions((api, version) => {
             `,
         ),
         extensions: expect.objectContaining({
-          code: 'SATISFIABILITY_ERROR',
+          code: "SATISFIABILITY_ERROR",
         }),
       }),
     );
@@ -2048,7 +2048,7 @@ testVersions((api, version) => {
     expect(result.errors).toContainEqual(
       expect.objectContaining({
         message: expect.stringContaining(
-          api.library === 'apollo'
+          api.library === "apollo"
             ? normalizeErrorMessage`
               The following supergraph API query:
               {
@@ -2078,7 +2078,7 @@ testVersions((api, version) => {
           `,
         ),
         extensions: expect.objectContaining({
-          code: 'SATISFIABILITY_ERROR',
+          code: "SATISFIABILITY_ERROR",
         }),
       }),
     );
@@ -2086,7 +2086,7 @@ testVersions((api, version) => {
     expect(result.errors).toContainEqual(
       expect.objectContaining({
         message: expect.stringContaining(
-          api.library === 'apollo'
+          api.library === "apollo"
             ? normalizeErrorMessage`
             The following supergraph API query:
             {
@@ -2115,7 +2115,7 @@ testVersions((api, version) => {
         `,
         ),
         extensions: expect.objectContaining({
-          code: 'SATISFIABILITY_ERROR',
+          code: "SATISFIABILITY_ERROR",
         }),
       }),
     );
@@ -2123,7 +2123,7 @@ testVersions((api, version) => {
     expect(result.errors).toContainEqual(
       expect.objectContaining({
         message: expect.stringContaining(
-          api.library === 'apollo'
+          api.library === "apollo"
             ? normalizeErrorMessage`
             The following supergraph API query:
             {
@@ -2152,7 +2152,7 @@ testVersions((api, version) => {
             `,
         ),
         extensions: expect.objectContaining({
-          code: 'SATISFIABILITY_ERROR',
+          code: "SATISFIABILITY_ERROR",
         }),
       }),
     );
@@ -2160,7 +2160,7 @@ testVersions((api, version) => {
     expect(result.errors).toContainEqual(
       expect.objectContaining({
         message: expect.stringContaining(
-          api.library === 'apollo'
+          api.library === "apollo"
             ? normalizeErrorMessage`
             The following supergraph API query:
             {
@@ -2189,7 +2189,7 @@ testVersions((api, version) => {
         `,
         ),
         extensions: expect.objectContaining({
-          code: 'SATISFIABILITY_ERROR',
+          code: "SATISFIABILITY_ERROR",
         }),
       }),
     );
@@ -2197,7 +2197,7 @@ testVersions((api, version) => {
     expect(result.errors).toContainEqual(
       expect.objectContaining({
         message: expect.stringContaining(
-          api.library === 'apollo'
+          api.library === "apollo"
             ? normalizeErrorMessage`
               The following supergraph API query:
               {
@@ -2226,7 +2226,7 @@ testVersions((api, version) => {
           `,
         ),
         extensions: expect.objectContaining({
-          code: 'SATISFIABILITY_ERROR',
+          code: "SATISFIABILITY_ERROR",
         }),
       }),
     );
@@ -2234,7 +2234,7 @@ testVersions((api, version) => {
     expect(result.errors).toContainEqual(
       expect.objectContaining({
         message: expect.stringContaining(
-          api.library === 'apollo'
+          api.library === "apollo"
             ? normalizeErrorMessage`
               The following supergraph API query:
               {
@@ -2264,7 +2264,7 @@ testVersions((api, version) => {
             `,
         ),
         extensions: expect.objectContaining({
-          code: 'SATISFIABILITY_ERROR',
+          code: "SATISFIABILITY_ERROR",
         }),
       }),
     );
@@ -2272,7 +2272,7 @@ testVersions((api, version) => {
     expect(result.errors).toContainEqual(
       expect.objectContaining({
         message: expect.stringContaining(
-          api.library === 'apollo'
+          api.library === "apollo"
             ? normalizeErrorMessage`
             The following supergraph API query:
             {
@@ -2302,17 +2302,17 @@ testVersions((api, version) => {
           `,
         ),
         extensions: expect.objectContaining({
-          code: 'SATISFIABILITY_ERROR',
+          code: "SATISFIABILITY_ERROR",
         }),
       }),
     );
   });
 
-  test('cannot move subgraphs without @key and common query path', () => {
+  test("cannot move subgraphs without @key and common query path", () => {
     expect(
       api.composeServices([
         {
-          name: 'a',
+          name: "a",
           typeDefs: graphql`
             extend schema @link(url: "https://specs.apollo.dev/federation/${version}" import: ["@key", "@external"])
 
@@ -2327,7 +2327,7 @@ testVersions((api, version) => {
           `,
         },
         {
-          name: 'b',
+          name: "b",
           typeDefs: graphql`
             extend schema @link(url: "https://specs.apollo.dev/federation/${version}" import: ["@key", "@external"])
 
@@ -2347,15 +2347,15 @@ testVersions((api, version) => {
         errors: expect.arrayContaining([
           expect.objectContaining({
             message: expect.stringContaining(
-              'The following supergraph API query:\n' +
-                '{\n' +
-                '  users {\n' +
-                '    tags {\n' +
-                '      ...\n' +
-                '    }\n' +
-                '  }\n' +
-                '}\n' +
-                'cannot be satisfied by the subgraphs because:\n' +
+              "The following supergraph API query:\n" +
+                "{\n" +
+                "  users {\n" +
+                "    tags {\n" +
+                "      ...\n" +
+                "    }\n" +
+                "  }\n" +
+                "}\n" +
+                "cannot be satisfied by the subgraphs because:\n" +
                 '- from subgraph "a":\n' +
                 '  - cannot find field "User.tags".\n' +
                 '  - cannot move to subgraph "b", which has field "User.tags", because type "User" has no @key defined in subgraph "b".',
@@ -2369,7 +2369,7 @@ testVersions((api, version) => {
     expect(
       api.composeServices([
         {
-          name: 'a',
+          name: "a",
           typeDefs: graphql`
             type User {
               id: String!
@@ -2382,7 +2382,7 @@ testVersions((api, version) => {
           `,
         },
         {
-          name: 'b',
+          name: "b",
           typeDefs: graphql`
             extend type User {
               tags: [Tag]
@@ -2400,15 +2400,15 @@ testVersions((api, version) => {
         errors: expect.arrayContaining([
           expect.objectContaining({
             message: expect.stringContaining(
-              'The following supergraph API query:\n' +
-                '{\n' +
-                '  users {\n' +
-                '    tags {\n' +
-                '      ...\n' +
-                '    }\n' +
-                '  }\n' +
-                '}\n' +
-                'cannot be satisfied by the subgraphs because:\n' +
+              "The following supergraph API query:\n" +
+                "{\n" +
+                "  users {\n" +
+                "    tags {\n" +
+                "      ...\n" +
+                "    }\n" +
+                "  }\n" +
+                "}\n" +
+                "cannot be satisfied by the subgraphs because:\n" +
                 '- from subgraph "a":\n' +
                 '  - cannot find field "User.tags".\n' +
                 '  - cannot move to subgraph "b", which has field "User.tags", because type "User" has no @key defined in subgraph "b".',
@@ -2419,7 +2419,7 @@ testVersions((api, version) => {
     );
   });
 
-  test('from root field (subgraph A) to entity (subgraph A,B) with missing key (B)', () => {
+  test("from root field (subgraph A) to entity (subgraph A,B) with missing key (B)", () => {
     // Even though key field fields are different, { user { nickname } } still can be resolved.
     // We cannot ask subgraph A, to resolve Query.user, as it's not defined there.
     // We need to ask subgraph B, but it can't resolve User.nickname, as it's not defined there.
@@ -2428,7 +2428,7 @@ testVersions((api, version) => {
     assertCompositionSuccess(
       api.composeServices([
         {
-          name: 'a',
+          name: "a",
           typeDefs: graphql`
             extend schema @link(url: "https://specs.apollo.dev/federation/${version}" import: ["@key"])
 
@@ -2443,7 +2443,7 @@ testVersions((api, version) => {
           `,
         },
         {
-          name: 'b',
+          name: "b",
           typeDefs: graphql`
             extend schema @link(url: "https://specs.apollo.dev/federation/${version}" import: ["@key", "@external"])
 
@@ -2459,7 +2459,7 @@ testVersions((api, version) => {
     expect(
       api.composeServices([
         {
-          name: 'a',
+          name: "a",
           typeDefs: graphql`
           extend schema @link(url: "https://specs.apollo.dev/federation/${version}" import: ["@key"])
 
@@ -2474,7 +2474,7 @@ testVersions((api, version) => {
         `,
         },
         {
-          name: 'b',
+          name: "b",
           typeDefs: graphql`
           extend schema @link(url: "https://specs.apollo.dev/federation/${version}" import: ["@key", "@external"])
 
@@ -2485,7 +2485,7 @@ testVersions((api, version) => {
         `,
         },
         {
-          name: 'c',
+          name: "c",
           typeDefs: graphql`
           extend schema @link(url: "https://specs.apollo.dev/federation/${version}" import: ["@key", "@external"])
 
@@ -2499,41 +2499,41 @@ testVersions((api, version) => {
     ).toEqual(
       expect.objectContaining({
         errors: expect.arrayContaining([
-          api.library === 'apollo'
+          api.library === "apollo"
             ? expect.objectContaining({
                 message: expect.stringContaining(
-                  'The following supergraph API query:\n' +
-                    '{\n' +
-                    '  user {\n' +
-                    '    email\n' +
-                    '  }\n' +
-                    '}\n' +
-                    'cannot be satisfied by the subgraphs because:\n' +
+                  "The following supergraph API query:\n" +
+                    "{\n" +
+                    "  user {\n" +
+                    "    email\n" +
+                    "  }\n" +
+                    "}\n" +
+                    "cannot be satisfied by the subgraphs because:\n" +
                     '- from subgraph "a":\n' +
                     '  - cannot find field "User.email".\n' +
                     '  - cannot move to subgraph "b" using @key(fields: "email") of "User", the key field(s) cannot be resolved from subgraph "a".\n' +
                     '  - cannot move to subgraph "c" using @key(fields: "email") of "User", the key field(s) cannot be resolved from subgraph "a".',
                 ),
                 extensions: expect.objectContaining({
-                  code: 'SATISFIABILITY_ERROR',
+                  code: "SATISFIABILITY_ERROR",
                 }),
               })
             : expect.objectContaining({
                 message: expect.stringContaining(
-                  'The following supergraph API query:\n' +
-                    '{\n' +
-                    '  user {\n' +
-                    '    email\n' +
-                    '  }\n' +
-                    '}\n' +
-                    'cannot be satisfied by the subgraphs because:\n' +
+                  "The following supergraph API query:\n" +
+                    "{\n" +
+                    "  user {\n" +
+                    "    email\n" +
+                    "  }\n" +
+                    "}\n" +
+                    "cannot be satisfied by the subgraphs because:\n" +
                     '- from subgraph "a":\n' +
                     '  - cannot find field "User.email".\n' +
                     '  - cannot move to subgraph "c" using @key(fields: "email") of "User", the key field(s) cannot be resolved from subgraph "a".\n' +
                     '  - cannot move to subgraph "b" using @key(fields: "email") of "User", the key field(s) cannot be resolved from subgraph "a".',
                 ),
                 extensions: expect.objectContaining({
-                  code: 'SATISFIABILITY_ERROR',
+                  code: "SATISFIABILITY_ERROR",
                 }),
               }),
         ]),
@@ -2541,10 +2541,10 @@ testVersions((api, version) => {
     );
   });
 
-  test('resolve missing field by parent entity', () => {
+  test("resolve missing field by parent entity", () => {
     const result = api.composeServices([
       {
-        name: 'product',
+        name: "product",
         typeDefs: graphql`
           extend schema
             @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@key", "@external"])
@@ -2565,7 +2565,7 @@ testVersions((api, version) => {
         `,
       },
       {
-        name: 'product-category',
+        name: "product-category",
         typeDefs: graphql`
           extend schema @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@key"])
 
@@ -2583,7 +2583,7 @@ testVersions((api, version) => {
         `,
       },
       {
-        name: 'category',
+        name: "category",
         typeDefs: graphql`
           extend schema @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@key"])
 
@@ -2604,11 +2604,11 @@ testVersions((api, version) => {
     assertCompositionSuccess(result);
   });
 
-  test('resolve missing field by resolving first deeply nested key fields from multiple subgraphs...', () => {
+  test("resolve missing field by resolving first deeply nested key fields from multiple subgraphs...", () => {
     const result = api.composeServices(
       [
         {
-          name: 'products',
+          name: "products",
           typeDefs: graphql`
           extend schema
             @link(
@@ -2637,7 +2637,7 @@ testVersions((api, version) => {
         `,
         },
         {
-          name: 'core',
+          name: "core",
           typeDefs: graphql`
           extend schema @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@key"])
 
@@ -2648,7 +2648,7 @@ testVersions((api, version) => {
         `,
         },
         {
-          name: 'product-list',
+          name: "product-list",
           typeDefs: graphql`
           extend schema
             @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@key", "@shareable"])
@@ -2666,7 +2666,7 @@ testVersions((api, version) => {
         `,
         },
         {
-          name: 'product-price',
+          name: "product-price",
           typeDefs: graphql`
             extend schema
               @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@key", "@shareable"])
@@ -2702,10 +2702,10 @@ testVersions((api, version) => {
     assertCompositionSuccess(result);
   });
 
-  test('ignore overridden root fields', () => {
+  test("ignore overridden root fields", () => {
     const result = api.composeServices([
       {
-        name: 'a',
+        name: "a",
         typeDefs: graphql`
           extend schema
             @link(
@@ -2728,7 +2728,7 @@ testVersions((api, version) => {
         `,
       },
       {
-        name: 'b',
+        name: "b",
         typeDefs: graphql`
           extend schema
             @link(
@@ -2758,30 +2758,30 @@ testVersions((api, version) => {
       expect.objectContaining({
         message: expect.stringContaining(
           [
-            'The following supergraph API query:',
-            '{',
-            '  data {',
-            '    notInA',
-            '  }',
-            '}',
-            'cannot be satisfied by the subgraphs because:',
+            "The following supergraph API query:",
+            "{",
+            "  data {",
+            "    notInA",
+            "  }",
+            "}",
+            "cannot be satisfied by the subgraphs because:",
             '- from subgraph "b":',
             '  - cannot find field "Data.notInA".',
             '  - cannot move to subgraph "a", which has field "Data.notInA", because type "Data" has no @key defined in subgraph "a".',
-          ].join('\n'),
+          ].join("\n"),
         ),
         extensions: expect.objectContaining({
-          code: 'SATISFIABILITY_ERROR',
+          code: "SATISFIABILITY_ERROR",
         }),
       }),
     );
   });
 
-  test('make sure we avoid infinite loops', () => {
+  test("make sure we avoid infinite loops", () => {
     assertCompositionSuccess(
       api.composeServices([
         {
-          name: 'foo',
+          name: "foo",
           typeDefs: graphql`
               extend schema @link(url: "https://specs.apollo.dev/federation/${version}" import: ["@key", "@shareable", "@external"])
 
@@ -2806,7 +2806,7 @@ testVersions((api, version) => {
             `,
         },
         {
-          name: 'bar',
+          name: "bar",
           typeDefs: graphql`
               extend schema @link(url: "https://specs.apollo.dev/federation/${version}" import: ["@key", "@shareable", "@external"])
               type Query {
@@ -2833,11 +2833,11 @@ testVersions((api, version) => {
     );
   });
 
-  test('Fed1: @external and @extends/extend', () => {
+  test("Fed1: @external and @extends/extend", () => {
     assertCompositionSuccess(
       api.composeServices([
         {
-          name: 'a',
+          name: "a",
           typeDefs: graphql`
             type Query {
               randomUser: User
@@ -2853,7 +2853,7 @@ testVersions((api, version) => {
           `,
         },
         {
-          name: 'b',
+          name: "b",
           typeDefs: graphql`
             type Query {
               userById(id: ID): User
@@ -2872,7 +2872,7 @@ testVersions((api, version) => {
     assertCompositionSuccess(
       api.composeServices([
         {
-          name: 'a',
+          name: "a",
           typeDefs: graphql`
             type Query {
               randomUser: User
@@ -2885,7 +2885,7 @@ testVersions((api, version) => {
           `,
         },
         {
-          name: 'b',
+          name: "b",
           typeDefs: graphql`
             type Query {
               userById(id: ID): User
@@ -2902,11 +2902,11 @@ testVersions((api, version) => {
     );
   });
 
-  test('@requires with interface field', () => {
+  test("@requires with interface field", () => {
     assertCompositionSuccess(
       api.composeServices([
         {
-          name: 'a',
+          name: "a",
           typeDefs: graphql`
             type Query {
               userFromA(id: ID): User
@@ -2935,7 +2935,7 @@ testVersions((api, version) => {
           `,
         },
         {
-          name: 'b',
+          name: "b",
           typeDefs: graphql`
             type Query {
               userFromB(id: ID): User
@@ -2967,13 +2967,17 @@ testVersions((api, version) => {
     );
   });
 
-  test('@requires with a lot of nested entities', () => {
+  test("@requires with a lot of nested entities", () => {
     assertCompositionSuccess(
       api.composeServices([
         {
-          name: 'a',
+          name: "a",
           typeDefs: graphql`
-            extend schema @link(url: "https://specs.apollo.dev/federation/v2.0", import: ["@key"])
+            extend schema
+              @link(
+                url: "https://specs.apollo.dev/federation/v2.0"
+                import: ["@key"]
+              )
 
             type Publisher @key(fields: "id", resolvable: false) {
               id: ID!
@@ -2986,9 +2990,13 @@ testVersions((api, version) => {
           `,
         },
         {
-          name: 'b',
+          name: "b",
           typeDefs: graphql`
-            extend schema @link(url: "https://specs.apollo.dev/federation/v2.0", import: ["@key"])
+            extend schema
+              @link(
+                url: "https://specs.apollo.dev/federation/v2.0"
+                import: ["@key"]
+              )
 
             type Publisher @key(fields: "id") {
               id: ID!
@@ -3001,9 +3009,13 @@ testVersions((api, version) => {
           `,
         },
         {
-          name: 'c',
+          name: "c",
           typeDefs: graphql`
-            extend schema @link(url: "https://specs.apollo.dev/federation/v2.0", import: ["@key"])
+            extend schema
+              @link(
+                url: "https://specs.apollo.dev/federation/v2.0"
+                import: ["@key"]
+              )
 
             type Book @key(fields: "id") {
               id: ID!
@@ -3021,7 +3033,7 @@ testVersions((api, version) => {
           `,
         },
         {
-          name: 'd',
+          name: "d",
           typeDefs: graphql`
             extend schema
               @link(
@@ -3053,10 +3065,13 @@ testVersions((api, version) => {
 
     let result = api.composeServices([
       {
-        name: 'a',
+        name: "a",
         typeDefs: graphql`
           extend schema
-            @link(url: "https://specs.apollo.dev/federation/v2.0", import: ["@key", "@shareable"])
+            @link(
+              url: "https://specs.apollo.dev/federation/v2.0"
+              import: ["@key", "@shareable"]
+            )
 
           type Book @key(fields: "id isbn author{id name}") {
             id: ID!
@@ -3071,10 +3086,13 @@ testVersions((api, version) => {
         `,
       },
       {
-        name: 'b',
+        name: "b",
         typeDefs: graphql`
           extend schema
-            @link(url: "https://specs.apollo.dev/federation/v2.0", import: ["@key", "@shareable"])
+            @link(
+              url: "https://specs.apollo.dev/federation/v2.0"
+              import: ["@key", "@shareable"]
+            )
 
           type Book @key(fields: "id") @key(fields: "id isbn title") {
             id: ID!
@@ -3084,7 +3102,7 @@ testVersions((api, version) => {
         `,
       },
       {
-        name: 'c',
+        name: "c",
         typeDefs: graphql`
           extend schema
             @link(
@@ -3111,14 +3129,19 @@ testVersions((api, version) => {
 
     assertCompositionFailure(result);
 
-    expect(result.errors[0].message).toEqual(expect.stringContaining('"Book.id"'));
+    expect(result.errors[0].message).toEqual(
+      expect.stringContaining('"Book.id"'),
+    );
 
     result = api.composeServices([
       {
-        name: 'a',
+        name: "a",
         typeDefs: graphql`
           extend schema
-            @link(url: "https://specs.apollo.dev/federation/v2.0", import: ["@key", "@shareable"])
+            @link(
+              url: "https://specs.apollo.dev/federation/v2.0"
+              import: ["@key", "@shareable"]
+            )
 
           type Book @key(fields: "id isbn author{id name}") {
             id: ID!
@@ -3126,7 +3149,8 @@ testVersions((api, version) => {
             author: Author
           }
 
-          type BookList @key(fields: "books{id isbn author{id name nickname}} last{id}") {
+          type BookList
+            @key(fields: "books{id isbn author{id name nickname}} last{id}") {
             books: [Book!]!
             first: Book @shareable
             last: Book @shareable
@@ -3141,12 +3165,18 @@ testVersions((api, version) => {
         `,
       },
       {
-        name: 'b',
+        name: "b",
         typeDefs: graphql`
           extend schema
-            @link(url: "https://specs.apollo.dev/federation/v2.0", import: ["@key", "@shareable"])
+            @link(
+              url: "https://specs.apollo.dev/federation/v2.0"
+              import: ["@key", "@shareable"]
+            )
 
-          type Book @key(fields: "id") @key(fields: "id isbn title") @key(fields: "id publisher") {
+          type Book
+            @key(fields: "id")
+            @key(fields: "id isbn title")
+            @key(fields: "id publisher") {
             id: ID!
             isbn: ID
             title: String
@@ -3164,7 +3194,7 @@ testVersions((api, version) => {
         `,
       },
       {
-        name: 'c',
+        name: "c",
         typeDefs: graphql`
           extend schema
             @link(
@@ -3195,14 +3225,19 @@ testVersions((api, version) => {
     ]);
 
     assertCompositionFailure(result);
-    expect(result.errors[0].message).toEqual(expect.stringContaining('"Book.id"'));
+    expect(result.errors[0].message).toEqual(
+      expect.stringContaining('"Book.id"'),
+    );
 
     result = api.composeServices([
       {
-        name: 'a',
+        name: "a",
         typeDefs: graphql`
           extend schema
-            @link(url: "https://specs.apollo.dev/federation/v2.0", import: ["@key", "@shareable"])
+            @link(
+              url: "https://specs.apollo.dev/federation/v2.0"
+              import: ["@key", "@shareable"]
+            )
 
           type Book @key(fields: "id title isbn") {
             id: ID!
@@ -3217,10 +3252,13 @@ testVersions((api, version) => {
         `,
       },
       {
-        name: 'b',
+        name: "b",
         typeDefs: graphql`
           extend schema
-            @link(url: "https://specs.apollo.dev/federation/v2.0", import: ["@key", "@shareable"])
+            @link(
+              url: "https://specs.apollo.dev/federation/v2.0"
+              import: ["@key", "@shareable"]
+            )
 
           type Book @key(fields: "id isbn author{id name country}") {
             id: ID!
@@ -3228,7 +3266,8 @@ testVersions((api, version) => {
             author: Author
           }
 
-          type BookList @key(fields: "books{id isbn author{id name country}} last{id}") {
+          type BookList
+            @key(fields: "books{id isbn author{id name country}} last{id}") {
             books: [Book!]!
             last: Book @shareable
           }
@@ -3241,12 +3280,18 @@ testVersions((api, version) => {
         `,
       },
       {
-        name: 'c',
+        name: "c",
         typeDefs: graphql`
           extend schema
-            @link(url: "https://specs.apollo.dev/federation/v2.0", import: ["@key", "@shareable"])
+            @link(
+              url: "https://specs.apollo.dev/federation/v2.0"
+              import: ["@key", "@shareable"]
+            )
 
-          type Book @key(fields: "id") @key(fields: "id publisher") @key(fields: "id title isbn") {
+          type Book
+            @key(fields: "id")
+            @key(fields: "id publisher")
+            @key(fields: "id title isbn") {
             id: ID!
             publisher: String
             title: String
@@ -3261,7 +3306,7 @@ testVersions((api, version) => {
         `,
       },
       {
-        name: 'd',
+        name: "d",
         typeDefs: graphql`
           extend schema
             @link(
@@ -3301,10 +3346,13 @@ testVersions((api, version) => {
 
     result = api.composeServices([
       {
-        name: 'a',
+        name: "a",
         typeDefs: graphql`
           extend schema
-            @link(url: "https://specs.apollo.dev/federation/v2.0", import: ["@key", "@shareable"])
+            @link(
+              url: "https://specs.apollo.dev/federation/v2.0"
+              import: ["@key", "@shareable"]
+            )
 
           type Book @key(fields: "id title isbn") {
             id: ID!
@@ -3319,10 +3367,13 @@ testVersions((api, version) => {
         `,
       },
       {
-        name: 'b',
+        name: "b",
         typeDefs: graphql`
           extend schema
-            @link(url: "https://specs.apollo.dev/federation/v2.0", import: ["@key", "@shareable"])
+            @link(
+              url: "https://specs.apollo.dev/federation/v2.0"
+              import: ["@key", "@shareable"]
+            )
 
           type Book @key(fields: "id isbn author{id name country}") {
             id: ID!
@@ -3330,7 +3381,8 @@ testVersions((api, version) => {
             author: Author
           }
 
-          type BookList @key(fields: "books{id isbn author{id name country}} last{id}") {
+          type BookList
+            @key(fields: "books{id isbn author{id name country}} last{id}") {
             books: [Book!]!
             last: Book @shareable
           }
@@ -3343,12 +3395,18 @@ testVersions((api, version) => {
         `,
       },
       {
-        name: 'c',
+        name: "c",
         typeDefs: graphql`
           extend schema
-            @link(url: "https://specs.apollo.dev/federation/v2.0", import: ["@key", "@shareable"])
+            @link(
+              url: "https://specs.apollo.dev/federation/v2.0"
+              import: ["@key", "@shareable"]
+            )
 
-          type Book @key(fields: "id") @key(fields: "id publisher") @key(fields: "id title isbn") {
+          type Book
+            @key(fields: "id")
+            @key(fields: "id publisher")
+            @key(fields: "id title isbn") {
             id: ID!
             publisher: String
             title: String
@@ -3365,7 +3423,7 @@ testVersions((api, version) => {
         `,
       },
       {
-        name: 'd',
+        name: "d",
         typeDefs: graphql`
           extend schema
             @link(
@@ -3405,10 +3463,13 @@ testVersions((api, version) => {
 
     result = api.composeServices([
       {
-        name: 'a',
+        name: "a",
         typeDefs: graphql`
           extend schema
-            @link(url: "https://specs.apollo.dev/federation/v2.0", import: ["@key", "@shareable"])
+            @link(
+              url: "https://specs.apollo.dev/federation/v2.0"
+              import: ["@key", "@shareable"]
+            )
 
           type Book @key(fields: "id title isbn") {
             id: ID!
@@ -3423,7 +3484,7 @@ testVersions((api, version) => {
         `,
       },
       {
-        name: 'b',
+        name: "b",
         typeDefs: graphql`
           extend schema
             @link(
@@ -3443,12 +3504,18 @@ testVersions((api, version) => {
         `,
       },
       {
-        name: 'c',
+        name: "c",
         typeDefs: graphql`
           extend schema
-            @link(url: "https://specs.apollo.dev/federation/v2.0", import: ["@key", "@shareable"])
+            @link(
+              url: "https://specs.apollo.dev/federation/v2.0"
+              import: ["@key", "@shareable"]
+            )
 
-          type Book @key(fields: "id") @key(fields: "id publisher") @key(fields: "id title isbn") {
+          type Book
+            @key(fields: "id")
+            @key(fields: "id publisher")
+            @key(fields: "id title isbn") {
             id: ID!
             publisher: String
             title: String
@@ -3465,7 +3532,7 @@ testVersions((api, version) => {
         `,
       },
       {
-        name: 'd',
+        name: "d",
         typeDefs: graphql`
           extend schema
             @link(
@@ -3504,10 +3571,10 @@ testVersions((api, version) => {
     expect(result.errors).toHaveLength(1);
   });
 
-  test('@require in interfaceObject', () => {
+  test("@require in interfaceObject", () => {
     const result = api.composeServices([
       {
-        name: 'a',
+        name: "a",
         typeDefs: graphql`
           extend schema
             @link(
@@ -3527,7 +3594,7 @@ testVersions((api, version) => {
         `,
       },
       {
-        name: 'b',
+        name: "b",
         typeDefs: graphql`
           extend schema
             @link(
@@ -3547,7 +3614,7 @@ testVersions((api, version) => {
         `,
       },
       {
-        name: 'c',
+        name: "c",
         typeDefs: graphql`
           extend schema
             @link(
@@ -3574,11 +3641,11 @@ testVersions((api, version) => {
     assertCompositionSuccess(result);
   });
 
-  test('deeply nested interfaces with @requires(fields: <fragment>)', () => {
+  test("deeply nested interfaces with @requires(fields: <fragment>)", () => {
     assertCompositionSuccess(
       api.composeServices([
         {
-          name: 'a',
+          name: "a",
           typeDefs: graphql`
             extend schema
               @link(
@@ -3618,9 +3685,13 @@ testVersions((api, version) => {
           `,
         },
         {
-          name: 'b',
+          name: "b",
           typeDefs: graphql`
-            extend schema @link(url: "https://specs.apollo.dev/federation/v2.3", import: ["@key"])
+            extend schema
+              @link(
+                url: "https://specs.apollo.dev/federation/v2.3"
+                import: ["@key"]
+              )
 
             type Query {
               products: [Product]!
@@ -3658,14 +3729,18 @@ testVersions((api, version) => {
     );
   });
 
-  test('unreachable interface implementation (@interfaceObject) - interface lacks @key', () => {
+  test("unreachable interface implementation (@interfaceObject) - interface lacks @key", () => {
     // This is a valid composition, as the interface is annotated with @key
     assertCompositionSuccess(
       api.composeServices([
         {
-          name: 'a',
+          name: "a",
           typeDefs: graphql`
-            extend schema @link(url: "https://specs.apollo.dev/federation/v2.3", import: ["@key"])
+            extend schema
+              @link(
+                url: "https://specs.apollo.dev/federation/v2.3"
+                import: ["@key"]
+              )
 
             interface IData @key(fields: "id") {
               id: String
@@ -3677,7 +3752,7 @@ testVersions((api, version) => {
           `,
         },
         {
-          name: 'b',
+          name: "b",
           typeDefs: graphql`
             extend schema
               @link(
@@ -3700,9 +3775,13 @@ testVersions((api, version) => {
     // This is an invalid composition, as the interface is NOT annotated with @key
     const result = api.composeServices([
       {
-        name: 'a',
+        name: "a",
         typeDefs: graphql`
-          extend schema @link(url: "https://specs.apollo.dev/federation/v2.3", import: ["@key"])
+          extend schema
+            @link(
+              url: "https://specs.apollo.dev/federation/v2.3"
+              import: ["@key"]
+            )
 
           interface IData {
             id: String
@@ -3714,7 +3793,7 @@ testVersions((api, version) => {
         `,
       },
       {
-        name: 'b',
+        name: "b",
         typeDefs: graphql`
           extend schema
             @link(
@@ -3748,17 +3827,17 @@ testVersions((api, version) => {
           cannot be satisfied by the subgraphs because:
           - from subgraph "b": no subgraph can be reached to resolve the implementation type of @interfaceObject type "IData".`),
         extensions: expect.objectContaining({
-          code: 'SATISFIABILITY_ERROR',
+          code: "SATISFIABILITY_ERROR",
         }),
       }),
     );
   });
 
-  test('make sure moving from @interfaceObject to an implementation of the interface is allowed', () => {
+  test("make sure moving from @interfaceObject to an implementation of the interface is allowed", () => {
     assertCompositionSuccess(
       api.composeServices([
         {
-          name: 'a',
+          name: "a",
           typeDefs: graphql`
             extend schema
               @link(
@@ -3770,15 +3849,21 @@ testVersions((api, version) => {
               products: Product!
             }
 
-            type Product @key(fields: "id", resolvable: false) @interfaceObject {
+            type Product
+              @key(fields: "id", resolvable: false)
+              @interfaceObject {
               id: ID!
             }
           `,
         },
         {
-          name: 'b',
+          name: "b",
           typeDefs: graphql`
-            extend schema @link(url: "https://specs.apollo.dev/federation/v2.3", import: ["@key"])
+            extend schema
+              @link(
+                url: "https://specs.apollo.dev/federation/v2.3"
+                import: ["@key"]
+              )
 
             interface Product @key(fields: "id") {
               id: ID!

@@ -1,8 +1,8 @@
-import { expect, test } from 'vitest';
-import { graphql, testVersions } from '../../shared/testkit.js';
+import { expect, test } from "vitest";
+import { graphql, testVersions } from "../../shared/testkit.js";
 
 testVersions((api, version) => {
-  test('KEY_INVALID_FIELDS: syntax error', () => {
+  test("KEY_INVALID_FIELDS: syntax error", () => {
     expect(
       api.composeServices([
         {
@@ -18,7 +18,7 @@ testVersions((api, version) => {
               id: ID!
             }
           `,
-          name: 'serviceA',
+          name: "serviceA",
         },
         {
           typeDefs: graphql`
@@ -29,7 +29,7 @@ testVersions((api, version) => {
               price: Int! @requires(fields: "sku")
             }
           `,
-          name: 'serviceB',
+          name: "serviceB",
         },
       ]),
     ).toEqual(
@@ -40,7 +40,7 @@ testVersions((api, version) => {
               `[serviceA] On type "Product", for @key(fields: "featuredItem { id"): Syntax Error: Expected Name, found <EOF>.`,
             ),
             extensions: expect.objectContaining({
-              code: 'KEY_INVALID_FIELDS',
+              code: "KEY_INVALID_FIELDS",
             }),
           }),
         ]),
@@ -48,11 +48,11 @@ testVersions((api, version) => {
     );
   });
 
-  test('KEY_INVALID_FIELDS - unknown directive', () => {
+  test("KEY_INVALID_FIELDS - unknown directive", () => {
     expect(
       api.composeServices([
         {
-          name: 'users',
+          name: "users",
           typeDefs: graphql`
             extend schema @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@key"])
 
@@ -75,7 +75,7 @@ testVersions((api, version) => {
               `[users] On type "User", for @key(fields: "id name @lowercase "): Unknown directive "@lowercase"`,
             ),
             extensions: expect.objectContaining({
-              code: 'KEY_INVALID_FIELDS',
+              code: "KEY_INVALID_FIELDS",
             }),
           }),
         ]),
@@ -83,7 +83,7 @@ testVersions((api, version) => {
     );
   });
 
-  test('KEY_INVALID_FIELDS: unknown field', () => {
+  test("KEY_INVALID_FIELDS: unknown field", () => {
     expect(
       api.composeServices([
         {
@@ -94,7 +94,7 @@ testVersions((api, version) => {
               sku: String!
             }
           `,
-          name: 'serviceA',
+          name: "serviceA",
         },
       ]),
     ).toEqual(
@@ -105,7 +105,7 @@ testVersions((api, version) => {
               `[serviceA] On type "Product", for @key(fields: "skucha"): Cannot query field "skucha" on type "Product" (the field should either be added to this subgraph or, if it should not be resolved by this subgraph, you need to add it to this subgraph with @external).`,
             ),
             extensions: expect.objectContaining({
-              code: 'KEY_INVALID_FIELDS',
+              code: "KEY_INVALID_FIELDS",
             }),
           }),
         ]),

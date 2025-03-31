@@ -1,4 +1,6 @@
-directive @tag(name: String!) repeatable on FIELD_DEFINITION | INTERFACE | OBJECT | UNION
+directive @tag(
+  name: String!
+) repeatable on FIELD_DEFINITION | INTERFACE | OBJECT | UNION
 
 input daily22a {
   wetlyf96: String!

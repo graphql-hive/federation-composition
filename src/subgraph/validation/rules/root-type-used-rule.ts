@@ -6,8 +6,8 @@ import {
   OperationTypeNode,
   SchemaDefinitionNode,
   SchemaExtensionNode,
-} from 'graphql';
-import type { SubgraphValidationContext } from '../validation-context.js';
+} from "graphql";
+import type { SubgraphValidationContext } from "../validation-context.js";
 
 function findDefaultRootTypes(definitions: readonly DefinitionNode[]) {
   const foundRootTypes: Record<OperationTypeNode, string | null> = {
@@ -24,14 +24,14 @@ function findDefaultRootTypes(definitions: readonly DefinitionNode[]) {
     }
 
     if (isTypeDefinitionNode(definition)) {
-      if (definition.name.value === 'Query') {
-        foundRootTypes.query = 'Query';
+      if (definition.name.value === "Query") {
+        foundRootTypes.query = "Query";
         found.add(OperationTypeNode.QUERY);
-      } else if (definition.name.value === 'Mutation') {
-        foundRootTypes.mutation = 'Mutation';
+      } else if (definition.name.value === "Mutation") {
+        foundRootTypes.mutation = "Mutation";
         found.add(OperationTypeNode.MUTATION);
-      } else if (definition.name.value === 'Subscription') {
-        foundRootTypes.subscription = 'Subscription';
+      } else if (definition.name.value === "Subscription") {
+        foundRootTypes.subscription = "Subscription";
         found.add(OperationTypeNode.SUBSCRIPTION);
       }
     }
@@ -66,7 +66,9 @@ function validateSchemaNode(
   }
 }
 
-export function RootTypeUsedRule(context: SubgraphValidationContext): ASTVisitor {
+export function RootTypeUsedRule(
+  context: SubgraphValidationContext,
+): ASTVisitor {
   const { definitions } = context.getDocument();
 
   return {

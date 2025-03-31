@@ -1,4 +1,8 @@
-extend schema @link(url: "https://specs.apollo.dev/federation/v2.0", import: ["@key", "@shareable"])
+extend schema
+  @link(
+    url: "https://specs.apollo.dev/federation/v2.0"
+    import: ["@key", "@shareable"]
+  )
 
 type which577 implements oddlybcf @key(fields: "midst81a") {
   midst81a: ID!

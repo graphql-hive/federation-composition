@@ -16,9 +16,9 @@ import {
   ValueNode,
   VariableDefinitionNode,
   visit,
-} from 'graphql';
-import sortBy from 'lodash.sortby';
-import { print } from './printer.js';
+} from "graphql";
+import sortBy from "lodash.sortby";
+import { print } from "./printer.js";
 
 // Used to normalize the AST of Supergraph SDLs so that they can be compared without worrying about ordering
 export function sortSDL(doc: DocumentNode) {
@@ -99,13 +99,18 @@ export function sortSDL(doc: DocumentNode) {
       },
       Directive(node) {
         for (const arg of node.arguments ?? []) {
-          if (['requires', 'provides'].includes(arg.name.value) && arg.value.kind === Kind.STRING) {
+          if (
+            ["requires", "provides"].includes(arg.name.value) &&
+            arg.value.kind === Kind.STRING
+          ) {
             const parsedFields = parseFields(arg.value.value);
 
             if (parsedFields) {
               const printed = stripIgnoredCharacters(print(parsedFields));
 
-              (arg.value as any).value = printed.replace(/^\{/, '').replace(/\}$/, '');
+              (arg.value as any).value = printed
+                .replace(/^\{/, "")
+                .replace(/\}$/, "");
             }
           }
         }
@@ -123,7 +128,7 @@ export function sortSDL(doc: DocumentNode) {
       },
     });
   } catch (error) {
-    console.log('Failed to parse', doc.loc?.source.name);
+    console.log("Failed to parse", doc.loc?.source.name);
     throw error;
   }
 }
@@ -131,7 +136,7 @@ export function sortSDL(doc: DocumentNode) {
 function parseFields(fields: string) {
   const parsed = parse(
     fields.trim().startsWith(`{`) ? `query ${fields}` : `query { ${fields} }`,
-  ).definitions.find(d => d.kind === Kind.OPERATION_DEFINITION) as
+  ).definitions.find((d) => d.kind === Kind.OPERATION_DEFINITION) as
     | OperationDefinitionNode
     | undefined;
 
@@ -139,96 +144,115 @@ function parseFields(fields: string) {
 }
 
 function valueNodeToString(node: ValueNode): string {
-  if ('name' in node) {
+  if ("name" in node) {
     return node.name.value;
   }
 
-  if ('value' in node) {
+  if ("value" in node) {
     return node.value.toString();
   }
 
   if (node.kind === Kind.LIST) {
-    return node.values.map(valueNodeToString).join(',');
+    return node.values.map(valueNodeToString).join(",");
   }
 
   if (node.kind === Kind.OBJECT) {
-    return 'OBJECT';
+    return "OBJECT";
   }
 
-  return 'NULL';
+  return "NULL";
 }
 
 function sortNodes(nodes: readonly DefinitionNode[]): readonly DefinitionNode[];
 function sortNodes(
   nodes: readonly NamedTypeNode[] | undefined,
 ): readonly NamedTypeNode[] | undefined;
-function sortNodes(nodes: readonly ArgumentNode[] | undefined): readonly ArgumentNode[] | undefined;
+function sortNodes(
+  nodes: readonly ArgumentNode[] | undefined,
+): readonly ArgumentNode[] | undefined;
 function sortNodes(
   nodes: readonly EnumValueDefinitionNode[] | undefined,
 ): readonly EnumValueDefinitionNode[] | undefined;
 function sortNodes(
   nodes: readonly DirectiveNode[] | undefined,
 ): readonly DirectiveNode[] | undefined;
-function sortNodes(nodes: readonly NameNode[] | undefined): readonly NameNode[] | undefined;
+function sortNodes(
+  nodes: readonly NameNode[] | undefined,
+): readonly NameNode[] | undefined;
 function sortNodes(
   nodes: readonly FieldDefinitionNode[] | undefined,
 ): readonly FieldDefinitionNode[] | undefined;
 function sortNodes(
   nodes: readonly InputValueDefinitionNode[] | undefined,
 ): readonly InputValueDefinitionNode[] | undefined;
-function sortNodes(nodes: readonly any[] | undefined): readonly any[] | undefined {
+function sortNodes(
+  nodes: readonly any[] | undefined,
+): readonly any[] | undefined {
   if (nodes) {
     if (nodes.length === 0) {
       return [];
     }
 
     if (isOfKindList<NamedTypeNode>(nodes, Kind.NAMED_TYPE)) {
-      return sortBy(nodes, 'name.value');
+      return sortBy(nodes, "name.value");
     }
 
     if (isOfKindList<DirectiveNode>(nodes, Kind.DIRECTIVE)) {
-      return sortBy(nodes, n => {
+      return sortBy(nodes, (n) => {
         const args =
           n.arguments
-            ?.map(a => a.name.value + valueNodeToString(a.value))
+            ?.map((a) => a.name.value + valueNodeToString(a.value))
             .sort()
-            .join(';') ?? '';
+            .join(";") ?? "";
         return n.name.value + args;
       });
     }
 
     if (isOfKindList<VariableDefinitionNode>(nodes, Kind.VARIABLE_DEFINITION)) {
-      return sortBy(nodes, 'variable.name.value');
+      return sortBy(nodes, "variable.name.value");
     }
 
     if (isOfKindList<ArgumentNode>(nodes, Kind.ARGUMENT)) {
-      return sortBy(nodes, 'name.value');
-    }
-
-    if (isOfKindList<EnumValueDefinitionNode>(nodes, Kind.ENUM_VALUE_DEFINITION)) {
-      return sortBy(nodes, 'name.value');
-    }
-
-    if (isOfKindList<InputValueDefinitionNode>(nodes, Kind.INPUT_VALUE_DEFINITION)) {
-      return sortBy(nodes, 'name.value');
+      return sortBy(nodes, "name.value");
     }
 
     if (
-      isOfKindList<SelectionNode>(nodes, [Kind.FIELD, Kind.FRAGMENT_SPREAD, Kind.INLINE_FRAGMENT])
+      isOfKindList<EnumValueDefinitionNode>(nodes, Kind.ENUM_VALUE_DEFINITION)
     ) {
-      return sortBy(nodes, 'kind', 'name.value');
+      return sortBy(nodes, "name.value");
+    }
+
+    if (
+      isOfKindList<InputValueDefinitionNode>(nodes, Kind.INPUT_VALUE_DEFINITION)
+    ) {
+      return sortBy(nodes, "name.value");
+    }
+
+    if (
+      isOfKindList<SelectionNode>(nodes, [
+        Kind.FIELD,
+        Kind.FRAGMENT_SPREAD,
+        Kind.INLINE_FRAGMENT,
+      ])
+    ) {
+      return sortBy(nodes, "kind", "name.value");
     }
 
     if (isOfKindList<NameNode>(nodes, Kind.NAME)) {
-      return sortBy(nodes, 'value');
+      return sortBy(nodes, "value");
     }
 
-    return sortBy(nodes, 'kind', 'name.value');
+    return sortBy(nodes, "kind", "name.value");
   }
 
   return;
 }
 
-function isOfKindList<T>(nodes: readonly any[], kind: string | string[]): nodes is T[] {
-  return typeof kind === 'string' ? nodes[0].kind === kind : kind.includes(nodes[0].kind);
+function isOfKindList<T>(
+  nodes: readonly any[],
+  kind: string | string[],
+): nodes is T[] {
+  return typeof kind === "string"
+    ? nodes[0].kind === kind
+    : kind.includes(nodes[0].kind);
 }

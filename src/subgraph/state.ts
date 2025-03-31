@@ -13,12 +13,15 @@ import {
   specifiedDirectives as specifiedDirectiveTypes,
   specifiedScalarTypes,
   TypeNode,
-} from 'graphql';
-import { print } from '../graphql/printer.js';
-import { TypeNodeInfo } from '../graphql/type-node-info.js';
-import { FederationVersion, isFederationLink } from '../specifications/federation.js';
-import { Link, LinkImport } from '../specifications/link.js';
-import { printOutputType } from './helpers.js';
+} from "graphql";
+import { print } from "../graphql/printer.js";
+import { TypeNodeInfo } from "../graphql/type-node-info.js";
+import {
+  FederationVersion,
+  isFederationLink,
+} from "../specifications/federation.js";
+import { Link, LinkImport } from "../specifications/link.js";
+import { printOutputType } from "./helpers.js";
 
 export type SubgraphType =
   | ObjectType
@@ -30,19 +33,19 @@ export type SubgraphType =
   | Directive;
 
 export enum TypeKind {
-  OBJECT = 'OBJECT',
-  INTERFACE = 'INTERFACE',
-  ENUM = 'ENUM',
-  UNION = 'UNION',
-  SCALAR = 'SCALAR',
-  INPUT_OBJECT = 'INPUT_OBJECT',
-  DIRECTIVE = 'DIRECTIVE',
+  OBJECT = "OBJECT",
+  INTERFACE = "INTERFACE",
+  ENUM = "ENUM",
+  UNION = "UNION",
+  SCALAR = "SCALAR",
+  INPUT_OBJECT = "INPUT_OBJECT",
+  DIRECTIVE = "DIRECTIVE",
 }
 
 export enum ArgumentKind {
-  SCALAR = 'SCALAR',
-  OBJECT = 'OBJECT',
-  ENUM = 'ENUM',
+  SCALAR = "SCALAR",
+  OBJECT = "OBJECT",
+  ENUM = "ENUM",
 }
 
 type SubgraphID = string;
@@ -80,7 +83,7 @@ export interface ObjectType {
   name: string;
   fields: Map<string, Field>;
   extension: boolean;
-  extensionType?: '@extends' | 'extend';
+  extensionType?: "@extends" | "extend";
   external: boolean;
   keys: Key[];
   fieldsUsedAsKeys: Set<string>;
@@ -306,9 +309,11 @@ export interface SubgraphState {
   };
 }
 
-const MISSING = 'MISSING';
+const MISSING = "MISSING";
 
-export type SubgraphStateBuilder = ReturnType<typeof createSubgraphStateBuilder>;
+export type SubgraphStateBuilder = ReturnType<
+  typeof createSubgraphStateBuilder
+>;
 
 export function createSubgraphStateBuilder(
   graph: { id: string; name: string; url?: string },
@@ -319,15 +324,17 @@ export function createSubgraphStateBuilder(
   const federationLink = links.find(isFederationLink);
   const linksWithDirective = links.filter(
     // Reject federation links and links without directives
-    link => !isFederationLink(link) && link.imports.some(im => im.kind === 'directive'),
+    (link) =>
+      !isFederationLink(link) &&
+      link.imports.some((im) => im.kind === "directive"),
   );
   const isLinkSpecManuallyProvided = typeDefs.definitions.some(
-    def =>
+    (def) =>
       def.kind === Kind.DIRECTIVE_DEFINITION &&
-      def.name.value === 'link' &&
-      def.locations.every(loc => loc.value === 'SCHEMA'),
+      def.name.value === "link" &&
+      def.locations.every((loc) => loc.value === "SCHEMA"),
   );
-  const specifiedScalars = specifiedScalarTypes.map(type => type.name);
+  const specifiedScalars = specifiedScalarTypes.map((type) => type.name);
 
   const state: SubgraphState = {
     graph: {
@@ -365,7 +372,10 @@ export function createSubgraphStateBuilder(
   const inputObjectTypeNames = new Set<string>();
 
   for (const typeDef of typeDefs.definitions) {
-    if (typeDef.kind === Kind.ENUM_TYPE_DEFINITION || typeDef.kind === Kind.ENUM_TYPE_EXTENSION) {
+    if (
+      typeDef.kind === Kind.ENUM_TYPE_DEFINITION ||
+      typeDef.kind === Kind.ENUM_TYPE_EXTENSION
+    ) {
       enumTypeNames.add(typeDef.name.value);
       leafTypeNames.add(typeDef.name.value);
     } else if (
@@ -381,16 +391,20 @@ export function createSubgraphStateBuilder(
     }
   }
 
-  const expectedQueryTypeName = decideOnRootTypeName(schemaDef, OperationTypeNode.QUERY, 'Query');
+  const expectedQueryTypeName = decideOnRootTypeName(
+    schemaDef,
+    OperationTypeNode.QUERY,
+    "Query",
+  );
   const expectedMutationTypeName = decideOnRootTypeName(
     schemaDef,
     OperationTypeNode.MUTATION,
-    'Mutation',
+    "Mutation",
   );
   const expectedSubscriptionTypeName = decideOnRootTypeName(
     schemaDef,
     OperationTypeNode.SUBSCRIPTION,
-    'Subscription',
+    "Subscription",
   );
 
   /**
@@ -425,15 +439,15 @@ export function createSubgraphStateBuilder(
 
   function renameObjectType(typeName: string) {
     if (typeName === expectedQueryTypeName) {
-      return 'Query';
+      return "Query";
     }
 
     if (typeName === expectedMutationTypeName) {
-      return 'Mutation';
+      return "Mutation";
     }
 
     if (typeName === expectedSubscriptionTypeName) {
-      return 'Subscription';
+      return "Subscription";
     }
 
     return typeName;
@@ -464,17 +478,20 @@ export function createSubgraphStateBuilder(
     enumType: enumTypeBuilder,
     composedDirectives,
     state,
-    markCostSpecAsUsed(directive: keyof SubgraphState['specs']['cost']['names'], name: string) {
+    markCostSpecAsUsed(
+      directive: keyof SubgraphState["specs"]["cost"]["names"],
+      name: string,
+    ) {
       state.specs.cost.used = true;
       state.specs.cost.names[directive] = name;
     },
-    markSpecAsUsed(specName: Exclude<keyof SubgraphState['specs'], 'cost'>) {
+    markSpecAsUsed(specName: Exclude<keyof SubgraphState["specs"], "cost">) {
       state.specs[specName] = true;
     },
     visitor(typeNodeInfo: TypeNodeInfo): ASTVisitor {
       const enumTypes = typeDefs.definitions.filter(isEnumType);
       const enumTypesByName = new Set(
-        enumTypes ? enumTypes.map(enumType => enumType.name.value) : [],
+        enumTypes ? enumTypes.map((enumType) => enumType.name.value) : [],
       );
 
       return {
@@ -509,10 +526,16 @@ export function createSubgraphStateBuilder(
               node.name.value,
               printOutputType(node.type),
             );
-            interfaceTypeBuilder.field.setUsed(typeDef.name.value, node.name.value);
+            interfaceTypeBuilder.field.setUsed(
+              typeDef.name.value,
+              node.name.value,
+            );
 
             if (isLeaf) {
-              interfaceTypeBuilder.field.setLeaf(typeDef.name.value, node.name.value);
+              interfaceTypeBuilder.field.setLeaf(
+                typeDef.name.value,
+                node.name.value,
+              );
             }
 
             return;
@@ -529,24 +552,36 @@ export function createSubgraphStateBuilder(
           );
 
           if (isLeaf) {
-            objectTypeBuilder.field.setLeaf(typeDef.name.value, node.name.value);
+            objectTypeBuilder.field.setLeaf(
+              typeDef.name.value,
+              node.name.value,
+            );
           }
 
-          if (typeDef.kind === Kind.OBJECT_TYPE_EXTENSION /* TODO:  || has @extends */) {
-            objectTypeBuilder.field.setExtension(typeDef.name.value, node.name.value);
+          if (
+            typeDef.kind ===
+            Kind.OBJECT_TYPE_EXTENSION /* TODO:  || has @extends */
+          ) {
+            objectTypeBuilder.field.setExtension(
+              typeDef.name.value,
+              node.name.value,
+            );
           }
 
           // In Federation v1, all fields are shareable by default, but only in object type definition.
           // Extensions are not shareable.
           // The exception are root types, all their fields are shareable.
           if (
-            version === 'v1.0' &&
+            version === "v1.0" &&
             (typeDef.kind === Kind.OBJECT_TYPE_DEFINITION ||
               typeDef.name.value === expectedQueryTypeName ||
               typeDef.name.value === expectedMutationTypeName ||
               typeDef.name.value === expectedSubscriptionTypeName)
           ) {
-            objectTypeBuilder.field.setShareable(typeDef.name.value, node.name.value);
+            objectTypeBuilder.field.setShareable(
+              typeDef.name.value,
+              node.name.value,
+            );
           }
         },
         InputValueDefinition(node) {
@@ -665,7 +700,10 @@ export function createSubgraphStateBuilder(
 
             if (node.interfaces) {
               for (const interfaceNode of node.interfaces) {
-                interfaceTypeBuilder.setInterface(node.name.value, interfaceNode.name.value);
+                interfaceTypeBuilder.setInterface(
+                  node.name.value,
+                  interfaceNode.name.value,
+                );
               }
             }
             return;
@@ -684,7 +722,10 @@ export function createSubgraphStateBuilder(
 
           if (node.interfaces) {
             for (const interfaceNode of node.interfaces) {
-              objectTypeBuilder.setInterface(node.name.value, interfaceNode.name.value);
+              objectTypeBuilder.setInterface(
+                node.name.value,
+                interfaceNode.name.value,
+              );
             }
           }
         },
@@ -701,11 +742,14 @@ export function createSubgraphStateBuilder(
             state.schema.subscriptionType = renameObjectType(node.name.value);
           }
 
-          objectTypeBuilder.setExtension(node.name.value, 'extend');
+          objectTypeBuilder.setExtension(node.name.value, "extend");
 
           if (node.interfaces) {
             for (const interfaceNode of node.interfaces) {
-              objectTypeBuilder.setInterface(node.name.value, interfaceNode.name.value);
+              objectTypeBuilder.setInterface(
+                node.name.value,
+                interfaceNode.name.value,
+              );
             }
           }
         },
@@ -714,18 +758,24 @@ export function createSubgraphStateBuilder(
 
           if (node.interfaces) {
             for (const interfaceNode of node.interfaces) {
-              interfaceTypeBuilder.setInterface(node.name.value, interfaceNode.name.value);
+              interfaceTypeBuilder.setInterface(
+                node.name.value,
+                interfaceNode.name.value,
+              );
             }
           }
         },
         InterfaceTypeExtension(node) {
-          if (version !== 'v1.0') {
+          if (version !== "v1.0") {
             interfaceTypeBuilder.setExtension(node.name.value);
           }
 
           if (node.interfaces) {
             for (const interfaceNode of node.interfaces) {
-              interfaceTypeBuilder.setInterface(node.name.value, interfaceNode.name.value);
+              interfaceTypeBuilder.setInterface(
+                node.name.value,
+                interfaceNode.name.value,
+              );
             }
           }
         },
@@ -823,7 +873,11 @@ export function createSubgraphStateBuilder(
               }
               case Kind.DIRECTIVE_DEFINITION: {
                 if (fieldDef) {
-                  directiveBuilder.arg.setDirective(typeDef.name.value, fieldDef!.name.value, node);
+                  directiveBuilder.arg.setDirective(
+                    typeDef.name.value,
+                    fieldDef!.name.value,
+                    node,
+                  );
                 }
                 break;
               }
@@ -861,22 +915,27 @@ export function createSubgraphStateBuilder(
 
               default:
                 throw new Error(
-                  `Directives on "${typeof typeDef === 'object' && typeDef !== null && 'kind' in typeDef ? (typeDef as any).kind : typeDef}" types are not supported yet`,
+                  `Directives on "${typeof typeDef === "object" && typeDef !== null && "kind" in typeDef ? (typeDef as any).kind : typeDef}" types are not supported yet`,
                 );
             }
-          } else if (node.name.value === 'specifiedBy') {
+          } else if (node.name.value === "specifiedBy") {
             const typeDef = typeNodeInfo.getTypeDef();
             if (
               typeDef &&
               (typeDef.kind === Kind.SCALAR_TYPE_DEFINITION ||
                 typeDef.kind === Kind.SCALAR_TYPE_EXTENSION)
             ) {
-              const urlValue = node.arguments?.find(arg => arg.name.value === 'url')?.value;
+              const urlValue = node.arguments?.find(
+                (arg) => arg.name.value === "url",
+              )?.value;
               if (urlValue?.kind === Kind.STRING) {
-                scalarTypeBuilder.setSpecifiedBy(typeDef.name.value, urlValue.value);
+                scalarTypeBuilder.setSpecifiedBy(
+                  typeDef.name.value,
+                  urlValue.value,
+                );
               }
             }
-          } else if (node.name.value === 'deprecated') {
+          } else if (node.name.value === "deprecated") {
             const typeDef = typeNodeInfo.getTypeDef();
             const fieldDef = typeNodeInfo.getFieldDef();
             const argDef = typeNodeInfo.getArgumentDef();
@@ -885,8 +944,11 @@ export function createSubgraphStateBuilder(
               return;
             }
 
-            const reasonValue = node.arguments?.find(arg => arg.name.value === 'reason')?.value;
-            const reason = reasonValue?.kind === Kind.STRING ? reasonValue.value : undefined;
+            const reasonValue = node.arguments?.find(
+              (arg) => arg.name.value === "reason",
+            )?.value;
+            const reason =
+              reasonValue?.kind === Kind.STRING ? reasonValue.value : undefined;
 
             switch (typeDef.kind) {
               case Kind.OBJECT_TYPE_DEFINITION:
@@ -997,7 +1059,7 @@ export function createSubgraphStateBuilder(
                 resolveArgumentKind(outputTypeName),
               );
 
-              if (typeof arg.defaultValue !== 'undefined') {
+              if (typeof arg.defaultValue !== "undefined") {
                 directiveBuilder.arg.setDefaultValue(
                   directiveName,
                   arg.name.value,
@@ -1017,7 +1079,7 @@ export function createSubgraphStateBuilder(
             block: node.block === true,
           };
 
-          if (parent && 'kind' in parent) {
+          if (parent && "kind" in parent) {
             if (
               parent.kind === Kind.SCALAR_TYPE_DEFINITION ||
               parent.kind === Kind.SCALAR_TYPE_EXTENSION
@@ -1060,7 +1122,10 @@ export function createSubgraphStateBuilder(
                   description,
                 );
               } else if (matchesParent(typeDef)) {
-                objectTypeBuilder.setDescription(typeDef.name.value, description);
+                objectTypeBuilder.setDescription(
+                  typeDef.name.value,
+                  description,
+                );
               }
               break;
             }
@@ -1080,7 +1145,10 @@ export function createSubgraphStateBuilder(
                   description,
                 );
               } else if (matchesParent(typeDef)) {
-                interfaceTypeBuilder.setDescription(typeDef.name.value, description);
+                interfaceTypeBuilder.setDescription(
+                  typeDef.name.value,
+                  description,
+                );
               }
               break;
             }
@@ -1093,13 +1161,20 @@ export function createSubgraphStateBuilder(
                   description,
                 );
               } else if (matchesParent(typeDef)) {
-                inputObjectTypeBuilder.setDescription(typeDef.name.value, description);
+                inputObjectTypeBuilder.setDescription(
+                  typeDef.name.value,
+                  description,
+                );
               }
               break;
             }
             case Kind.ENUM_TYPE_DEFINITION:
             case Kind.ENUM_TYPE_EXTENSION: {
-              if (parent && 'kind' in parent && parent.kind === Kind.ENUM_VALUE_DEFINITION) {
+              if (
+                parent &&
+                "kind" in parent &&
+                parent.kind === Kind.ENUM_VALUE_DEFINITION
+              ) {
                 enumTypeBuilder.value.setDescription(
                   typeDef.name.value,
                   parent.name.value,
@@ -1113,7 +1188,10 @@ export function createSubgraphStateBuilder(
             case Kind.UNION_TYPE_DEFINITION:
             case Kind.UNION_TYPE_EXTENSION: {
               if (matchesParent(typeDef)) {
-                unionTypeBuilder.setDescription(typeDef.name.value, description);
+                unionTypeBuilder.setDescription(
+                  typeDef.name.value,
+                  description,
+                );
               }
               break;
             }
@@ -1145,11 +1223,18 @@ function directiveFactory(state: SubgraphState) {
       setKind(directiveName: string, argName: string, argKind: ArgumentKind) {
         getOrCreateDirectiveArg(state, directiveName, argName).kind = argKind;
       },
-      setDirective(typeName: string, argName: string, directive: DirectiveNode) {
-        getOrCreateDirectiveArg(state, typeName, argName).ast.directives.push(directive);
+      setDirective(
+        typeName: string,
+        argName: string,
+        directive: DirectiveNode,
+      ) {
+        getOrCreateDirectiveArg(state, typeName, argName).ast.directives.push(
+          directive,
+        );
       },
       setDefaultValue(typeName: string, argName: string, defaultValue: string) {
-        getOrCreateDirectiveArg(state, typeName, argName).defaultValue = defaultValue;
+        getOrCreateDirectiveArg(state, typeName, argName).defaultValue =
+          defaultValue;
       },
       setInaccessible(typeName: string, argName: string) {
         getOrCreateDirectiveArg(state, typeName, argName).inaccessible = true;
@@ -1161,11 +1246,13 @@ function directiveFactory(state: SubgraphState) {
 /**
  * Removes some types that are specific to the federation spec.
  */
-export function cleanSubgraphStateFromFederationSpec(state: SubgraphState): SubgraphState {
-  state.types.delete('_FieldSet');
-  state.types.delete('federation__FieldSet');
-  state.types.delete('federation__Policy');
-  state.types.delete('federation__Scope');
+export function cleanSubgraphStateFromFederationSpec(
+  state: SubgraphState,
+): SubgraphState {
+  state.types.delete("_FieldSet");
+  state.types.delete("federation__FieldSet");
+  state.types.delete("federation__Policy");
+  state.types.delete("federation__Scope");
 
   return state;
 }
@@ -1173,11 +1260,13 @@ export function cleanSubgraphStateFromFederationSpec(state: SubgraphState): Subg
 /**
  * Removes all types that are specific to the link spec.
  */
-export function cleanSubgraphStateFromLinkSpec(state: SubgraphState): SubgraphState {
-  state.types.delete('link__Import');
-  state.types.delete('link__Purpose');
-  state.types.delete('link__Import');
-  state.types.delete('link');
+export function cleanSubgraphStateFromLinkSpec(
+  state: SubgraphState,
+): SubgraphState {
+  state.types.delete("link__Import");
+  state.types.delete("link__Purpose");
+  state.types.delete("link__Import");
+  state.types.delete("link");
 
   return state;
 }
@@ -1231,14 +1320,14 @@ function objectTypeFactory(
 
       getOrCreateObjectType(state, renameObject, typeName).isDefinition = true;
     },
-    setExtension(typeName: string, extensionType: '@extends' | 'extend') {
+    setExtension(typeName: string, extensionType: "@extends" | "extend") {
       if (isInterfaceObject(typeName)) {
         return interfaceTypeBuilder.setExtension(typeName);
       }
 
       const objectType = getOrCreateObjectType(state, renameObject, typeName);
       objectType.extension = true;
-      if (objectType.extensionType !== '@extends') {
+      if (objectType.extensionType !== "@extends") {
         objectType.extensionType = extensionType;
       }
     },
@@ -1246,7 +1335,8 @@ function objectTypeFactory(
       if (isInterfaceObject(typeName)) {
         return interfaceTypeBuilder.setDescription(typeName, description);
       }
-      getOrCreateObjectType(state, renameObject, typeName).description = description;
+      getOrCreateObjectType(state, renameObject, typeName).description =
+        description;
     },
     setExternal(typeName: string) {
       if (isInterfaceObject(typeName)) {
@@ -1265,12 +1355,26 @@ function objectTypeFactory(
         return interfaceTypeBuilder.setInterface(typeName, interfaceName);
       }
 
-      getOrCreateObjectType(state, renameObject, typeName).interfaces.add(interfaceName);
-      getOrCreateInterfaceType(state, interfaceName).implementedBy.add(typeName);
+      getOrCreateObjectType(state, renameObject, typeName).interfaces.add(
+        interfaceName,
+      );
+      getOrCreateInterfaceType(state, interfaceName).implementedBy.add(
+        typeName,
+      );
     },
-    setKey(typeName: string, fields: string, fieldsUsedInKey: Set<string>, resolvable: boolean) {
+    setKey(
+      typeName: string,
+      fields: string,
+      fieldsUsedInKey: Set<string>,
+      resolvable: boolean,
+    ) {
       if (isInterfaceObject(typeName)) {
-        return interfaceTypeBuilder.setKey(typeName, fields, fieldsUsedInKey, resolvable);
+        return interfaceTypeBuilder.setKey(
+          typeName,
+          fields,
+          fieldsUsedInKey,
+          resolvable,
+        );
       }
       const objectType = getOrCreateObjectType(state, renameObject, typeName);
       objectType.keys.push({ fields, resolvable });
@@ -1304,14 +1408,18 @@ function objectTypeFactory(
         return interfaceTypeBuilder.setPolicies(typeName, policies);
       }
 
-      getOrCreateObjectType(state, renameObject, typeName).policies.push(...policies);
+      getOrCreateObjectType(state, renameObject, typeName).policies.push(
+        ...policies,
+      );
     },
     setScopes(typeName: string, scopes: string[][]) {
       if (isInterfaceObject(typeName)) {
         return interfaceTypeBuilder.setScopes(typeName, scopes);
       }
 
-      getOrCreateObjectType(state, renameObject, typeName).scopes.push(...scopes);
+      getOrCreateObjectType(state, renameObject, typeName).scopes.push(
+        ...scopes,
+      );
     },
     setCost(typeName: string, cost: number) {
       if (isInterfaceObject(typeName)) {
@@ -1342,111 +1450,225 @@ function objectTypeFactory(
         return interfaceTypeBuilder.setDirective(typeName, directive);
       }
 
-      getOrCreateObjectType(state, renameObject, typeName).ast.directives.push(directive);
+      getOrCreateObjectType(state, renameObject, typeName).ast.directives.push(
+        directive,
+      );
     },
     field: {
       setType(typeName: string, fieldName: string, fieldType: string) {
         if (isInterfaceObject(typeName)) {
-          return interfaceTypeBuilder.field.setType(typeName, fieldName, fieldType);
+          return interfaceTypeBuilder.field.setType(
+            typeName,
+            fieldName,
+            fieldType,
+          );
         }
 
-        getOrCreateObjectField(state, renameObject, typeName, fieldName).type = fieldType;
+        getOrCreateObjectField(state, renameObject, typeName, fieldName).type =
+          fieldType;
       },
       setLeaf(typeName: string, fieldName: string) {
         if (isInterfaceObject(typeName)) {
           return interfaceTypeBuilder.field.setLeaf(typeName, fieldName);
         }
 
-        getOrCreateObjectField(state, renameObject, typeName, fieldName).isLeaf = true;
+        getOrCreateObjectField(
+          state,
+          renameObject,
+          typeName,
+          fieldName,
+        ).isLeaf = true;
       },
       setExtension(typeName: string, fieldName: string) {
         if (isInterfaceObject(typeName)) {
           return;
         }
 
-        getOrCreateObjectField(state, renameObject, typeName, fieldName).extension = true;
+        getOrCreateObjectField(
+          state,
+          renameObject,
+          typeName,
+          fieldName,
+        ).extension = true;
       },
-      setDirective(typeName: string, fieldName: string, directive: DirectiveNode) {
+      setDirective(
+        typeName: string,
+        fieldName: string,
+        directive: DirectiveNode,
+      ) {
         if (isInterfaceObject(typeName)) {
-          return interfaceTypeBuilder.field.setDirective(typeName, fieldName, directive);
+          return interfaceTypeBuilder.field.setDirective(
+            typeName,
+            fieldName,
+            directive,
+          );
         }
 
-        getOrCreateObjectField(state, renameObject, typeName, fieldName).ast.directives.push(
-          directive,
-        );
+        getOrCreateObjectField(
+          state,
+          renameObject,
+          typeName,
+          fieldName,
+        ).ast.directives.push(directive);
       },
-      setDescription(typeName: string, fieldName: string, description: Description) {
+      setDescription(
+        typeName: string,
+        fieldName: string,
+        description: Description,
+      ) {
         if (isInterfaceObject(typeName)) {
-          return interfaceTypeBuilder.field.setDescription(typeName, fieldName, description);
+          return interfaceTypeBuilder.field.setDescription(
+            typeName,
+            fieldName,
+            description,
+          );
         }
 
-        getOrCreateObjectField(state, renameObject, typeName, fieldName).description = description;
+        getOrCreateObjectField(
+          state,
+          renameObject,
+          typeName,
+          fieldName,
+        ).description = description;
       },
       setDeprecated(typeName: string, fieldName: string, reason?: string) {
         if (isInterfaceObject(typeName)) {
-          return interfaceTypeBuilder.field.setDeprecated(typeName, fieldName, reason);
+          return interfaceTypeBuilder.field.setDeprecated(
+            typeName,
+            fieldName,
+            reason,
+          );
         }
 
-        getOrCreateObjectField(state, renameObject, typeName, fieldName).deprecated = {
+        getOrCreateObjectField(
+          state,
+          renameObject,
+          typeName,
+          fieldName,
+        ).deprecated = {
           reason,
           deprecated: true,
         };
       },
       setAuthenticated(typeName: string, fieldName: string) {
         if (isInterfaceObject(typeName)) {
-          return interfaceTypeBuilder.field.setAuthenticated(typeName, fieldName);
+          return interfaceTypeBuilder.field.setAuthenticated(
+            typeName,
+            fieldName,
+          );
         }
 
-        getOrCreateObjectField(state, renameObject, typeName, fieldName).authenticated = true;
+        getOrCreateObjectField(
+          state,
+          renameObject,
+          typeName,
+          fieldName,
+        ).authenticated = true;
       },
       setPolicies(typeName: string, fieldName: string, policies: string[][]) {
         if (isInterfaceObject(typeName)) {
-          return interfaceTypeBuilder.field.setPolicies(typeName, fieldName, policies);
+          return interfaceTypeBuilder.field.setPolicies(
+            typeName,
+            fieldName,
+            policies,
+          );
         }
 
-        getOrCreateObjectField(state, renameObject, typeName, fieldName).policies.push(...policies);
+        getOrCreateObjectField(
+          state,
+          renameObject,
+          typeName,
+          fieldName,
+        ).policies.push(...policies);
       },
       setScopes(typeName: string, fieldName: string, scopes: string[][]) {
         if (isInterfaceObject(typeName)) {
-          return interfaceTypeBuilder.field.setScopes(typeName, fieldName, scopes);
+          return interfaceTypeBuilder.field.setScopes(
+            typeName,
+            fieldName,
+            scopes,
+          );
         }
 
-        getOrCreateObjectField(state, renameObject, typeName, fieldName).scopes.push(...scopes);
+        getOrCreateObjectField(
+          state,
+          renameObject,
+          typeName,
+          fieldName,
+        ).scopes.push(...scopes);
       },
       setCost(typeName: string, fieldName: string, cost: number) {
         if (isInterfaceObject(typeName)) {
           return interfaceTypeBuilder.field.setCost(typeName, fieldName, cost);
         }
 
-        getOrCreateObjectField(state, renameObject, typeName, fieldName).cost = cost;
+        getOrCreateObjectField(state, renameObject, typeName, fieldName).cost =
+          cost;
       },
       setListSize(typeName: string, fieldName: string, listSize: ListSize) {
         if (isInterfaceObject(typeName)) {
-          return interfaceTypeBuilder.field.setListSize(typeName, fieldName, listSize);
+          return interfaceTypeBuilder.field.setListSize(
+            typeName,
+            fieldName,
+            listSize,
+          );
         }
 
-        getOrCreateObjectField(state, renameObject, typeName, fieldName).listSize = listSize;
+        getOrCreateObjectField(
+          state,
+          renameObject,
+          typeName,
+          fieldName,
+        ).listSize = listSize;
       },
       setExternal(typeName: string, fieldName: string) {
         if (isInterfaceObject(typeName)) {
           return interfaceTypeBuilder.field.setExternal(typeName, fieldName);
         }
 
-        getOrCreateObjectField(state, renameObject, typeName, fieldName).external = true;
+        getOrCreateObjectField(
+          state,
+          renameObject,
+          typeName,
+          fieldName,
+        ).external = true;
       },
       setInaccessible(typeName: string, fieldName: string) {
         if (isInterfaceObject(typeName)) {
-          return interfaceTypeBuilder.field.setInaccessible(typeName, fieldName);
+          return interfaceTypeBuilder.field.setInaccessible(
+            typeName,
+            fieldName,
+          );
         }
 
-        getOrCreateObjectField(state, renameObject, typeName, fieldName).inaccessible = true;
+        getOrCreateObjectField(
+          state,
+          renameObject,
+          typeName,
+          fieldName,
+        ).inaccessible = true;
       },
-      setOverride(typeName: string, fieldName: string, override: string, label: string | null) {
+      setOverride(
+        typeName: string,
+        fieldName: string,
+        override: string,
+        label: string | null,
+      ) {
         if (isInterfaceObject(typeName)) {
-          return interfaceTypeBuilder.field.setOverride(typeName, fieldName, override, label);
+          return interfaceTypeBuilder.field.setOverride(
+            typeName,
+            fieldName,
+            override,
+            label,
+          );
         }
 
-        const field = getOrCreateObjectField(state, renameObject, typeName, fieldName);
+        const field = getOrCreateObjectField(
+          state,
+          renameObject,
+          typeName,
+          fieldName,
+        );
         field.override = override;
         field.overrideLabel = label;
       },
@@ -1455,66 +1677,131 @@ function objectTypeFactory(
           return;
         }
 
-        getOrCreateObjectField(state, renameObject, typeName, fieldName).provides = provides;
+        getOrCreateObjectField(
+          state,
+          renameObject,
+          typeName,
+          fieldName,
+        ).provides = provides;
       },
       setRequires(typeName: string, fieldName: string, requires: string) {
         if (isInterfaceObject(typeName)) {
-          return interfaceTypeBuilder.field.setRequires(typeName, fieldName, requires);
+          return interfaceTypeBuilder.field.setRequires(
+            typeName,
+            fieldName,
+            requires,
+          );
         }
 
-        getOrCreateObjectField(state, renameObject, typeName, fieldName).requires = requires;
+        getOrCreateObjectField(
+          state,
+          renameObject,
+          typeName,
+          fieldName,
+        ).requires = requires;
       },
       markAsProvided(typeName: string, fieldName: string) {
         if (isInterfaceObject(typeName)) {
           return;
         }
 
-        getOrCreateObjectField(state, renameObject, typeName, fieldName).provided = true;
+        getOrCreateObjectField(
+          state,
+          renameObject,
+          typeName,
+          fieldName,
+        ).provided = true;
       },
       markedAsRequired(typeName: string, fieldName: string) {
         if (isInterfaceObject(typeName)) {
           return;
         }
 
-        getOrCreateObjectField(state, renameObject, typeName, fieldName).required = true;
+        getOrCreateObjectField(
+          state,
+          renameObject,
+          typeName,
+          fieldName,
+        ).required = true;
       },
       setShareable(typeName: string, fieldName: string) {
         if (isInterfaceObject(typeName)) {
           return interfaceTypeBuilder.field.setShareable(typeName, fieldName);
         }
 
-        getOrCreateObjectField(state, renameObject, typeName, fieldName).shareable = true;
+        getOrCreateObjectField(
+          state,
+          renameObject,
+          typeName,
+          fieldName,
+        ).shareable = true;
       },
       setTag(typeName: string, fieldName: string, tag: string) {
         if (isInterfaceObject(typeName)) {
           return interfaceTypeBuilder.field.setTag(typeName, fieldName, tag);
         }
 
-        getOrCreateObjectField(state, renameObject, typeName, fieldName).tags.add(tag);
+        getOrCreateObjectField(
+          state,
+          renameObject,
+          typeName,
+          fieldName,
+        ).tags.add(tag);
       },
       setUsed(typeName: string, fieldName: string) {
         if (isInterfaceObject(typeName)) {
           return interfaceTypeBuilder.field.setUsed(typeName, fieldName);
         }
 
-        getOrCreateObjectField(state, renameObject, typeName, fieldName).used = true;
+        getOrCreateObjectField(state, renameObject, typeName, fieldName).used =
+          true;
       },
       arg: {
-        setType(typeName: string, fieldName: string, argName: string, argType: string) {
+        setType(
+          typeName: string,
+          fieldName: string,
+          argName: string,
+          argType: string,
+        ) {
           if (isInterfaceObject(typeName)) {
-            return interfaceTypeBuilder.field.arg.setType(typeName, fieldName, argName, argType);
+            return interfaceTypeBuilder.field.arg.setType(
+              typeName,
+              fieldName,
+              argName,
+              argType,
+            );
           }
 
-          getOrCreateObjectFieldArgument(state, renameObject, typeName, fieldName, argName).type =
-            argType;
+          getOrCreateObjectFieldArgument(
+            state,
+            renameObject,
+            typeName,
+            fieldName,
+            argName,
+          ).type = argType;
         },
-        setKind(typeName: string, fieldName: string, argName: string, argKind: ArgumentKind) {
+        setKind(
+          typeName: string,
+          fieldName: string,
+          argName: string,
+          argKind: ArgumentKind,
+        ) {
           if (isInterfaceObject(typeName)) {
-            return interfaceTypeBuilder.field.arg.setKind(typeName, fieldName, argName, argKind);
+            return interfaceTypeBuilder.field.arg.setKind(
+              typeName,
+              fieldName,
+              argName,
+              argKind,
+            );
           }
 
-          getOrCreateObjectFieldArgument(state, renameObject, typeName, fieldName, argName).kind =
-            argKind;
+          getOrCreateObjectFieldArgument(
+            state,
+            renameObject,
+            typeName,
+            fieldName,
+            argName,
+          ).kind = argKind;
         },
         setDescription(
           typeName: string,
@@ -1539,7 +1826,12 @@ function objectTypeFactory(
             argName,
           ).description = description;
         },
-        setDeprecated(typeName: string, fieldName: string, argName: string, reason?: string) {
+        setDeprecated(
+          typeName: string,
+          fieldName: string,
+          argName: string,
+          reason?: string,
+        ) {
           if (isInterfaceObject(typeName)) {
             return interfaceTypeBuilder.field.arg.setDeprecated(
               typeName,
@@ -1608,7 +1900,11 @@ function objectTypeFactory(
         },
         setInaccessible(typeName: string, fieldName: string, argName: string) {
           if (isInterfaceObject(typeName)) {
-            return interfaceTypeBuilder.field.arg.setInaccessible(typeName, fieldName, argName);
+            return interfaceTypeBuilder.field.arg.setInaccessible(
+              typeName,
+              fieldName,
+              argName,
+            );
           }
 
           getOrCreateObjectFieldArgument(
@@ -1619,9 +1915,19 @@ function objectTypeFactory(
             argName,
           ).inaccessible = true;
         },
-        setTag(typeName: string, fieldName: string, argName: string, tag: string) {
+        setTag(
+          typeName: string,
+          fieldName: string,
+          argName: string,
+          tag: string,
+        ) {
           if (isInterfaceObject(typeName)) {
-            return interfaceTypeBuilder.field.arg.setTag(typeName, fieldName, argName, tag);
+            return interfaceTypeBuilder.field.arg.setTag(
+              typeName,
+              fieldName,
+              argName,
+              tag,
+            );
           }
 
           getOrCreateObjectFieldArgument(
@@ -1632,13 +1938,28 @@ function objectTypeFactory(
             argName,
           ).tags.add(tag);
         },
-        setCost(typeName: string, fieldName: string, argName: string, cost: number) {
+        setCost(
+          typeName: string,
+          fieldName: string,
+          argName: string,
+          cost: number,
+        ) {
           if (isInterfaceObject(typeName)) {
-            return interfaceTypeBuilder.field.arg.setCost(typeName, fieldName, argName, cost);
+            return interfaceTypeBuilder.field.arg.setCost(
+              typeName,
+              fieldName,
+              argName,
+              cost,
+            );
           }
 
-          getOrCreateObjectFieldArgument(state, renameObject, typeName, fieldName, argName).cost =
-            cost;
+          getOrCreateObjectFieldArgument(
+            state,
+            renameObject,
+            typeName,
+            fieldName,
+            argName,
+          ).cost = cost;
         },
       },
     },
@@ -1666,7 +1987,12 @@ function interfaceTypeFactory(state: SubgraphState) {
     setInterfaceObject(typeName: string) {
       getOrCreateInterfaceType(state, typeName).isInterfaceObject = true;
     },
-    setKey(typeName: string, fields: string, fieldsUsedInKey: Set<string>, resolvable: boolean) {
+    setKey(
+      typeName: string,
+      fields: string,
+      fieldsUsedInKey: Set<string>,
+      resolvable: boolean,
+    ) {
       const interfaceType = getOrCreateInterfaceType(state, typeName);
       interfaceType.keys.push({ fields, resolvable });
 
@@ -1712,30 +2038,43 @@ function interfaceTypeFactory(state: SubgraphState) {
         getOrCreateInterfaceField(state, typeName, fieldName).external = true;
       },
       setInaccessible(typeName: string, fieldName: string) {
-        getOrCreateInterfaceField(state, typeName, fieldName).inaccessible = true;
+        getOrCreateInterfaceField(state, typeName, fieldName).inaccessible =
+          true;
       },
       setAuthenticated(typeName: string, fieldName: string) {
-        getOrCreateInterfaceField(state, typeName, fieldName).authenticated = true;
+        getOrCreateInterfaceField(state, typeName, fieldName).authenticated =
+          true;
       },
       setPolicies(typeName: string, fieldName: string, policies: string[][]) {
-        getOrCreateInterfaceField(state, typeName, fieldName).policies.push(...policies);
+        getOrCreateInterfaceField(state, typeName, fieldName).policies.push(
+          ...policies,
+        );
       },
       setScopes(typeName: string, fieldName: string, scopes: string[][]) {
-        getOrCreateInterfaceField(state, typeName, fieldName).scopes.push(...scopes);
+        getOrCreateInterfaceField(state, typeName, fieldName).scopes.push(
+          ...scopes,
+        );
       },
       setCost(typeName: string, fieldName: string, cost: number) {
         getOrCreateInterfaceField(state, typeName, fieldName).cost = cost;
       },
       setListSize(typeName: string, fieldName: string, listSize: ListSize) {
-        getOrCreateInterfaceField(state, typeName, fieldName).listSize = listSize;
+        getOrCreateInterfaceField(state, typeName, fieldName).listSize =
+          listSize;
       },
-      setOverride(typeName: string, fieldName: string, override: string, label: string | null) {
+      setOverride(
+        typeName: string,
+        fieldName: string,
+        override: string,
+        label: string | null,
+      ) {
         const field = getOrCreateInterfaceField(state, typeName, fieldName);
         field.override = override;
         field.overrideLabel = label;
       },
       setRequires(typeName: string, fieldName: string, requires: string) {
-        getOrCreateInterfaceField(state, typeName, fieldName).requires = requires;
+        getOrCreateInterfaceField(state, typeName, fieldName).requires =
+          requires;
       },
       setShareable(typeName: string, fieldName: string) {
         getOrCreateInterfaceField(state, typeName, fieldName).shareable = true;
@@ -1746,11 +2085,24 @@ function interfaceTypeFactory(state: SubgraphState) {
       setUsed(typeName: string, fieldName: string) {
         getOrCreateInterfaceField(state, typeName, fieldName).used = true;
       },
-      setDirective(typeName: string, fieldName: string, directive: DirectiveNode) {
-        getOrCreateInterfaceField(state, typeName, fieldName).ast.directives.push(directive);
+      setDirective(
+        typeName: string,
+        fieldName: string,
+        directive: DirectiveNode,
+      ) {
+        getOrCreateInterfaceField(
+          state,
+          typeName,
+          fieldName,
+        ).ast.directives.push(directive);
       },
-      setDescription(typeName: string, fieldName: string, description: Description) {
-        getOrCreateInterfaceField(state, typeName, fieldName).description = description;
+      setDescription(
+        typeName: string,
+        fieldName: string,
+        description: Description,
+      ) {
+        getOrCreateInterfaceField(state, typeName, fieldName).description =
+          description;
       },
       setDeprecated(typeName: string, fieldName: string, reason?: string) {
         getOrCreateInterfaceField(state, typeName, fieldName).deprecated = {
@@ -1759,11 +2111,31 @@ function interfaceTypeFactory(state: SubgraphState) {
         };
       },
       arg: {
-        setType(typeName: string, fieldName: string, argName: string, argType: string) {
-          getOrCreateInterfaceFieldArgument(state, typeName, fieldName, argName).type = argType;
+        setType(
+          typeName: string,
+          fieldName: string,
+          argName: string,
+          argType: string,
+        ) {
+          getOrCreateInterfaceFieldArgument(
+            state,
+            typeName,
+            fieldName,
+            argName,
+          ).type = argType;
         },
-        setKind(typeName: string, fieldName: string, argName: string, argKind: ArgumentKind) {
-          getOrCreateInterfaceFieldArgument(state, typeName, fieldName, argName).kind = argKind;
+        setKind(
+          typeName: string,
+          fieldName: string,
+          argName: string,
+          argKind: ArgumentKind,
+        ) {
+          getOrCreateInterfaceFieldArgument(
+            state,
+            typeName,
+            fieldName,
+            argName,
+          ).kind = argKind;
         },
         setDefaultValue(
           typeName: string,
@@ -1771,11 +2143,25 @@ function interfaceTypeFactory(state: SubgraphState) {
           argName: string,
           defaultValue: string,
         ) {
-          getOrCreateInterfaceFieldArgument(state, typeName, fieldName, argName).defaultValue =
-            defaultValue;
+          getOrCreateInterfaceFieldArgument(
+            state,
+            typeName,
+            fieldName,
+            argName,
+          ).defaultValue = defaultValue;
         },
-        setDeprecated(typeName: string, fieldName: string, argName: string, reason?: string) {
-          getOrCreateInterfaceFieldArgument(state, typeName, fieldName, argName).deprecated = {
+        setDeprecated(
+          typeName: string,
+          fieldName: string,
+          argName: string,
+          reason?: string,
+        ) {
+          getOrCreateInterfaceFieldArgument(
+            state,
+            typeName,
+            fieldName,
+            argName,
+          ).deprecated = {
             reason,
             deprecated: true,
           };
@@ -1786,18 +2172,46 @@ function interfaceTypeFactory(state: SubgraphState) {
           argName: string,
           description: Description,
         ) {
-          getOrCreateInterfaceFieldArgument(state, typeName, fieldName, argName).description =
-            description;
+          getOrCreateInterfaceFieldArgument(
+            state,
+            typeName,
+            fieldName,
+            argName,
+          ).description = description;
         },
-        setTag(typeName: string, fieldName: string, argName: string, tag: string) {
-          getOrCreateInterfaceFieldArgument(state, typeName, fieldName, argName).tags.add(tag);
+        setTag(
+          typeName: string,
+          fieldName: string,
+          argName: string,
+          tag: string,
+        ) {
+          getOrCreateInterfaceFieldArgument(
+            state,
+            typeName,
+            fieldName,
+            argName,
+          ).tags.add(tag);
         },
         setInaccessible(typeName: string, fieldName: string, argName: string) {
-          getOrCreateInterfaceFieldArgument(state, typeName, fieldName, argName).inaccessible =
-            true;
+          getOrCreateInterfaceFieldArgument(
+            state,
+            typeName,
+            fieldName,
+            argName,
+          ).inaccessible = true;
         },
-        setCost(typeName: string, fieldName: string, argName: string, cost: number) {
-          getOrCreateInterfaceFieldArgument(state, typeName, fieldName, argName).cost = cost;
+        setCost(
+          typeName: string,
+          fieldName: string,
+          argName: string,
+          cost: number,
+        ) {
+          getOrCreateInterfaceFieldArgument(
+            state,
+            typeName,
+            fieldName,
+            argName,
+          ).cost = cost;
         },
         setDirective(
           typeName: string,
@@ -1837,20 +2251,29 @@ function inputObjectTypeFactory(state: SubgraphState) {
       }
     },
     setDirective(typeName: string, directive: DirectiveNode) {
-      getOrCreateInputObjectType(state, typeName).ast.directives.push(directive);
+      getOrCreateInputObjectType(state, typeName).ast.directives.push(
+        directive,
+      );
     },
     setTag(typeName: string, tag: string) {
       getOrCreateInputObjectType(state, typeName).tags.add(tag);
     },
     field: {
       setType(typeName: string, fieldName: string, fieldType: string) {
-        getOrCreateInputObjectField(state, typeName, fieldName).type = fieldType;
+        getOrCreateInputObjectField(state, typeName, fieldName).type =
+          fieldType;
       },
       setKind(typeName: string, fieldName: string, fieldKind: ArgumentKind) {
-        getOrCreateInputObjectField(state, typeName, fieldName).kind = fieldKind;
+        getOrCreateInputObjectField(state, typeName, fieldName).kind =
+          fieldKind;
       },
-      setDescription(typeName: string, fieldName: string, description: Description) {
-        getOrCreateInputObjectField(state, typeName, fieldName).description = description;
+      setDescription(
+        typeName: string,
+        fieldName: string,
+        description: Description,
+      ) {
+        getOrCreateInputObjectField(state, typeName, fieldName).description =
+          description;
       },
       setDeprecated(typeName: string, fieldName: string, reason?: string) {
         getOrCreateInputObjectField(state, typeName, fieldName).deprecated = {
@@ -1858,17 +2281,31 @@ function inputObjectTypeFactory(state: SubgraphState) {
           deprecated: true,
         };
       },
-      setDefaultValue(typeName: string, fieldName: string, defaultValue: string) {
-        getOrCreateInputObjectField(state, typeName, fieldName).defaultValue = defaultValue;
+      setDefaultValue(
+        typeName: string,
+        fieldName: string,
+        defaultValue: string,
+      ) {
+        getOrCreateInputObjectField(state, typeName, fieldName).defaultValue =
+          defaultValue;
       },
       setInaccessible(typeName: string, fieldName: string) {
-        getOrCreateInputObjectField(state, typeName, fieldName).inaccessible = true;
+        getOrCreateInputObjectField(state, typeName, fieldName).inaccessible =
+          true;
       },
       setTag(typeName: string, fieldName: string, tag: string) {
         getOrCreateInputObjectField(state, typeName, fieldName).tags.add(tag);
       },
-      setDirective(typeName: string, fieldName: string, directive: DirectiveNode) {
-        getOrCreateInputObjectField(state, typeName, fieldName).ast.directives.push(directive);
+      setDirective(
+        typeName: string,
+        fieldName: string,
+        directive: DirectiveNode,
+      ) {
+        getOrCreateInputObjectField(
+          state,
+          typeName,
+          fieldName,
+        ).ast.directives.push(directive);
       },
       setCost(typeName: string, fieldName: string, cost: number) {
         getOrCreateInputObjectField(state, typeName, fieldName).cost = cost;
@@ -1928,11 +2365,15 @@ function enumTypeFactory(state: SubgraphState) {
     },
     setReferencedByInputType(typeName: string, schemaCoordinate: string) {
       getOrCreateEnumType(state, typeName).referencedByInputType = true;
-      getOrCreateEnumType(state, typeName).inputTypeReferences.add(schemaCoordinate);
+      getOrCreateEnumType(state, typeName).inputTypeReferences.add(
+        schemaCoordinate,
+      );
     },
     setReferencedByOutputType(typeName: string, schemaCoordinate: string) {
       getOrCreateEnumType(state, typeName).referencedByOutputType = true;
-      getOrCreateEnumType(state, typeName).outputTypeReferences.add(schemaCoordinate);
+      getOrCreateEnumType(state, typeName).outputTypeReferences.add(
+        schemaCoordinate,
+      );
     },
     setDirective(typeName: string, directive: DirectiveNode) {
       getOrCreateEnumType(state, typeName).ast.directives.push(directive);
@@ -1941,11 +2382,22 @@ function enumTypeFactory(state: SubgraphState) {
       setValue(typeName: string, valueName: string) {
         getOrCreateEnumValue(state, typeName, valueName);
       },
-      setDescription(typeName: string, valueName: string, description: Description) {
-        getOrCreateEnumValue(state, typeName, valueName).description = description;
+      setDescription(
+        typeName: string,
+        valueName: string,
+        description: Description,
+      ) {
+        getOrCreateEnumValue(state, typeName, valueName).description =
+          description;
       },
-      setDirective(typeName: string, valueName: string, directive: DirectiveNode) {
-        getOrCreateEnumValue(state, typeName, valueName).ast.directives.push(directive);
+      setDirective(
+        typeName: string,
+        valueName: string,
+        directive: DirectiveNode,
+      ) {
+        getOrCreateEnumValue(state, typeName, valueName).ast.directives.push(
+          directive,
+        );
       },
       setInaccessible(typeName: string, valueName: string) {
         getOrCreateEnumValue(state, typeName, valueName).inaccessible = true;
@@ -1963,7 +2415,10 @@ function enumTypeFactory(state: SubgraphState) {
   };
 }
 
-function getOrCreateDirective(state: SubgraphState, directiveName: string): Directive {
+function getOrCreateDirective(
+  state: SubgraphState,
+  directiveName: string,
+): Directive {
   const existing = state.types.get(directiveName);
 
   if (existing) {
@@ -2017,7 +2472,10 @@ function getOrCreateDirectiveArg(
   return arg;
 }
 
-function getOrCreateScalarType(state: SubgraphState, typeName: string): ScalarType {
+function getOrCreateScalarType(
+  state: SubgraphState,
+  typeName: string,
+): ScalarType {
   const existing = state.types.get(typeName);
 
   if (existing) {
@@ -2090,7 +2548,10 @@ function getOrCreateObjectType(
   return objectType;
 }
 
-function getOrCreateInterfaceType(state: SubgraphState, typeName: string): InterfaceType {
+function getOrCreateInterfaceType(
+  state: SubgraphState,
+  typeName: string,
+): InterfaceType {
   const existing = state.types.get(typeName);
 
   if (existing) {
@@ -2127,7 +2588,10 @@ function getOrCreateInterfaceType(state: SubgraphState, typeName: string): Inter
   return interfaceType;
 }
 
-function getOrCreateInputObjectType(state: SubgraphState, typeName: string): InputObjectType {
+function getOrCreateInputObjectType(
+  state: SubgraphState,
+  typeName: string,
+): InputObjectType {
   const existing = state.types.get(typeName);
 
   if (existing) {
@@ -2192,7 +2656,10 @@ function getOrCreateEnumType(state: SubgraphState, typeName: string): EnumType {
   return enumType;
 }
 
-function getOrCreateUnionType(state: SubgraphState, typeName: string): UnionType {
+function getOrCreateUnionType(
+  state: SubgraphState,
+  typeName: string,
+): UnionType {
   const existing = state.types.get(typeName);
 
   if (existing) {
@@ -2378,7 +2845,12 @@ function getOrCreateObjectFieldArgument(
   fieldName: string,
   argName: string,
 ): Argument {
-  const fieldState = getOrCreateObjectField(state, renameObject, typeName, fieldName);
+  const fieldState = getOrCreateObjectField(
+    state,
+    renameObject,
+    typeName,
+    fieldName,
+  );
 
   const existing = fieldState.args.get(argName);
 
@@ -2451,8 +2923,13 @@ function resolveTypeName(node: TypeNode): string {
   }
 }
 
-function isEnumType(node: ASTNode): node is EnumTypeDefinitionNode | EnumTypeExtensionNode {
-  return node.kind === Kind.ENUM_TYPE_DEFINITION || node.kind === Kind.ENUM_TYPE_EXTENSION;
+function isEnumType(
+  node: ASTNode,
+): node is EnumTypeDefinitionNode | EnumTypeExtensionNode {
+  return (
+    node.kind === Kind.ENUM_TYPE_DEFINITION ||
+    node.kind === Kind.ENUM_TYPE_EXTENSION
+  );
 }
 
 function decideOnRootTypeName(
@@ -2461,11 +2938,14 @@ function decideOnRootTypeName(
   defaultName: string,
 ) {
   return (
-    schemaDef?.operationTypes?.find(operationType => operationType.operation === kind)?.type.name
-      .value ?? defaultName
+    schemaDef?.operationTypes?.find(
+      (operationType) => operationType.operation === kind,
+    )?.type.name.value ?? defaultName
   );
 }
 
-function hasInterfaceObjectDirective(node: ObjectTypeDefinitionNode | ObjectTypeExtensionNode) {
-  return node.directives?.some(d => d.name.value === 'interfaceObject');
+function hasInterfaceObjectDirective(
+  node: ObjectTypeDefinitionNode | ObjectTypeExtensionNode,
+) {
+  return node.directives?.some((d) => d.name.value === "interfaceObject");
 }

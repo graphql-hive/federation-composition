@@ -1,7 +1,8 @@
 scalar until598
 
 type Query @extends {
-  drive3e7(zowie9dc: front43f!, yahoo616: clearcdf): until879 @deprecated(reason: "")
+  drive3e7(zowie9dc: front43f!, yahoo616: clearcdf): until879
+    @deprecated(reason: "")
   minus453(flume0d1: [front43f!]!, yahoo616: clearcdf): until879
   knowna21(flare450: [ID!]!): [cycle927]
 }

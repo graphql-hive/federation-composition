@@ -1,12 +1,16 @@
-import { expect, test } from 'vitest';
-import { assertCompositionSuccess, graphql, testVersions } from '../../shared/testkit.js';
+import { expect, test } from "vitest";
+import {
+  assertCompositionSuccess,
+  graphql,
+  testVersions,
+} from "../../shared/testkit.js";
 
 testVersions((api, version) => {
-  test('PROVIDES_FIELDS_MISSING_EXTERNAL', () => {
+  test("PROVIDES_FIELDS_MISSING_EXTERNAL", () => {
     expect(
       api.composeServices([
         {
-          name: 'users',
+          name: "users",
           typeDefs: graphql`
             extend schema
               @link(
@@ -38,7 +42,7 @@ testVersions((api, version) => {
               `[users] On field "User.profile", for @provides(fields: "name"): field "Profile.name" should not be part of a @provides since it is already provided by this subgraph (it is not marked @external)`,
             ),
             extensions: expect.objectContaining({
-              code: 'PROVIDES_FIELDS_MISSING_EXTERNAL',
+              code: "PROVIDES_FIELDS_MISSING_EXTERNAL",
             }),
           }),
         ]),
@@ -46,11 +50,11 @@ testVersions((api, version) => {
     );
   });
 
-  test('PROVIDES_FIELDS_MISSING_EXTERNAL on external (historical)', () => {
+  test("PROVIDES_FIELDS_MISSING_EXTERNAL on external (historical)", () => {
     expect(
       api.composeServices([
         {
-          name: 'users',
+          name: "users",
           typeDefs: graphql`
             extend schema @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@key"])
 
@@ -64,7 +68,7 @@ testVersions((api, version) => {
           `,
         },
         {
-          name: 'reviews',
+          name: "reviews",
           typeDefs: graphql`
             extend schema
               @link(
@@ -94,7 +98,7 @@ testVersions((api, version) => {
               `[reviews] On field "Review.author", for @provides(fields: "id"): field "User.id" should not be part of a @provides since it is already "effectively" provided by this subgraph (while it is marked @external, it is a @key field of an extension type, which are not internally considered external for historical/backward compatibility reasons)`,
             ),
             extensions: expect.objectContaining({
-              code: 'PROVIDES_FIELDS_MISSING_EXTERNAL',
+              code: "PROVIDES_FIELDS_MISSING_EXTERNAL",
             }),
           }),
         ]),
@@ -102,10 +106,10 @@ testVersions((api, version) => {
     );
   });
 
-  test('Fed v1: NO PROVIDES_FIELDS_MISSING_EXTERNAL on external (historical)', () => {
+  test("Fed v1: NO PROVIDES_FIELDS_MISSING_EXTERNAL on external (historical)", () => {
     const result = api.composeServices([
       {
-        name: 'users',
+        name: "users",
         typeDefs: graphql`
           type Query {
             users: [User]
@@ -117,7 +121,7 @@ testVersions((api, version) => {
         `,
       },
       {
-        name: 'reviews',
+        name: "reviews",
         typeDefs: graphql`
           type Query {
             review: Review

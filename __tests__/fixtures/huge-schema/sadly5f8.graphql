@@ -325,7 +325,12 @@ input trulyb2a {
 }
 
 type Query {
-  fooey723(fooey052: Int, never2e5: Int, madly2ba: String, while53c: String): yahoo474
+  fooey723(
+    fooey052: Int
+    never2e5: Int
+    madly2ba: String
+    while53c: String
+  ): yahoo474
   budge0f6(worth668: welche45!): dimly65d
   abovebf1(
     afterf7b: String

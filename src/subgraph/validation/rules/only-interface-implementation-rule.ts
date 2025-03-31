@@ -4,15 +4,22 @@ import {
   Kind,
   ObjectTypeDefinitionNode,
   ObjectTypeExtensionNode,
-} from 'graphql';
-import type { SimpleValidationContext } from '../validation-context.js';
+} from "graphql";
+import type { SimpleValidationContext } from "../validation-context.js";
 
-export function OnlyInterfaceImplementationRule(context: SimpleValidationContext): ASTVisitor {
+export function OnlyInterfaceImplementationRule(
+  context: SimpleValidationContext,
+): ASTVisitor {
   const { definitions } = context.getDocument();
   let filled = false;
   const typeNameToKind = new Map<
     string,
-    'ObjectType' | 'InterfaceType' | 'UnionType' | 'EnumType' | 'InputObjectType' | 'ScalarType'
+    | "ObjectType"
+    | "InterfaceType"
+    | "UnionType"
+    | "EnumType"
+    | "InputObjectType"
+    | "ScalarType"
   >();
 
   function fillTypeNameToKindMap() {
@@ -20,27 +27,27 @@ export function OnlyInterfaceImplementationRule(context: SimpleValidationContext
       switch (node.kind) {
         case Kind.OBJECT_TYPE_DEFINITION:
         case Kind.OBJECT_TYPE_EXTENSION:
-          typeNameToKind.set(node.name.value, 'ObjectType');
+          typeNameToKind.set(node.name.value, "ObjectType");
           break;
         case Kind.INTERFACE_TYPE_DEFINITION:
         case Kind.INTERFACE_TYPE_EXTENSION:
-          typeNameToKind.set(node.name.value, 'InterfaceType');
+          typeNameToKind.set(node.name.value, "InterfaceType");
           break;
         case Kind.UNION_TYPE_DEFINITION:
         case Kind.UNION_TYPE_EXTENSION:
-          typeNameToKind.set(node.name.value, 'UnionType');
+          typeNameToKind.set(node.name.value, "UnionType");
           break;
         case Kind.ENUM_TYPE_DEFINITION:
         case Kind.ENUM_TYPE_EXTENSION:
-          typeNameToKind.set(node.name.value, 'EnumType');
+          typeNameToKind.set(node.name.value, "EnumType");
           break;
         case Kind.SCALAR_TYPE_DEFINITION:
         case Kind.SCALAR_TYPE_EXTENSION:
-          typeNameToKind.set(node.name.value, 'ScalarType');
+          typeNameToKind.set(node.name.value, "ScalarType");
           break;
         case Kind.INPUT_OBJECT_TYPE_DEFINITION:
         case Kind.INPUT_OBJECT_TYPE_EXTENSION:
-          typeNameToKind.set(node.name.value, 'InputObjectType');
+          typeNameToKind.set(node.name.value, "InputObjectType");
           break;
       }
     }
@@ -66,13 +73,13 @@ export function OnlyInterfaceImplementationRule(context: SimpleValidationContext
 
       const kind = findKindByName(interfaceName);
 
-      if (kind && kind !== 'InterfaceType') {
+      if (kind && kind !== "InterfaceType") {
         context.reportError(
           new GraphQLError(
             `Cannot implement non-interface type ${interfaceName} (of type ObjectType)`,
             {
               extensions: {
-                code: 'INVALID_GRAPHQL',
+                code: "INVALID_GRAPHQL",
               },
             },
           ),

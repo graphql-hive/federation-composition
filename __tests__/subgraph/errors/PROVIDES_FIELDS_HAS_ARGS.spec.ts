@@ -1,12 +1,12 @@
-import { expect, test } from 'vitest';
-import { graphql, testVersions } from '../../shared/testkit.js';
+import { expect, test } from "vitest";
+import { graphql, testVersions } from "../../shared/testkit.js";
 
 testVersions((api, version) => {
-  test('PROVIDES_FIELDS_HAS_ARGS', () => {
+  test("PROVIDES_FIELDS_HAS_ARGS", () => {
     expect(
       api.composeServices([
         {
-          name: 'users',
+          name: "users",
           typeDefs: graphql`
             extend schema
               @link(
@@ -30,7 +30,7 @@ testVersions((api, version) => {
           `,
         },
         {
-          name: 'feed',
+          name: "feed",
           typeDefs: graphql`
             extend schema
               @link(
@@ -67,7 +67,7 @@ testVersions((api, version) => {
               `[feed] On field "Article.author", for @provides(fields: "tags"): field User.tags cannot be included because it has arguments (fields with argument are not allowed in @provides)`,
             ),
             extensions: expect.objectContaining({
-              code: 'PROVIDES_FIELDS_HAS_ARGS',
+              code: "PROVIDES_FIELDS_HAS_ARGS",
             }),
           }),
         ]),

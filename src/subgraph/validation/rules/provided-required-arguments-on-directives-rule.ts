@@ -1,13 +1,19 @@
-import { ASTVisitor, GraphQLError, InputValueDefinitionNode, Kind } from 'graphql';
-import { print } from '../../../graphql/printer.js';
-import type { SimpleValidationContext } from '../validation-context.js';
+import {
+  ASTVisitor,
+  GraphQLError,
+  InputValueDefinitionNode,
+  Kind,
+} from "graphql";
+import { print } from "../../../graphql/printer.js";
+import type { SimpleValidationContext } from "../validation-context.js";
 
 export function ProvidedRequiredArgumentsOnDirectivesRule(
   context: SimpleValidationContext,
 ): ASTVisitor {
-  const requiredArgsMap: Record<string, Record<string, InputValueDefinitionNode>> = Object.create(
-    null,
-  );
+  const requiredArgsMap: Record<
+    string,
+    Record<string, InputValueDefinitionNode>
+  > = Object.create(null);
 
   const astDefinitions = context.getDocument().definitions;
   for (const def of astDefinitions) {
@@ -31,7 +37,7 @@ export function ProvidedRequiredArgumentsOnDirectivesRule(
         const requiredArgs = requiredArgsMap[directiveName];
         if (requiredArgs) {
           const argNodes = directiveNode.arguments ?? [];
-          const argNodeMap = new Set(argNodes.map(arg => arg.name.value));
+          const argNodeMap = new Set(argNodes.map((arg) => arg.name.value));
           for (const [argName, argDef] of Object.entries(requiredArgs)) {
             if (!argNodeMap.has(argName)) {
               const argType = print(argDef.type);
@@ -41,7 +47,7 @@ export function ProvidedRequiredArgumentsOnDirectivesRule(
                   {
                     nodes: directiveNode,
                     extensions: {
-                      code: 'INVALID_GRAPHQL',
+                      code: "INVALID_GRAPHQL",
                     },
                   },
                 ),

@@ -1,15 +1,23 @@
-import { expect, test } from 'vitest';
-import { getSubgraphs as getSubgraphsOfDGS } from './fixtures/dgs/index.js';
-import { getSubgraphs as getSubgraphsOfHugeSchema } from './fixtures/huge-schema/index.js';
-import { assertCompositionSuccess, graphql, testImplementations } from './shared/testkit.js';
+import { expect, test } from "vitest";
+import { getSubgraphs as getSubgraphsOfDGS } from "./fixtures/dgs/index.js";
+import { getSubgraphs as getSubgraphsOfHugeSchema } from "./fixtures/huge-schema/index.js";
+import {
+  assertCompositionSuccess,
+  graphql,
+  testImplementations,
+} from "./shared/testkit.js";
 
-testImplementations(api => {
-  test('composition of basic object types', () => {
+testImplementations((api) => {
+  test("composition of basic object types", () => {
     const result = api.composeServices([
       {
-        name: 'products',
+        name: "products",
         typeDefs: graphql`
-          extend schema @link(url: "https://specs.apollo.dev/federation/v2.0", import: ["@key"])
+          extend schema
+            @link(
+              url: "https://specs.apollo.dev/federation/v2.0"
+              import: ["@key"]
+            )
 
           type Query {
             products: [Product!]!
@@ -22,9 +30,13 @@ testImplementations(api => {
         `,
       },
       {
-        name: 'reviews',
+        name: "reviews",
         typeDefs: graphql`
-          extend schema @link(url: "https://specs.apollo.dev/federation/v2.0", import: ["@key"])
+          extend schema
+            @link(
+              url: "https://specs.apollo.dev/federation/v2.0"
+              import: ["@key"]
+            )
 
           type Query {
             reviews: [Review!]!
@@ -46,14 +58,16 @@ testImplementations(api => {
     assertCompositionSuccess(result);
 
     expect(result.supergraphSdl).toContainGraphQL(/* GraphQL */ `
-      type Product @join__type(graph: PRODUCTS, key: "id") @join__type(graph: REVIEWS, key: "id") {
+      type Product
+        @join__type(graph: PRODUCTS, key: "id")
+        @join__type(graph: REVIEWS, key: "id") {
         id: ID!
         name: String! @join__field(graph: PRODUCTS)
         reviews: [Review!]! @join__field(graph: REVIEWS)
       }
     `);
 
-    if (api.library === 'guild') {
+    if (api.library === "guild") {
       expect(result.publicSdl).toContainGraphQL(/* GraphQL */ `
         type Product {
           id: ID!
@@ -70,7 +84,7 @@ testImplementations(api => {
       }
     `);
 
-    if (api.library === 'guild') {
+    if (api.library === "guild") {
       expect(result.publicSdl).toContainGraphQL(/* GraphQL */ `
         type Review {
           id: ID!
@@ -86,7 +100,7 @@ testImplementations(api => {
       }
     `);
 
-    if (api.library === 'guild') {
+    if (api.library === "guild") {
       expect(result.publicSdl).toContainGraphQL(/* GraphQL */ `
         type Query {
           products: [Product!]!
@@ -102,15 +116,17 @@ testImplementations(api => {
       }
     `);
 
-    if (api.library === 'guild') {
-      expect(result.publicSdl).not.toEqual(expect.stringContaining('join__Graph'));
+    if (api.library === "guild") {
+      expect(result.publicSdl).not.toEqual(
+        expect.stringContaining("join__Graph"),
+      );
     }
   });
 
-  test('composition of basic object types with @requires, @provides, @key', () => {
+  test("composition of basic object types with @requires, @provides, @key", () => {
     const result = api.composeServices([
       {
-        name: 'accounts',
+        name: "accounts",
         typeDefs: graphql`
           extend type Query {
             me: User
@@ -124,7 +140,7 @@ testImplementations(api => {
         `,
       },
       {
-        name: 'inventory',
+        name: "inventory",
         typeDefs: graphql`
           extend type Product @key(fields: "upc") {
             upc: String! @external
@@ -136,7 +152,7 @@ testImplementations(api => {
         `,
       },
       {
-        name: 'products',
+        name: "products",
         typeDefs: graphql`
           extend type Query {
             topProducts(first: Int = 5): [Product]
@@ -151,7 +167,7 @@ testImplementations(api => {
         `,
       },
       {
-        name: 'reviews',
+        name: "reviews",
         typeDefs: graphql`
           type Review @key(fields: "id") {
             id: ID!
@@ -182,16 +198,21 @@ testImplementations(api => {
         @join__type(graph: PRODUCTS, key: "upc")
         @join__type(graph: REVIEWS, key: "upc") {
         upc: String!
-        weight: Int @join__field(graph: INVENTORY, external: true) @join__field(graph: PRODUCTS)
-        price: Int @join__field(graph: INVENTORY, external: true) @join__field(graph: PRODUCTS)
+        weight: Int
+          @join__field(graph: INVENTORY, external: true)
+          @join__field(graph: PRODUCTS)
+        price: Int
+          @join__field(graph: INVENTORY, external: true)
+          @join__field(graph: PRODUCTS)
         inStock: Boolean @join__field(graph: INVENTORY)
-        shippingEstimate: Int @join__field(graph: INVENTORY, requires: "price weight")
+        shippingEstimate: Int
+          @join__field(graph: INVENTORY, requires: "price weight")
         name: String @join__field(graph: PRODUCTS)
         reviews: [Review] @join__field(graph: REVIEWS)
       }
     `);
 
-    if (api.library === 'guild') {
+    if (api.library === "guild") {
       expect(result.publicSdl).toContainGraphQL(/* GraphQL */ `
         type Product {
           upc: String!
@@ -206,15 +227,19 @@ testImplementations(api => {
     }
 
     expect(result.supergraphSdl).toContainGraphQL(/* GraphQL */ `
-      type User @join__type(graph: ACCOUNTS, key: "id") @join__type(graph: REVIEWS, key: "id") {
+      type User
+        @join__type(graph: ACCOUNTS, key: "id")
+        @join__type(graph: REVIEWS, key: "id") {
         id: ID!
         name: String @join__field(graph: ACCOUNTS)
-        username: String @join__field(graph: ACCOUNTS) @join__field(graph: REVIEWS, external: true)
+        username: String
+          @join__field(graph: ACCOUNTS)
+          @join__field(graph: REVIEWS, external: true)
         reviews: [Review] @join__field(graph: REVIEWS)
       }
     `);
 
-    if (api.library === 'guild') {
+    if (api.library === "guild") {
       expect(result.publicSdl).toContainGraphQL(/* GraphQL */ `
         type User {
           id: ID!
@@ -234,7 +259,7 @@ testImplementations(api => {
       }
     `);
 
-    if (api.library === 'guild') {
+    if (api.library === "guild") {
       expect(result.publicSdl).toContainGraphQL(/* GraphQL */ `
         type Review {
           id: ID!
@@ -246,10 +271,10 @@ testImplementations(api => {
     }
   });
 
-  test('[Fed v1] set @join__type(extension: true) to types with @extends', () => {
+  test("[Fed v1] set @join__type(extension: true) to types with @extends", () => {
     const result = api.composeServices([
       {
-        name: 'foo',
+        name: "foo",
         typeDefs: graphql`
           type Action @extends @key(fields: "id") {
             id: ID! @external
@@ -258,7 +283,7 @@ testImplementations(api => {
         `,
       },
       {
-        name: 'bar',
+        name: "bar",
         typeDefs: graphql`
           type Action @key(fields: "id") {
             id: ID!
@@ -271,7 +296,7 @@ testImplementations(api => {
         `,
       },
       {
-        name: 'baz',
+        name: "baz",
         typeDefs: graphql`
           type Action @extends @key(fields: "id") {
             id: ID! @external
@@ -296,10 +321,10 @@ testImplementations(api => {
     `);
   });
 
-  test('[Fed v2 - DGS] set @join__type(override, requires) to types with @override and @requires', () => {
+  test("[Fed v2 - DGS] set @join__type(override, requires) to types with @override and @requires", () => {
     const result = api.composeServices([
       {
-        name: 'foo',
+        name: "foo",
         typeDefs: graphql`
           schema
             @link(url: "https://specs.apollo.dev/link/v1.0")
@@ -354,13 +379,19 @@ testImplementations(api => {
         `,
       },
       {
-        name: 'bar',
+        name: "bar",
         typeDefs: graphql`
           schema
             @link(url: "https://specs.apollo.dev/link/v1.0")
             @link(
               url: "https://specs.apollo.dev/federation/v2.0"
-              import: ["@key", "@external", "@requires", "@shareable", "@override"]
+              import: [
+                "@key"
+                "@external"
+                "@requires"
+                "@shareable"
+                "@override"
+              ]
             ) {
             query: Query
           }
@@ -391,7 +422,9 @@ testImplementations(api => {
 
           type Product @key(fields: "id") {
             id: ID!
-            variants: [Variant!]! @override(from: "foo") @requires(fields: "colors { id }")
+            variants: [Variant!]!
+              @override(from: "foo")
+              @requires(fields: "colors { id }")
             colors: [Color!]! @external
           }
 
@@ -413,9 +446,12 @@ testImplementations(api => {
     assertCompositionSuccess(result);
 
     expect(result.supergraphSdl).toContainGraphQL(/* GraphQL */ `
-      type Product @join__type(graph: BAR, key: "id") @join__type(graph: FOO, key: "id") {
+      type Product
+        @join__type(graph: BAR, key: "id")
+        @join__type(graph: FOO, key: "id") {
         id: ID!
-        variants: [Variant!]! @join__field(graph: BAR, requires: "colors { id }", override: "foo")
+        variants: [Variant!]!
+          @join__field(graph: BAR, requires: "colors { id }", override: "foo")
         colors: [Color!]!
           @inaccessible
           @join__field(graph: BAR, external: true)
@@ -424,7 +460,7 @@ testImplementations(api => {
       }
     `);
 
-    if (api.library === 'guild') {
+    if (api.library === "guild") {
       expect(result.publicSdl).toContainGraphQL(/* GraphQL */ `
         type Product {
           id: ID!
@@ -435,10 +471,10 @@ testImplementations(api => {
     }
   });
 
-  test('[Fed v1] @override', () => {
+  test("[Fed v1] @override", () => {
     const result = api.composeServices([
       {
-        name: 'foo',
+        name: "foo",
         typeDefs: graphql`
           directive @override(from: String!) on FIELD_DEFINITION
 
@@ -458,10 +494,13 @@ testImplementations(api => {
         `,
       },
       {
-        name: 'bar',
+        name: "bar",
         typeDefs: graphql`
           extend schema
-            @link(url: "https://specs.apollo.dev/federation/v2.0", import: ["@shareable"])
+            @link(
+              url: "https://specs.apollo.dev/federation/v2.0"
+              import: ["@shareable"]
+            )
 
           type Sentence {
             text: String!
@@ -480,10 +519,13 @@ testImplementations(api => {
         `,
       },
       {
-        name: 'baz',
+        name: "baz",
         typeDefs: graphql`
           extend schema
-            @link(url: "https://specs.apollo.dev/federation/v2.0", import: ["@shareable"])
+            @link(
+              url: "https://specs.apollo.dev/federation/v2.0"
+              import: ["@shareable"]
+            )
 
           type Viewer @shareable {
             ping: String
@@ -506,7 +548,10 @@ testImplementations(api => {
     `);
 
     expect(result.supergraphSdl).toContainGraphQL(/* GraphQL */ `
-      type Viewer @join__type(graph: BAR) @join__type(graph: FOO) @join__type(graph: BAZ) {
+      type Viewer
+        @join__type(graph: BAR)
+        @join__type(graph: FOO)
+        @join__type(graph: BAZ) {
         sentences: [Sentence!]! @join__field(graph: FOO, override: "bar")
         words: [String!]! @join__field(graph: BAR)
         ping: String @join__field(graph: BAZ)
@@ -514,29 +559,32 @@ testImplementations(api => {
     `);
 
     expect(result.supergraphSdl).toContainGraphQL(/* GraphQL */ `
-      type Query @join__type(graph: BAR) @join__type(graph: FOO) @join__type(graph: BAZ) {
+      type Query
+        @join__type(graph: BAR)
+        @join__type(graph: FOO)
+        @join__type(graph: BAZ) {
         sentences: [Sentence!]! @join__field(graph: FOO, override: "bar")
         view: Viewer!
       }
     `);
   });
 
-  test.skip('validate fixtures/huge-schema', async () => {
+  test.skip("validate fixtures/huge-schema", async () => {
     const subgraphs = await getSubgraphsOfHugeSchema();
     const result = api.composeServices(subgraphs);
     assertCompositionSuccess(result);
   });
 
-  test('validate fixtures/dgs', async () => {
+  test("validate fixtures/dgs", async () => {
     const subgraphs = await getSubgraphsOfDGS();
     const result = api.composeServices(subgraphs);
     assertCompositionSuccess(result);
   });
 
-  test('validate authentication', () => {
+  test("validate authentication", () => {
     const result = api.composeServices([
       {
-        name: 'feed',
+        name: "feed",
         typeDefs: graphql`
           extend schema
             @link(
@@ -558,7 +606,7 @@ testImplementations(api => {
         `,
       },
       {
-        name: 'comments',
+        name: "comments",
         typeDefs: graphql`
           extend schema
             @link(
@@ -581,7 +629,9 @@ testImplementations(api => {
           extend type Query {
             feed: [Post!]!
               @shareable
-              @policy(policies: [["read_post_comments"], ["read_post_comments"]])
+              @policy(
+                policies: [["read_post_comments"], ["read_post_comments"]]
+              )
               @requiresScopes(scopes: [["read:posts"]])
           }
 
@@ -610,7 +660,10 @@ testImplementations(api => {
         @link(url: "https://specs.apollo.dev/join/v0.3", for: EXECUTION)
         @link(url: "https://specs.apollo.dev/authenticated/v0.1", for: SECURITY)
         @link(url: "https://specs.apollo.dev/policy/v0.1", for: SECURITY)
-        @link(url: "https://specs.apollo.dev/requiresScopes/v0.1", for: SECURITY) {
+        @link(
+          url: "https://specs.apollo.dev/requiresScopes/v0.1"
+          for: SECURITY
+        ) {
         query: Query
         mutation: Mutation
       }
@@ -620,7 +673,7 @@ testImplementations(api => {
       directive @authenticated on FIELD_DEFINITION | OBJECT | INTERFACE | SCALAR | ENUM
     `);
 
-    expect(result.publicSdl).not.toMatch('@authenticated');
+    expect(result.publicSdl).not.toMatch("@authenticated");
 
     expect(result.supergraphSdl).toContainGraphQL(/* GraphQL */ `
       directive @requiresScopes(
@@ -628,13 +681,13 @@ testImplementations(api => {
       ) on FIELD_DEFINITION | OBJECT | INTERFACE | SCALAR | ENUM
     `);
 
-    expect(result.publicSdl).not.toMatch('@requiresScopes');
+    expect(result.publicSdl).not.toMatch("@requiresScopes");
 
     expect(result.supergraphSdl).toContainGraphQL(/* GraphQL */ `
       scalar requiresScopes__Scope
     `);
 
-    expect(result.publicSdl).not.toMatch('requiresScopes__Scope');
+    expect(result.publicSdl).not.toMatch("requiresScopes__Scope");
 
     expect(result.supergraphSdl).toContainGraphQL(/* GraphQL */ `
       directive @policy(
@@ -642,13 +695,13 @@ testImplementations(api => {
       ) on ENUM | FIELD_DEFINITION | INTERFACE | OBJECT | SCALAR
     `);
 
-    expect(result.publicSdl).not.toMatch('policy');
+    expect(result.publicSdl).not.toMatch("policy");
 
     expect(result.supergraphSdl).toContainGraphQL(/* GraphQL */ `
       scalar policy__Policy
     `);
 
-    expect(result.publicSdl).not.toMatch('policy__Policy');
+    expect(result.publicSdl).not.toMatch("policy__Policy");
 
     expect(result.supergraphSdl).toContainGraphQL(/* GraphQL */ `
       type Mutation @join__type(graph: COMMENTS) {
@@ -657,7 +710,7 @@ testImplementations(api => {
     `);
 
     const policies =
-      api.library === 'apollo'
+      api.library === "apollo"
         ? // The top-level array means "OR".
           // The inner arrays mean "AND".
           // So this means "read_post_comments OR read_posts".
@@ -685,10 +738,10 @@ testImplementations(api => {
     `);
   });
 
-  test('removes federation__Policy and federation__Scope scalars', () => {
+  test("removes federation__Policy and federation__Scope scalars", () => {
     const result = api.composeServices([
       {
-        name: 'feed',
+        name: "feed",
         typeDefs: graphql`
           extend schema
             @link(
@@ -720,7 +773,7 @@ testImplementations(api => {
         `,
       },
       {
-        name: 'comments',
+        name: "comments",
         typeDefs: graphql`
           extend schema
             @link(
@@ -753,7 +806,9 @@ testImplementations(api => {
           extend type Query {
             feed: [Post!]!
               @shareable
-              @policy(policies: [["read_post_comments"], ["read_post_comments"]])
+              @policy(
+                policies: [["read_post_comments"], ["read_post_comments"]]
+              )
               @requiresScopes(scopes: [["read:posts"]])
           }
 
@@ -776,17 +831,20 @@ testImplementations(api => {
 
     assertCompositionSuccess(result);
 
-    expect(result.supergraphSdl).not.toMatch('federation__Policy');
-    expect(result.supergraphSdl).not.toMatch('federation__Scope');
+    expect(result.supergraphSdl).not.toMatch("federation__Policy");
+    expect(result.supergraphSdl).not.toMatch("federation__Scope");
   });
 
-  test('@override with @shareable in different conditions', () => {
+  test("@override with @shareable in different conditions", () => {
     let result = api.composeServices([
       {
-        name: 'a',
+        name: "a",
         typeDefs: graphql`
           extend schema
-            @link(url: "https://specs.apollo.dev/federation/v2.3", import: ["@shareable"])
+            @link(
+              url: "https://specs.apollo.dev/federation/v2.3"
+              import: ["@shareable"]
+            )
 
           type Query {
             bar: String! @shareable
@@ -794,10 +852,13 @@ testImplementations(api => {
         `,
       },
       {
-        name: 'b',
+        name: "b",
         typeDefs: graphql`
           extend schema
-            @link(url: "https://specs.apollo.dev/federation/v2.3", import: ["@shareable"])
+            @link(
+              url: "https://specs.apollo.dev/federation/v2.3"
+              import: ["@shareable"]
+            )
 
           type Query {
             bar: String! @shareable
@@ -805,7 +866,7 @@ testImplementations(api => {
         `,
       },
       {
-        name: 'c',
+        name: "c",
         typeDefs: graphql`
           extend schema
             @link(
@@ -823,17 +884,25 @@ testImplementations(api => {
     assertCompositionSuccess(result);
 
     expect(result.supergraphSdl).toContainGraphQL(/* GraphQL */ `
-      type Query @join__type(graph: A) @join__type(graph: B) @join__type(graph: C) {
-        bar: String! @join__field(graph: B) @join__field(graph: C, override: "a")
+      type Query
+        @join__type(graph: A)
+        @join__type(graph: B)
+        @join__type(graph: C) {
+        bar: String!
+          @join__field(graph: B)
+          @join__field(graph: C, override: "a")
       }
     `);
 
     result = api.composeServices([
       {
-        name: 'a',
+        name: "a",
         typeDefs: graphql`
           extend schema
-            @link(url: "https://specs.apollo.dev/federation/v2.3", import: ["@shareable"])
+            @link(
+              url: "https://specs.apollo.dev/federation/v2.3"
+              import: ["@shareable"]
+            )
 
           type Query {
             bar: String! @shareable
@@ -841,10 +910,13 @@ testImplementations(api => {
         `,
       },
       {
-        name: 'b',
+        name: "b",
         typeDefs: graphql`
           extend schema
-            @link(url: "https://specs.apollo.dev/federation/v2.3", import: ["@shareable"])
+            @link(
+              url: "https://specs.apollo.dev/federation/v2.3"
+              import: ["@shareable"]
+            )
 
           type Query {
             bar: String! @shareable
@@ -852,7 +924,7 @@ testImplementations(api => {
         `,
       },
       {
-        name: 'c',
+        name: "c",
         typeDefs: graphql`
           extend schema
             @link(
@@ -866,10 +938,13 @@ testImplementations(api => {
         `,
       },
       {
-        name: 'd',
+        name: "d",
         typeDefs: graphql`
           extend schema
-            @link(url: "https://specs.apollo.dev/federation/v2.3", import: ["@shareable"])
+            @link(
+              url: "https://specs.apollo.dev/federation/v2.3"
+              import: ["@shareable"]
+            )
 
           type Query {
             foo: String!
@@ -887,16 +962,21 @@ testImplementations(api => {
         @join__type(graph: C)
         @join__type(graph: D) {
         foo: String! @join__field(graph: D)
-        bar: String! @join__field(graph: B) @join__field(graph: C, override: "a")
+        bar: String!
+          @join__field(graph: B)
+          @join__field(graph: C, override: "a")
       }
     `);
 
     result = api.composeServices([
       {
-        name: 'a',
+        name: "a",
         typeDefs: graphql`
           extend schema
-            @link(url: "https://specs.apollo.dev/federation/v2.3", import: ["@shareable"])
+            @link(
+              url: "https://specs.apollo.dev/federation/v2.3"
+              import: ["@shareable"]
+            )
 
           type Query {
             bar: String! @shareable
@@ -904,10 +984,13 @@ testImplementations(api => {
         `,
       },
       {
-        name: 'b',
+        name: "b",
         typeDefs: graphql`
           extend schema
-            @link(url: "https://specs.apollo.dev/federation/v2.3", import: ["@shareable"])
+            @link(
+              url: "https://specs.apollo.dev/federation/v2.3"
+              import: ["@shareable"]
+            )
 
           type Query {
             bar: String! @shareable
@@ -915,10 +998,13 @@ testImplementations(api => {
         `,
       },
       {
-        name: 'c',
+        name: "c",
         typeDefs: graphql`
           extend schema
-            @link(url: "https://specs.apollo.dev/federation/v2.3", import: ["@shareable"])
+            @link(
+              url: "https://specs.apollo.dev/federation/v2.3"
+              import: ["@shareable"]
+            )
 
           type Query {
             bar: String! @shareable
@@ -930,17 +1016,23 @@ testImplementations(api => {
     assertCompositionSuccess(result);
 
     expect(result.supergraphSdl).toContainGraphQL(/* GraphQL */ `
-      type Query @join__type(graph: A) @join__type(graph: B) @join__type(graph: C) {
+      type Query
+        @join__type(graph: A)
+        @join__type(graph: B)
+        @join__type(graph: C) {
         bar: String!
       }
     `);
 
     result = api.composeServices([
       {
-        name: 'a',
+        name: "a",
         typeDefs: graphql`
           extend schema
-            @link(url: "https://specs.apollo.dev/federation/v2.3", import: ["@shareable"])
+            @link(
+              url: "https://specs.apollo.dev/federation/v2.3"
+              import: ["@shareable"]
+            )
 
           type Query {
             bar: String! @shareable
@@ -948,10 +1040,13 @@ testImplementations(api => {
         `,
       },
       {
-        name: 'b',
+        name: "b",
         typeDefs: graphql`
           extend schema
-            @link(url: "https://specs.apollo.dev/federation/v2.3", import: ["@shareable"])
+            @link(
+              url: "https://specs.apollo.dev/federation/v2.3"
+              import: ["@shareable"]
+            )
 
           type Query {
             bar: String! @shareable
@@ -959,10 +1054,13 @@ testImplementations(api => {
         `,
       },
       {
-        name: 'c',
+        name: "c",
         typeDefs: graphql`
           extend schema
-            @link(url: "https://specs.apollo.dev/federation/v2.3", import: ["@shareable"])
+            @link(
+              url: "https://specs.apollo.dev/federation/v2.3"
+              import: ["@shareable"]
+            )
 
           type Query {
             bar: String! @shareable
@@ -970,10 +1068,13 @@ testImplementations(api => {
         `,
       },
       {
-        name: 'd',
+        name: "d",
         typeDefs: graphql`
           extend schema
-            @link(url: "https://specs.apollo.dev/federation/v2.3", import: ["@shareable"])
+            @link(
+              url: "https://specs.apollo.dev/federation/v2.3"
+              import: ["@shareable"]
+            )
 
           type Query {
             foo: String! @shareable
@@ -991,13 +1092,16 @@ testImplementations(api => {
         @join__type(graph: C)
         @join__type(graph: D) {
         foo: String! @join__field(graph: D)
-        bar: String! @join__field(graph: A) @join__field(graph: B) @join__field(graph: C)
+        bar: String!
+          @join__field(graph: A)
+          @join__field(graph: B)
+          @join__field(graph: C)
       }
     `);
 
     result = api.composeServices([
       {
-        name: 'a',
+        name: "a",
         typeDefs: graphql`
           extend schema
             @link(

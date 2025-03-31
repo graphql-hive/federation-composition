@@ -1,14 +1,14 @@
-import { ASTVisitor, Kind } from 'graphql';
-import { validateDirectiveAgainstOriginal } from '../../../helpers.js';
-import type { SubgraphValidationContext } from '../../validation-context.js';
+import { ASTVisitor, Kind } from "graphql";
+import { validateDirectiveAgainstOriginal } from "../../../helpers.js";
+import type { SubgraphValidationContext } from "../../validation-context.js";
 
 export function ExtendsRules(context: SubgraphValidationContext): ASTVisitor {
   return {
     DirectiveDefinition(node) {
-      validateDirectiveAgainstOriginal(node, 'extends', context);
+      validateDirectiveAgainstOriginal(node, "extends", context);
     },
     Directive(node) {
-      if (!context.isAvailableFederationDirective('extends', node)) {
+      if (!context.isAvailableFederationDirective("extends", node)) {
         return;
       }
 
@@ -25,7 +25,10 @@ export function ExtendsRules(context: SubgraphValidationContext): ASTVisitor {
       }
 
       if (typeDef.kind === Kind.OBJECT_TYPE_DEFINITION) {
-        context.stateBuilder.objectType.setExtension(typeDef.name.value, '@extends');
+        context.stateBuilder.objectType.setExtension(
+          typeDef.name.value,
+          "@extends",
+        );
       } else {
         context.stateBuilder.interfaceType.setExtension(typeDef.name.value);
       }
@@ -34,7 +37,12 @@ export function ExtendsRules(context: SubgraphValidationContext): ASTVisitor {
 
       for (const field of fields ?? []) {
         // TODO: T11 make sure it's actually correct to mark extended types as used
-        context.markAsUsed('@extends', typeDef.kind, typeDef.name.value, field.name.value);
+        context.markAsUsed(
+          "@extends",
+          typeDef.kind,
+          typeDef.name.value,
+          field.name.value,
+        );
       }
     },
   };

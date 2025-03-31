@@ -1,6 +1,6 @@
-import { ConstDirectiveNode, Kind, parse, TypeKind } from 'graphql';
-import { describe, expect, test } from 'vitest';
-import { ArgumentKind } from '../src/subgraph/state.js';
+import { ConstDirectiveNode, Kind, parse, TypeKind } from "graphql";
+import { describe, expect, test } from "vitest";
+import { ArgumentKind } from "../src/subgraph/state.js";
 import {
   createEnumTypeNode,
   createInputObjectTypeNode,
@@ -11,7 +11,7 @@ import {
   createSchemaNode,
   createUnionTypeNode,
   stripFederation,
-} from '../src/supergraph/composition/ast.js';
+} from "../src/supergraph/composition/ast.js";
 
 function createDirective(name: string): ConstDirectiveNode {
   return {
@@ -23,18 +23,18 @@ function createDirective(name: string): ConstDirectiveNode {
   };
 }
 
-describe('object type', () => {
-  test('@join__type(graph)', () => {
+describe("object type", () => {
+  test("@join__type(graph)", () => {
     expect(
       createObjectTypeNode({
-        name: 'User',
+        name: "User",
         join: {
-          type: [{ graph: 'A' }, { graph: 'B' }],
+          type: [{ graph: "A" }, { graph: "B" }],
         },
         fields: [
           {
-            name: 'name',
-            type: 'String',
+            name: "name",
+            type: "String",
           },
         ],
       }),
@@ -45,102 +45,108 @@ describe('object type', () => {
     `);
   });
 
-  test('@join__implements(graph, interface)', () => {
+  test("@join__implements(graph, interface)", () => {
     expect(
       createObjectTypeNode({
-        name: 'Book',
+        name: "Book",
         join: {
-          type: [{ graph: 'A' }],
-          implements: [{ graph: 'A', interface: 'Media' }],
+          type: [{ graph: "A" }],
+          implements: [{ graph: "A", interface: "Media" }],
         },
         fields: [
           {
-            name: 'title',
-            type: 'String',
+            name: "title",
+            type: "String",
           },
         ],
       }),
     ).toEqualGraphQL(/* GraphQL */ `
-      type Book @join__type(graph: A) @join__implements(graph: A, interface: "Media") {
+      type Book
+        @join__type(graph: A)
+        @join__implements(graph: A, interface: "Media") {
         title: String
       }
     `);
   });
 
-  test('@join__type(graph, key)', () => {
+  test("@join__type(graph, key)", () => {
     expect(
       createObjectTypeNode({
-        name: 'User',
+        name: "User",
         join: {
           type: [
-            { graph: 'A', key: 'id' },
-            { graph: 'B', key: 'id' },
+            { graph: "A", key: "id" },
+            { graph: "B", key: "id" },
           ],
         },
         fields: [
           {
-            name: 'id',
-            type: 'ID!',
+            name: "id",
+            type: "ID!",
           },
           {
-            name: 'name',
-            type: 'String',
+            name: "name",
+            type: "String",
           },
         ],
       }),
     ).toEqualGraphQL(/* GraphQL */ `
-      type User @join__type(graph: A, key: "id") @join__type(graph: B, key: "id") {
+      type User
+        @join__type(graph: A, key: "id")
+        @join__type(graph: B, key: "id") {
         id: ID!
         name: String
       }
     `);
   });
 
-  test('@join__type(graph, key, extension)', () => {
+  test("@join__type(graph, key, extension)", () => {
     expect(
       createObjectTypeNode({
-        name: 'User',
+        name: "User",
         join: {
           type: [
-            { graph: 'A', key: 'id' },
-            { graph: 'B', key: 'id', extension: true },
+            { graph: "A", key: "id" },
+            { graph: "B", key: "id", extension: true },
           ],
         },
         fields: [
           {
-            name: 'id',
-            type: 'ID!',
+            name: "id",
+            type: "ID!",
           },
           {
-            name: 'name',
-            type: 'String',
+            name: "name",
+            type: "String",
           },
         ],
       }),
     ).toEqualGraphQL(/* GraphQL */ `
-      type User @join__type(graph: A, key: "id") @join__type(graph: B, key: "id", extension: true) {
+      type User
+        @join__type(graph: A, key: "id")
+        @join__type(graph: B, key: "id", extension: true) {
         id: ID!
         name: String
       }
     `);
   });
 
-  test('@join_field', () => {
+  test("@join_field", () => {
     expect(
       createObjectTypeNode({
-        name: 'User',
-        join: { type: [{ graph: 'A' }, { graph: 'B' }] },
+        name: "User",
+        join: { type: [{ graph: "A" }, { graph: "B" }] },
         fields: [
           {
-            name: 'name',
-            type: 'String',
+            name: "name",
+            type: "String",
             join: {
               field: [{}],
             },
           },
           {
-            name: 'id',
-            type: 'ID',
+            name: "id",
+            type: "ID",
           },
         ],
       }),
@@ -152,26 +158,26 @@ describe('object type', () => {
     `);
   });
 
-  test('@join_field(graph)', () => {
+  test("@join_field(graph)", () => {
     expect(
       createObjectTypeNode({
-        name: 'User',
-        join: { type: [{ graph: 'A' }, { graph: 'B' }] },
+        name: "User",
+        join: { type: [{ graph: "A" }, { graph: "B" }] },
         fields: [
           {
-            name: 'name',
-            type: 'String',
+            name: "name",
+            type: "String",
             join: {
               field: [
                 {
-                  graph: 'A',
+                  graph: "A",
                 },
               ],
             },
           },
           {
-            name: 'id',
-            type: 'ID',
+            name: "id",
+            type: "ID",
           },
         ],
       }),
@@ -183,26 +189,26 @@ describe('object type', () => {
     `);
   });
 
-  test('@join_field(graph, type)', () => {
+  test("@join_field(graph, type)", () => {
     expect(
       createObjectTypeNode({
-        name: 'User',
+        name: "User",
         join: {
-          type: [{ graph: 'A' }, { graph: 'B' }],
+          type: [{ graph: "A" }, { graph: "B" }],
         },
         fields: [
           {
-            name: 'name',
-            type: 'String',
+            name: "name",
+            type: "String",
             join: {
               field: [
                 {
-                  graph: 'A',
-                  type: 'String',
+                  graph: "A",
+                  type: "String",
                 },
                 {
-                  graph: 'B',
-                  type: 'String!',
+                  graph: "B",
+                  type: "String!",
                 },
               ],
             },
@@ -211,27 +217,29 @@ describe('object type', () => {
       }),
     ).toEqualGraphQL(/* GraphQL */ `
       type User @join__type(graph: A) @join__type(graph: B) {
-        name: String @join__field(graph: B, type: "String!") @join__field(graph: A, type: "String")
+        name: String
+          @join__field(graph: B, type: "String!")
+          @join__field(graph: A, type: "String")
       }
     `);
   });
 
-  test('@join_field(graph, override)', () => {
+  test("@join_field(graph, override)", () => {
     expect(
       createObjectTypeNode({
-        name: 'User',
+        name: "User",
         join: {
-          type: [{ graph: 'A' }, { graph: 'B' }],
+          type: [{ graph: "A" }, { graph: "B" }],
         },
         fields: [
           {
-            name: 'name',
-            type: 'String',
+            name: "name",
+            type: "String",
             join: {
               field: [
                 {
-                  graph: 'B',
-                  override: 'a',
+                  graph: "B",
+                  override: "a",
                 },
               ],
             },
@@ -245,21 +253,21 @@ describe('object type', () => {
     `);
   });
 
-  test('@join_field(graph, external)', () => {
+  test("@join_field(graph, external)", () => {
     expect(
       createObjectTypeNode({
-        name: 'User',
+        name: "User",
         join: {
-          type: [{ graph: 'A' }, { graph: 'B' }],
+          type: [{ graph: "A" }, { graph: "B" }],
         },
         fields: [
           {
-            name: 'name',
-            type: 'String',
+            name: "name",
+            type: "String",
             join: {
               field: [
                 {
-                  graph: 'B',
+                  graph: "B",
                   external: true,
                 },
               ],
@@ -274,22 +282,22 @@ describe('object type', () => {
     `);
   });
 
-  test('@join_field(graph, provides)', () => {
+  test("@join_field(graph, provides)", () => {
     expect(
       createObjectTypeNode({
-        name: 'User',
+        name: "User",
         join: {
-          type: [{ graph: 'A' }, { graph: 'B' }],
+          type: [{ graph: "A" }, { graph: "B" }],
         },
         fields: [
           {
-            name: 'name',
-            type: 'String',
+            name: "name",
+            type: "String",
             join: {
               field: [
                 {
-                  graph: 'B',
-                  provides: 'name',
+                  graph: "B",
+                  provides: "name",
                 },
               ],
             },
@@ -303,22 +311,22 @@ describe('object type', () => {
     `);
   });
 
-  test('@join_field(graph, requires)', () => {
+  test("@join_field(graph, requires)", () => {
     expect(
       createObjectTypeNode({
-        name: 'User',
+        name: "User",
         join: {
-          type: [{ graph: 'A' }, { graph: 'B' }],
+          type: [{ graph: "A" }, { graph: "B" }],
         },
         fields: [
           {
-            name: 'name',
-            type: 'String',
+            name: "name",
+            type: "String",
             join: {
               field: [
                 {
-                  graph: 'B',
-                  requires: 'name',
+                  graph: "B",
+                  requires: "name",
                 },
               ],
             },
@@ -332,17 +340,17 @@ describe('object type', () => {
     `);
   });
 
-  test('@inaccessible', () => {
+  test("@inaccessible", () => {
     expect(
       createObjectTypeNode({
-        name: 'User',
+        name: "User",
         join: {
-          type: [{ graph: 'A' }, { graph: 'B' }],
+          type: [{ graph: "A" }, { graph: "B" }],
         },
         fields: [
           {
-            name: 'name',
-            type: 'String',
+            name: "name",
+            type: "String",
             inaccessible: true,
           },
         ],
@@ -354,19 +362,19 @@ describe('object type', () => {
     `);
   });
 
-  test('field arguments', () => {
+  test("field arguments", () => {
     expect(
       createObjectTypeNode({
-        name: 'Building',
-        join: { type: [{ graph: 'A' }, { graph: 'B' }] },
+        name: "Building",
+        join: { type: [{ graph: "A" }, { graph: "B" }] },
         fields: [
           {
-            name: 'height',
-            type: 'Int!',
+            name: "height",
+            type: "Int!",
             arguments: [
               {
-                name: 'units',
-                type: 'String!',
+                name: "units",
+                type: "String!",
                 kind: ArgumentKind.SCALAR,
               },
             ],
@@ -380,15 +388,15 @@ describe('object type', () => {
     `);
   });
 
-  test('interfaces', () => {
+  test("interfaces", () => {
     expect(
       createObjectTypeNode({
-        name: 'Book',
-        interfaces: ['Media'],
+        name: "Book",
+        interfaces: ["Media"],
         fields: [
           {
-            name: 'title',
-            type: 'String',
+            name: "title",
+            type: "String",
           },
         ],
       }),
@@ -399,20 +407,20 @@ describe('object type', () => {
     `);
   });
 
-  test('default value', () => {
+  test("default value", () => {
     expect(
       createObjectTypeNode({
-        name: 'Building',
+        name: "Building",
         fields: [
           {
-            name: 'height',
-            type: 'Int!',
+            name: "height",
+            type: "Int!",
             arguments: [
               {
-                name: 'units',
-                type: 'Int!',
+                name: "units",
+                type: "Int!",
                 kind: TypeKind.SCALAR,
-                defaultValue: '1',
+                defaultValue: "1",
               },
             ],
           },
@@ -425,17 +433,17 @@ describe('object type', () => {
     `);
   });
 
-  test('a directive on a field', () => {
+  test("a directive on a field", () => {
     expect(
       createObjectTypeNode({
-        name: 'User',
-        join: { type: [{ graph: 'A' }] },
+        name: "User",
+        join: { type: [{ graph: "A" }] },
         fields: [
           {
-            name: 'name',
-            type: 'String!',
+            name: "name",
+            type: "String!",
             ast: {
-              directives: [createDirective('lowercase')],
+              directives: [createDirective("lowercase")],
             },
           },
         ],
@@ -447,19 +455,19 @@ describe('object type', () => {
     `);
   });
 
-  test('a directive on an object type', () => {
+  test("a directive on an object type", () => {
     expect(
       createObjectTypeNode({
-        name: 'User',
-        join: { type: [{ graph: 'A' }] },
+        name: "User",
+        join: { type: [{ graph: "A" }] },
         fields: [
           {
-            name: 'name',
-            type: 'String!',
+            name: "name",
+            type: "String!",
           },
         ],
         ast: {
-          directives: [createDirective('lowercase')],
+          directives: [createDirective("lowercase")],
         },
       }),
     ).toEqualGraphQL(/* GraphQL */ `
@@ -469,26 +477,26 @@ describe('object type', () => {
     `);
   });
 
-  test('@tag', () => {
+  test("@tag", () => {
     expect(
       createObjectTypeNode({
-        name: 'User',
+        name: "User",
         fields: [
           {
-            name: 'name',
-            type: 'String',
-            tags: ['public'],
+            name: "name",
+            type: "String",
+            tags: ["public"],
             arguments: [
               {
-                name: 'limit',
-                type: 'Int',
+                name: "limit",
+                type: "Int",
                 kind: ArgumentKind.SCALAR,
-                tags: ['public'],
+                tags: ["public"],
               },
             ],
           },
         ],
-        tags: ['public'],
+        tags: ["public"],
       }),
     ).toEqualGraphQL(/* GraphQL */ `
       type User @tag(name: "public") {
@@ -497,19 +505,19 @@ describe('object type', () => {
     `);
   });
 
-  test('@inaccessible', () => {
+  test("@inaccessible", () => {
     expect(
       createObjectTypeNode({
-        name: 'User',
+        name: "User",
         fields: [
           {
-            name: 'name',
-            type: 'String',
+            name: "name",
+            type: "String",
             inaccessible: true,
             arguments: [
               {
-                name: 'limit',
-                type: 'Int',
+                name: "limit",
+                type: "Int",
                 kind: ArgumentKind.SCALAR,
                 inaccessible: true,
               },
@@ -526,16 +534,16 @@ describe('object type', () => {
   });
 });
 
-describe('interface type', () => {
-  test('@join__type(graph)', () => {
+describe("interface type", () => {
+  test("@join__type(graph)", () => {
     expect(
       createInterfaceTypeNode({
-        name: 'User',
-        join: { type: [{ graph: 'A' }, { graph: 'B' }] },
+        name: "User",
+        join: { type: [{ graph: "A" }, { graph: "B" }] },
         fields: [
           {
-            name: 'name',
-            type: 'String',
+            name: "name",
+            type: "String",
           },
         ],
       }),
@@ -546,20 +554,20 @@ describe('interface type', () => {
     `);
   });
 
-  test('@join__type(graph, key, isInterfaceObject)', () => {
+  test("@join__type(graph, key, isInterfaceObject)", () => {
     expect(
       createInterfaceTypeNode({
-        name: 'Media',
+        name: "Media",
         join: {
           type: [
-            { graph: 'A', key: 'id' },
-            { graph: 'B', key: 'id', isInterfaceObject: true },
+            { graph: "A", key: "id" },
+            { graph: "B", key: "id", isInterfaceObject: true },
           ],
         },
         fields: [
           {
-            name: 'id',
-            type: 'ID!',
+            name: "id",
+            type: "ID!",
           },
         ],
       }),
@@ -572,28 +580,28 @@ describe('interface type', () => {
     `);
   });
 
-  test('@join__field(graph)', () => {
+  test("@join__field(graph)", () => {
     expect(
       createInterfaceTypeNode({
-        name: 'User',
+        name: "User",
         join: {
-          type: [{ graph: 'A' }, { graph: 'B' }],
+          type: [{ graph: "A" }, { graph: "B" }],
         },
         fields: [
           {
-            name: 'name',
-            type: 'String',
+            name: "name",
+            type: "String",
             join: {
               field: [
                 {
-                  graph: 'A',
+                  graph: "A",
                 },
               ],
             },
           },
           {
-            name: 'id',
-            type: 'ID',
+            name: "id",
+            type: "ID",
           },
         ],
       }),
@@ -605,21 +613,21 @@ describe('interface type', () => {
     `);
   });
 
-  test('field arguments', () => {
+  test("field arguments", () => {
     expect(
       createInterfaceTypeNode({
-        name: 'Building',
+        name: "Building",
         join: {
-          type: [{ graph: 'A' }, { graph: 'B' }],
+          type: [{ graph: "A" }, { graph: "B" }],
         },
         fields: [
           {
-            name: 'height',
-            type: 'Int!',
+            name: "height",
+            type: "Int!",
             arguments: [
               {
-                name: 'units',
-                type: 'Int!',
+                name: "units",
+                type: "Int!",
                 kind: ArgumentKind.SCALAR,
               },
             ],
@@ -633,15 +641,15 @@ describe('interface type', () => {
     `);
   });
 
-  test('interfaces', () => {
+  test("interfaces", () => {
     expect(
       createInterfaceTypeNode({
-        name: 'Book',
-        interfaces: ['Media'],
+        name: "Book",
+        interfaces: ["Media"],
         fields: [
           {
-            name: 'title',
-            type: 'String',
+            name: "title",
+            type: "String",
           },
         ],
       }),
@@ -652,21 +660,21 @@ describe('interface type', () => {
     `);
   });
 
-  test('default value', () => {
+  test("default value", () => {
     expect(
       createInterfaceTypeNode({
-        name: 'Skyscraper',
-        interfaces: ['Building'],
+        name: "Skyscraper",
+        interfaces: ["Building"],
         fields: [
           {
-            name: 'height',
-            type: 'Int!',
+            name: "height",
+            type: "Int!",
             arguments: [
               {
-                name: 'units',
-                type: 'Int!',
+                name: "units",
+                type: "Int!",
                 kind: ArgumentKind.SCALAR,
-                defaultValue: '1',
+                defaultValue: "1",
               },
             ],
           },
@@ -679,26 +687,26 @@ describe('interface type', () => {
     `);
   });
 
-  test('@tag', () => {
+  test("@tag", () => {
     expect(
       createInterfaceTypeNode({
-        name: 'Building',
+        name: "Building",
         fields: [
           {
-            name: 'height',
-            type: 'Int!',
-            tags: ['public'],
+            name: "height",
+            type: "Int!",
+            tags: ["public"],
             arguments: [
               {
-                name: 'units',
-                type: 'Int!',
+                name: "units",
+                type: "Int!",
                 kind: ArgumentKind.SCALAR,
-                tags: ['public'],
+                tags: ["public"],
               },
             ],
           },
         ],
-        tags: ['public'],
+        tags: ["public"],
       }),
     ).toEqualGraphQL(/* GraphQL */ `
       interface Building @tag(name: "public") {
@@ -707,19 +715,19 @@ describe('interface type', () => {
     `);
   });
 
-  test('@inaccessible', () => {
+  test("@inaccessible", () => {
     expect(
       createInterfaceTypeNode({
-        name: 'User',
+        name: "User",
         fields: [
           {
-            name: 'name',
-            type: 'String',
+            name: "name",
+            type: "String",
             inaccessible: true,
             arguments: [
               {
-                name: 'limit',
-                type: 'Int',
+                name: "limit",
+                type: "Int",
                 kind: ArgumentKind.SCALAR,
                 inaccessible: true,
               },
@@ -736,20 +744,20 @@ describe('interface type', () => {
   });
 });
 
-describe('union type', () => {
-  test('@join__type(graph) + @join__unionMember(graph, member)', () => {
+describe("union type", () => {
+  test("@join__type(graph) + @join__unionMember(graph, member)", () => {
     expect(
       createUnionTypeNode({
-        name: 'Media',
+        name: "Media",
         join: {
-          type: [{ graph: 'A' }, { graph: 'B' }],
+          type: [{ graph: "A" }, { graph: "B" }],
           unionMember: [
-            { graph: 'A', member: 'Book' },
-            { graph: 'B', member: 'Book' },
-            { graph: 'B', member: 'Movie' },
+            { graph: "A", member: "Book" },
+            { graph: "B", member: "Book" },
+            { graph: "B", member: "Movie" },
           ],
         },
-        members: ['Book', 'Movie'],
+        members: ["Book", "Movie"],
       }),
     ).toEqualGraphQL(/* GraphQL */ `
       union Media
@@ -763,23 +771,23 @@ describe('union type', () => {
     `);
   });
 
-  test('@tag', () => {
+  test("@tag", () => {
     expect(
       createUnionTypeNode({
-        name: 'Media',
-        members: ['Book', 'Movie'],
-        tags: ['public'],
+        name: "Media",
+        members: ["Book", "Movie"],
+        tags: ["public"],
       }),
     ).toEqualGraphQL(/* GraphQL */ `
       union Media @tag(name: "public") = Movie | Book
     `);
   });
 
-  test('@inaccessible', () => {
+  test("@inaccessible", () => {
     expect(
       createUnionTypeNode({
-        name: 'Media',
-        members: ['Book', 'Movie'],
+        name: "Media",
+        members: ["Book", "Movie"],
         inaccessible: true,
       }),
     ).toEqualGraphQL(/* GraphQL */ `
@@ -787,13 +795,13 @@ describe('union type', () => {
     `);
   });
 
-  test('directives', () => {
+  test("directives", () => {
     expect(
       createUnionTypeNode({
-        name: 'Media',
-        members: ['Book', 'Movie'],
+        name: "Media",
+        members: ["Book", "Movie"],
         ast: {
-          directives: [createDirective('custom')],
+          directives: [createDirective("custom")],
         },
       }),
     ).toEqualGraphQL(/* GraphQL */ `
@@ -802,18 +810,18 @@ describe('union type', () => {
   });
 });
 
-describe('input object type', () => {
-  test('@join__type(graph)', () => {
+describe("input object type", () => {
+  test("@join__type(graph)", () => {
     expect(
       createInputObjectTypeNode({
-        name: 'UserInput',
+        name: "UserInput",
         join: {
-          type: [{ graph: 'A' }, { graph: 'B' }],
+          type: [{ graph: "A" }, { graph: "B" }],
         },
         fields: [
           {
-            name: 'name',
-            type: 'String!',
+            name: "name",
+            type: "String!",
           },
         ],
       }),
@@ -824,14 +832,14 @@ describe('input object type', () => {
     `);
   });
 
-  test('@inaccessible', () => {
+  test("@inaccessible", () => {
     expect(
       createInputObjectTypeNode({
-        name: 'User',
+        name: "User",
         fields: [
           {
-            name: 'name',
-            type: 'String',
+            name: "name",
+            type: "String",
             inaccessible: true,
           },
         ],
@@ -844,18 +852,18 @@ describe('input object type', () => {
     `);
   });
 
-  test('@tag', () => {
+  test("@tag", () => {
     expect(
       createInputObjectTypeNode({
-        name: 'UserInput',
+        name: "UserInput",
         fields: [
           {
-            name: 'name',
-            type: 'String!',
-            tags: ['public'],
+            name: "name",
+            type: "String!",
+            tags: ["public"],
           },
         ],
-        tags: ['public'],
+        tags: ["public"],
       }),
     ).toEqualGraphQL(/* GraphQL */ `
       input UserInput @tag(name: "public") {
@@ -864,21 +872,21 @@ describe('input object type', () => {
     `);
   });
 
-  test('directive', () => {
+  test("directive", () => {
     expect(
       createInputObjectTypeNode({
-        name: 'User',
+        name: "User",
         fields: [
           {
-            name: 'name',
-            type: 'String',
+            name: "name",
+            type: "String",
             ast: {
-              directives: [createDirective('custom')],
+              directives: [createDirective("custom")],
             },
           },
         ],
         ast: {
-          directives: [createDirective('custom')],
+          directives: [createDirective("custom")],
         },
       }),
     ).toEqualGraphQL(/* GraphQL */ `
@@ -888,20 +896,20 @@ describe('input object type', () => {
     `);
   });
 
-  test('default value', () => {
+  test("default value", () => {
     expect(
       createInputObjectTypeNode({
-        name: 'Filter',
+        name: "Filter",
         fields: [
           {
-            name: 'limit',
-            type: 'Int',
-            defaultValue: '2',
+            name: "limit",
+            type: "Int",
+            defaultValue: "2",
           },
           {
-            name: 'obj',
-            type: 'Obj',
-            defaultValue: '{limit: 1}',
+            name: "obj",
+            type: "Obj",
+            defaultValue: "{limit: 1}",
           },
         ],
       }),
@@ -914,34 +922,34 @@ describe('input object type', () => {
   });
 });
 
-describe('enum object type', () => {
-  test('@join__type(graph) + @join_enumValue(graph)', () => {
+describe("enum object type", () => {
+  test("@join__type(graph) + @join_enumValue(graph)", () => {
     expect(
       createEnumTypeNode({
-        name: 'UserType',
+        name: "UserType",
         join: {
-          type: [{ graph: 'A' }, { graph: 'B' }],
+          type: [{ graph: "A" }, { graph: "B" }],
         },
         values: [
           {
-            name: 'ADMIN',
+            name: "ADMIN",
             join: {
               enumValue: [
                 {
-                  graph: 'A',
+                  graph: "A",
                 },
                 {
-                  graph: 'B',
+                  graph: "B",
                 },
               ],
             },
           },
           {
-            name: 'REGULAR',
+            name: "REGULAR",
             join: {
               enumValue: [
                 {
-                  graph: 'B',
+                  graph: "B",
                 },
               ],
             },
@@ -956,19 +964,19 @@ describe('enum object type', () => {
     `);
   });
 
-  test('@tag', () => {
+  test("@tag", () => {
     expect(
       createEnumTypeNode({
-        name: 'UserType',
-        tags: ['public'],
+        name: "UserType",
+        tags: ["public"],
         values: [
           {
-            name: 'ADMIN',
-            tags: ['public'],
+            name: "ADMIN",
+            tags: ["public"],
           },
           {
-            name: 'REGULAR',
-            tags: ['public'],
+            name: "REGULAR",
+            tags: ["public"],
           },
         ],
       }),
@@ -980,16 +988,16 @@ describe('enum object type', () => {
     `);
   });
 
-  test('@inaccessible', () => {
+  test("@inaccessible", () => {
     expect(
       createEnumTypeNode({
-        name: 'Media',
+        name: "Media",
         values: [
           {
-            name: 'BOOK',
+            name: "BOOK",
           },
           {
-            name: 'MOVIE',
+            name: "MOVIE",
             inaccessible: true,
           },
         ],
@@ -1003,23 +1011,23 @@ describe('enum object type', () => {
     `);
   });
 
-  test('directives', () => {
+  test("directives", () => {
     expect(
       createEnumTypeNode({
-        name: 'Media',
+        name: "Media",
         values: [
           {
-            name: 'BOOK',
+            name: "BOOK",
             ast: {
-              directives: [createDirective('any')],
+              directives: [createDirective("any")],
             },
           },
           {
-            name: 'MOVIE',
+            name: "MOVIE",
           },
         ],
         ast: {
-          directives: [createDirective('custom')],
+          directives: [createDirective("custom")],
         },
       }),
     ).toEqualGraphQL(/* GraphQL */ `
@@ -1031,13 +1039,13 @@ describe('enum object type', () => {
   });
 });
 
-describe('schema', () => {
-  test('operation types', () => {
+describe("schema", () => {
+  test("operation types", () => {
     expect(
       createSchemaNode({
-        query: 'Query',
-        mutation: 'Mutation',
-        subscription: 'Subscription',
+        query: "Query",
+        mutation: "Mutation",
+        subscription: "Subscription",
       }),
     ).toEqualGraphQL(/* GraphQL */ `
       schema {
@@ -1048,23 +1056,23 @@ describe('schema', () => {
     `);
   });
 
-  test('links', () => {
+  test("links", () => {
     expect(
       createSchemaNode({
-        query: 'Query',
+        query: "Query",
         links: [
           {
-            url: 'https://specs.apollo.dev/link/v1.0',
+            url: "https://specs.apollo.dev/link/v1.0",
           },
           {
-            url: 'https://specs.apollo.dev/join/v0.3',
-            for: 'EXECUTION',
+            url: "https://specs.apollo.dev/join/v0.3",
+            for: "EXECUTION",
           },
           {
-            url: 'https://myspecs.dev/lowercase/v1.0',
+            url: "https://myspecs.dev/lowercase/v1.0",
             import: [
               {
-                name: '@lowercase',
+                name: "@lowercase",
               },
             ],
           },
@@ -1074,25 +1082,28 @@ describe('schema', () => {
       schema
         @link(url: "https://specs.apollo.dev/link/v1.0")
         @link(url: "https://specs.apollo.dev/join/v0.3", for: EXECUTION)
-        @link(url: "https://myspecs.dev/lowercase/v1.0", import: ["@lowercase"]) {
+        @link(
+          url: "https://myspecs.dev/lowercase/v1.0"
+          import: ["@lowercase"]
+        ) {
         query: Query
       }
     `);
   });
 });
 
-describe('join__Graph enum type', () => {
-  test('@join__graph', () => {
+describe("join__Graph enum type", () => {
+  test("@join__graph", () => {
     expect(
       createJoinGraphEnumTypeNode([
         {
-          name: 'products',
-          url: 'http://products.com',
-          enumValue: 'PRODUCTS',
+          name: "products",
+          url: "http://products.com",
+          enumValue: "PRODUCTS",
         },
         {
-          name: 'reviews',
-          enumValue: 'REVIEWS',
+          name: "reviews",
+          enumValue: "REVIEWS",
         },
       ]),
     ).toEqualGraphQL(/* GraphQL */ `
@@ -1104,16 +1115,16 @@ describe('join__Graph enum type', () => {
   });
 });
 
-describe('scalars', () => {
-  test('scalar and directive on a scalar', () => {
+describe("scalars", () => {
+  test("scalar and directive on a scalar", () => {
     expect(
       createScalarTypeNode({
-        name: 'MyScalar',
+        name: "MyScalar",
         join: {
-          type: [{ graph: 'A' }, { graph: 'B' }],
+          type: [{ graph: "A" }, { graph: "B" }],
         },
         ast: {
-          directives: [createDirective('custom')],
+          directives: [createDirective("custom")],
         },
       }),
     ).toEqualGraphQL(/* GraphQL */ `
@@ -1121,10 +1132,10 @@ describe('scalars', () => {
     `);
   });
 
-  test('@inaccessible', () => {
+  test("@inaccessible", () => {
     expect(
       createScalarTypeNode({
-        name: 'MyScalar',
+        name: "MyScalar",
         inaccessible: true,
       }),
     ).toEqualGraphQL(/* GraphQL */ `
@@ -1133,8 +1144,8 @@ describe('scalars', () => {
   });
 });
 
-describe('strip federation', () => {
-  test('@join__graph', () => {
+describe("strip federation", () => {
+  test("@join__graph", () => {
     expect(
       stripFederation(
         parse(/* GraphQL */ `
@@ -1157,7 +1168,7 @@ describe('strip federation', () => {
     `);
   });
 
-  test('@join__enumValue', () => {
+  test("@join__enumValue", () => {
     expect(
       stripFederation(
         parse(/* GraphQL */ `
@@ -1177,7 +1188,7 @@ describe('strip federation', () => {
     `);
   });
 
-  test('@join__unionMember', () => {
+  test("@join__unionMember", () => {
     expect(
       stripFederation(
         parse(/* GraphQL */ `
@@ -1197,7 +1208,7 @@ describe('strip federation', () => {
     `);
   });
 
-  test('@join__field', () => {
+  test("@join__field", () => {
     expect(
       stripFederation(
         parse(/* GraphQL */ `
@@ -1217,7 +1228,7 @@ describe('strip federation', () => {
     `);
   });
 
-  test('@join__implements', () => {
+  test("@join__implements", () => {
     expect(
       stripFederation(
         parse(/* GraphQL */ `
@@ -1237,7 +1248,7 @@ describe('strip federation', () => {
     `);
   });
 
-  test('@join__type', () => {
+  test("@join__type", () => {
     expect(
       stripFederation(
         parse(/* GraphQL */ `
@@ -1255,7 +1266,7 @@ describe('strip federation', () => {
     `);
   });
 
-  test('@link', () => {
+  test("@link", () => {
     expect(
       stripFederation(
         parse(/* GraphQL */ `
@@ -1280,7 +1291,7 @@ describe('strip federation', () => {
     `);
   });
 
-  test('@tag', () => {
+  test("@tag", () => {
     expect(
       stripFederation(
         parse(/* GraphQL */ `
@@ -1298,7 +1309,7 @@ describe('strip federation', () => {
     `);
   });
 
-  test('enum link__Purpose', () => {
+  test("enum link__Purpose", () => {
     expect(
       stripFederation(
         parse(/* GraphQL */ `
@@ -1319,7 +1330,7 @@ describe('strip federation', () => {
     `);
   });
 
-  test('scalar link__Import', () => {
+  test("scalar link__Import", () => {
     expect(
       stripFederation(
         parse(/* GraphQL */ `
@@ -1332,7 +1343,7 @@ describe('strip federation', () => {
     `);
   });
 
-  test('enum join__Graph', () => {
+  test("enum join__Graph", () => {
     expect(
       stripFederation(
         parse(/* GraphQL */ `
@@ -1353,7 +1364,7 @@ describe('strip federation', () => {
     `);
   });
 
-  test('scalar join__FieldSet', () => {
+  test("scalar join__FieldSet", () => {
     expect(
       stripFederation(
         parse(/* GraphQL */ `
@@ -1366,7 +1377,7 @@ describe('strip federation', () => {
     `);
   });
 
-  test('strip @inaccessible', () => {
+  test("strip @inaccessible", () => {
     expect(
       stripFederation(
         parse(/* GraphQL */ `

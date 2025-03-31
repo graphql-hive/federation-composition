@@ -1,15 +1,24 @@
-import { ArgumentNode, ASTVisitor, GraphQLError, Kind, TypeNode } from 'graphql';
-import { namedTypeFromTypeNode, validateDirectiveAgainstOriginal } from '../../../helpers.js';
-import { isScalarType } from '../../validate-state.js';
-import type { SubgraphValidationContext } from '../../validation-context.js';
+import {
+  ArgumentNode,
+  ASTVisitor,
+  GraphQLError,
+  Kind,
+  TypeNode,
+} from "graphql";
+import {
+  namedTypeFromTypeNode,
+  validateDirectiveAgainstOriginal,
+} from "../../../helpers.js";
+import { isScalarType } from "../../validate-state.js";
+import type { SubgraphValidationContext } from "../../validation-context.js";
 
 export function ListSizeRule(context: SubgraphValidationContext): ASTVisitor {
   return {
     DirectiveDefinition(node) {
-      validateDirectiveAgainstOriginal(node, 'listSize', context);
+      validateDirectiveAgainstOriginal(node, "listSize", context);
     },
     Directive(node, _key, _parent, paths, ancestors) {
-      if (!context.isAvailableFederationDirective('listSize', node)) {
+      if (!context.isAvailableFederationDirective("listSize", node)) {
         return;
       }
 
@@ -23,13 +32,13 @@ export function ListSizeRule(context: SubgraphValidationContext): ASTVisitor {
       let requireOneSlicingArgument = true;
 
       for (const arg of node.arguments || []) {
-        if (arg.name.value === 'assumedSize') {
+        if (arg.name.value === "assumedSize") {
           assumedSizeArg = arg;
-        } else if (arg.name.value === 'slicingArguments') {
+        } else if (arg.name.value === "slicingArguments") {
           slicingArgumentsArg = arg;
-        } else if (arg.name.value === 'sizedFields') {
+        } else if (arg.name.value === "sizedFields") {
           sizedFieldsArg = arg;
-        } else if (arg.name.value === 'requireOneSlicingArgument') {
+        } else if (arg.name.value === "requireOneSlicingArgument") {
           requireOneSlicingArgumentArg = arg;
         }
       }
@@ -37,11 +46,14 @@ export function ListSizeRule(context: SubgraphValidationContext): ASTVisitor {
       if (assumedSizeArg) {
         if (assumedSizeArg.value.kind !== Kind.INT) {
           context.reportError(
-            new GraphQLError(`The value of @listSize(assumedSize:) must be an integer`, {
-              extensions: {
-                code: 'LIST_SIZE_INVALID_ASSUMED_SIZE',
+            new GraphQLError(
+              `The value of @listSize(assumedSize:) must be an integer`,
+              {
+                extensions: {
+                  code: "LIST_SIZE_INVALID_ASSUMED_SIZE",
+                },
               },
-            }),
+            ),
           );
           return;
         }
@@ -50,11 +62,14 @@ export function ListSizeRule(context: SubgraphValidationContext): ASTVisitor {
           assumedSize = parseInt(assumedSizeArg.value.value, 10);
         } catch (error) {
           context.reportError(
-            new GraphQLError(`The value of @listSize(assumedSize:) is not a valid integer`, {
-              extensions: {
-                code: 'LIST_SIZE_INVALID_ASSUMED_SIZE',
+            new GraphQLError(
+              `The value of @listSize(assumedSize:) is not a valid integer`,
+              {
+                extensions: {
+                  code: "LIST_SIZE_INVALID_ASSUMED_SIZE",
+                },
               },
-            }),
+            ),
           );
           return;
         }
@@ -67,7 +82,7 @@ export function ListSizeRule(context: SubgraphValidationContext): ASTVisitor {
               `The value of @listSize(slicingArguments:) must be a list of strings`,
               {
                 extensions: {
-                  code: 'LIST_SIZE_INVALID_SLICING_ARGUMENT',
+                  code: "LIST_SIZE_INVALID_SLICING_ARGUMENT",
                 },
               },
             ),
@@ -76,13 +91,13 @@ export function ListSizeRule(context: SubgraphValidationContext): ASTVisitor {
         }
 
         const values = slicingArgumentsArg.value.values;
-        if (values.some(val => val.kind !== Kind.STRING)) {
+        if (values.some((val) => val.kind !== Kind.STRING)) {
           context.reportError(
             new GraphQLError(
               `The value of @listSize(slicingArguments:) must be a list of strings`,
               {
                 extensions: {
-                  code: 'LIST_SIZE_INVALID_SLICING_ARGUMENT',
+                  code: "LIST_SIZE_INVALID_SLICING_ARGUMENT",
                 },
               },
             ),
@@ -90,10 +105,12 @@ export function ListSizeRule(context: SubgraphValidationContext): ASTVisitor {
           return;
         }
 
-        slicingArguments = values.map(val => {
+        slicingArguments = values.map((val) => {
           if (val.kind !== Kind.STRING) {
             // We validate it before, so it shouldn't be a surprise
-            throw new Error('Expected @listSize(slicingArguments:) to be a list of strings');
+            throw new Error(
+              "Expected @listSize(slicingArguments:) to be a list of strings",
+            );
           }
           return val.value;
         });
@@ -102,31 +119,39 @@ export function ListSizeRule(context: SubgraphValidationContext): ASTVisitor {
       if (sizedFieldsArg) {
         if (sizedFieldsArg.value.kind !== Kind.LIST) {
           context.reportError(
-            new GraphQLError(`The value of @listSize(sizedFields:) must be a list of strings`, {
-              extensions: {
-                code: 'LIST_SIZE_INVALID_SIZED_FIELD',
+            new GraphQLError(
+              `The value of @listSize(sizedFields:) must be a list of strings`,
+              {
+                extensions: {
+                  code: "LIST_SIZE_INVALID_SIZED_FIELD",
+                },
               },
-            }),
+            ),
           );
           return;
         }
 
         const values = sizedFieldsArg.value.values;
-        if (values.some(val => val.kind !== Kind.STRING)) {
+        if (values.some((val) => val.kind !== Kind.STRING)) {
           context.reportError(
-            new GraphQLError(`The value of @listSize(sizedFields:) must be a list of strings`, {
-              extensions: {
-                code: 'LIST_SIZE_INVALID_SIZED_FIELD',
+            new GraphQLError(
+              `The value of @listSize(sizedFields:) must be a list of strings`,
+              {
+                extensions: {
+                  code: "LIST_SIZE_INVALID_SIZED_FIELD",
+                },
               },
-            }),
+            ),
           );
           return;
         }
 
-        sizedFields = values.map(val => {
+        sizedFields = values.map((val) => {
           if (val.kind !== Kind.STRING) {
             // We validate it before, so it shouldn't be a surprise
-            throw new Error('Expected @listSize(sizedFields:) to be a list of strings');
+            throw new Error(
+              "Expected @listSize(sizedFields:) to be a list of strings",
+            );
           }
           return val.value;
         });
@@ -139,7 +164,7 @@ export function ListSizeRule(context: SubgraphValidationContext): ASTVisitor {
               `The value of @listSize(requireOneSlicingArgument:) must be a boolean when defined`,
               {
                 extensions: {
-                  code: 'LIST_SIZE_INVALID_REQUIRE_ONE_SLICING_ARGUMENT',
+                  code: "LIST_SIZE_INVALID_REQUIRE_ONE_SLICING_ARGUMENT",
                 },
               },
             ),
@@ -150,7 +175,7 @@ export function ListSizeRule(context: SubgraphValidationContext): ASTVisitor {
         requireOneSlicingArgument = requireOneSlicingArgumentArg.value.value;
       }
 
-      const directivesKeyAt = paths.findIndex(path => path === 'directives');
+      const directivesKeyAt = paths.findIndex((path) => path === "directives");
 
       if (directivesKeyAt === -1) {
         throw new Error('Could not find "directives" key in ancestors');
@@ -160,18 +185,18 @@ export function ListSizeRule(context: SubgraphValidationContext): ASTVisitor {
       const parent = ancestors[directivesKeyAt];
 
       if (!parent) {
-        throw new Error('Could not find the node annotated with @listSize');
+        throw new Error("Could not find the node annotated with @listSize");
       }
 
       if (Array.isArray(parent)) {
-        throw new Error('Expected parent to be a single node');
+        throw new Error("Expected parent to be a single node");
       }
 
-      if (!('kind' in parent)) {
-        throw new Error('Expected parent to be a node');
+      if (!("kind" in parent)) {
+        throw new Error("Expected parent to be a node");
       }
 
-      context.stateBuilder.markCostSpecAsUsed('listSize', node.name.value);
+      context.stateBuilder.markCostSpecAsUsed("listSize", node.name.value);
 
       switch (parent.kind) {
         case Kind.FIELD_DEFINITION: {
@@ -179,40 +204,51 @@ export function ListSizeRule(context: SubgraphValidationContext): ASTVisitor {
           const fieldDef = parent;
 
           if (!typeDef) {
-            throw new Error('Could not find the parent type of the field annotated with @listSize');
+            throw new Error(
+              "Could not find the parent type of the field annotated with @listSize",
+            );
           }
 
           const coordinate = `"${typeDef.name.value}.${parent.name.value}"`;
 
-          if (typeof assumedSize === 'number' && assumedSize < 0) {
+          if (typeof assumedSize === "number" && assumedSize < 0) {
             context.reportError(
-              new GraphQLError(`${coordinate} has negative @listSize(assumedSize:) value`, {
-                extensions: {
-                  code: 'LIST_SIZE_INVALID_ASSUMED_SIZE',
+              new GraphQLError(
+                `${coordinate} has negative @listSize(assumedSize:) value`,
+                {
+                  extensions: {
+                    code: "LIST_SIZE_INVALID_ASSUMED_SIZE",
+                  },
                 },
-              }),
+              ),
             );
             return;
           }
 
-          if (typeof assumedSize === 'number' && assumedSize < 0) {
+          if (typeof assumedSize === "number" && assumedSize < 0) {
             context.reportError(
-              new GraphQLError(`${coordinate} has negative @listSize(assumedSize:) value`, {
-                extensions: {
-                  code: 'LIST_SIZE_INVALID_ASSUMED_SIZE',
+              new GraphQLError(
+                `${coordinate} has negative @listSize(assumedSize:) value`,
+                {
+                  extensions: {
+                    code: "LIST_SIZE_INVALID_ASSUMED_SIZE",
+                  },
                 },
-              }),
+              ),
             );
             return;
           }
 
-          if ((sizedFields === null || sizedFields.length === 0) && !isListType(fieldDef.type)) {
+          if (
+            (sizedFields === null || sizedFields.length === 0) &&
+            !isListType(fieldDef.type)
+          ) {
             context.reportError(
               new GraphQLError(
                 `${coordinate} is not a list. Try to add @listSize(sizedFields:) argument.`,
                 {
                   extensions: {
-                    code: 'LIST_SIZE_INVALID_SIZED_FIELD',
+                    code: "LIST_SIZE_INVALID_SIZED_FIELD",
                   },
                 },
               ),
@@ -221,10 +257,13 @@ export function ListSizeRule(context: SubgraphValidationContext): ASTVisitor {
           }
 
           if (sizedFields?.length) {
-            const knownObjectsAndInterfaces = context.getSubgraphObjectOrInterfaceTypes();
+            const knownObjectsAndInterfaces =
+              context.getSubgraphObjectOrInterfaceTypes();
 
             const outputType = namedTypeFromTypeNode(fieldDef.type);
-            const targetType = knownObjectsAndInterfaces.get(outputType.name.value);
+            const targetType = knownObjectsAndInterfaces.get(
+              outputType.name.value,
+            );
 
             if (!targetType) {
               context.reportError(
@@ -232,7 +271,7 @@ export function ListSizeRule(context: SubgraphValidationContext): ASTVisitor {
                   `${coordinate} has @listSize(sizedFields:) applied, but the output type is not an object`,
                   {
                     extensions: {
-                      code: 'LIST_SIZE_INVALID_SIZED_FIELD',
+                      code: "LIST_SIZE_INVALID_SIZED_FIELD",
                     },
                   },
                 ),
@@ -244,7 +283,9 @@ export function ListSizeRule(context: SubgraphValidationContext): ASTVisitor {
             const nonExistingFields: string[] = [];
 
             for (const sizedField of sizedFields) {
-              const targetField = targetType.fields?.find(f => f.name.value === sizedField);
+              const targetField = targetType.fields?.find(
+                (f) => f.name.value === sizedField,
+              );
 
               if (!targetField) {
                 nonExistingFields.push(sizedField);
@@ -254,26 +295,26 @@ export function ListSizeRule(context: SubgraphValidationContext): ASTVisitor {
             }
 
             if (nonIntFields.length || nonExistingFields.length) {
-              nonIntFields.forEach(fieldName => {
+              nonIntFields.forEach((fieldName) => {
                 context.reportError(
                   new GraphQLError(
                     `${coordinate} references "${fieldName}" field in @listSize(sizedFields:) argument that is not an integer.`,
                     {
                       extensions: {
-                        code: 'LIST_SIZE_INVALID_SIZED_FIELD',
+                        code: "LIST_SIZE_INVALID_SIZED_FIELD",
                       },
                     },
                   ),
                 );
               });
 
-              nonExistingFields.forEach(fieldName => {
+              nonExistingFields.forEach((fieldName) => {
                 context.reportError(
                   new GraphQLError(
                     `${coordinate} references "${fieldName}" field in @listSize(sizedFields:) argument that does not exist.`,
                     {
                       extensions: {
-                        code: 'LIST_SIZE_INVALID_SIZED_FIELD',
+                        code: "LIST_SIZE_INVALID_SIZED_FIELD",
                       },
                     },
                   ),
@@ -290,7 +331,7 @@ export function ListSizeRule(context: SubgraphValidationContext): ASTVisitor {
 
             for (const slicingArgument of slicingArguments) {
               const targetArgument = fieldDef.arguments?.find(
-                a => a.name.value === slicingArgument,
+                (a) => a.name.value === slicingArgument,
               );
 
               if (!targetArgument) {
@@ -301,26 +342,26 @@ export function ListSizeRule(context: SubgraphValidationContext): ASTVisitor {
             }
 
             if (nonIntArgument.length || nonExistingArgument.length) {
-              nonIntArgument.forEach(argumentName => {
+              nonIntArgument.forEach((argumentName) => {
                 context.reportError(
                   new GraphQLError(
                     `${coordinate} references "${argumentName}" argument in @listSize(slicingArguments:) that is not an integer.`,
                     {
                       extensions: {
-                        code: 'LIST_SIZE_INVALID_SLICING_ARGUMENT',
+                        code: "LIST_SIZE_INVALID_SLICING_ARGUMENT",
                       },
                     },
                   ),
                 );
               });
 
-              nonExistingArgument.forEach(argumentName => {
+              nonExistingArgument.forEach((argumentName) => {
                 context.reportError(
                   new GraphQLError(
                     `${coordinate} references "${argumentName}" argument in @listSize(slicingArguments:) that does not exist.`,
                     {
                       extensions: {
-                        code: 'LIST_SIZE_INVALID_SLICING_ARGUMENT',
+                        code: "LIST_SIZE_INVALID_SLICING_ARGUMENT",
                       },
                     },
                   ),
@@ -387,7 +428,7 @@ function isIntTypeOrNullableIntType(typeNode: TypeNode): boolean {
   }
 
   if (typeNode.kind === Kind.NAMED_TYPE) {
-    return typeNode.name.value === 'Int';
+    return typeNode.name.value === "Int";
   }
 
   return isIntTypeOrNullableIntType(typeNode.type);

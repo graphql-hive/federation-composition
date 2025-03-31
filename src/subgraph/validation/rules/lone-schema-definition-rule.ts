@@ -1,4 +1,4 @@
-import { ASTVisitor, GraphQLError } from 'graphql';
+import { ASTVisitor, GraphQLError } from "graphql";
 
 export function LoneSchemaDefinitionRule(context: {
   reportError: (error: GraphQLError) => void;
@@ -8,9 +8,9 @@ export function LoneSchemaDefinitionRule(context: {
     SchemaDefinition() {
       if (schemaDefinitionsCount > 0) {
         context.reportError(
-          new GraphQLError('Must provide only one schema definition.', {
+          new GraphQLError("Must provide only one schema definition.", {
             extensions: {
-              code: 'INVALID_GRAPHQL',
+              code: "INVALID_GRAPHQL",
             },
           }),
         );

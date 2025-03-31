@@ -1,38 +1,43 @@
-import { ConstArgumentNode, ConstDirectiveNode, ConstValueNode, Kind } from 'graphql';
-import JSON5 from 'json5';
-import { print } from '../graphql/printer.js';
+import {
+  ConstArgumentNode,
+  ConstDirectiveNode,
+  ConstValueNode,
+  Kind,
+} from "graphql";
+import JSON5 from "json5";
+import { print } from "../graphql/printer.js";
 
 export type Link = ReturnType<typeof parseLink>;
-export type LinkImport = ReturnType<typeof parseLink>['imports'][number];
+export type LinkImport = ReturnType<typeof parseLink>["imports"][number];
 
 export function printLink(link: Link): string {
   return print({
     kind: Kind.DIRECTIVE,
     name: {
       kind: Kind.NAME,
-      value: 'link',
+      value: "link",
     },
     arguments: [
       {
         kind: Kind.ARGUMENT,
         name: {
           kind: Kind.NAME,
-          value: 'url',
+          value: "url",
         },
         value: {
           kind: Kind.STRING,
-          value: [link.identity, link.version].filter(Boolean).join('/'),
+          value: [link.identity, link.version].filter(Boolean).join("/"),
         },
       },
       {
         kind: Kind.ARGUMENT,
         name: {
           kind: Kind.NAME,
-          value: 'import',
+          value: "import",
         },
         value: {
           kind: Kind.LIST,
-          values: link.imports.map(im => {
+          values: link.imports.map((im) => {
             if (!im.alias) {
               return {
                 kind: Kind.STRING,
@@ -47,7 +52,7 @@ export function printLink(link: Link): string {
                   kind: Kind.OBJECT_FIELD,
                   name: {
                     kind: Kind.NAME,
-                    value: 'name',
+                    value: "name",
                   },
                   value: {
                     kind: Kind.STRING,
@@ -58,7 +63,7 @@ export function printLink(link: Link): string {
                   kind: Kind.OBJECT_FIELD,
                   name: {
                     kind: Kind.NAME,
-                    value: 'as',
+                    value: "as",
                   },
                   value: {
                     kind: Kind.STRING,
@@ -98,7 +103,7 @@ export function printLink(link: Link): string {
 */
 export function parseLinkUrl(urlString: string) {
   const url = new URL(urlString);
-  const parts = url.pathname.split('/').filter(Boolean);
+  const parts = url.pathname.split("/").filter(Boolean);
   const len = parts.length;
 
   if (!len) {
@@ -110,7 +115,7 @@ export function parseLinkUrl(urlString: string) {
 
   // https://spec.example.com/mySchema/v0.1
   // https://spec.example.com/mySchema/not-a-version
-  const potentiallyNameAndVersion = typeof secondLast === 'string';
+  const potentiallyNameAndVersion = typeof secondLast === "string";
 
   if (potentiallyNameAndVersion) {
     return {
@@ -118,11 +123,11 @@ export function parseLinkUrl(urlString: string) {
       version: last,
       identity:
         url.origin +
-        '/' +
+        "/" +
         parts
           .slice(0, len - 2)
           .concat(secondLast)
-          .join('/'),
+          .join("/"),
     };
   }
 
@@ -154,11 +159,11 @@ export function parseLinkUrl(urlString: string) {
     version: null,
     identity:
       url.origin +
-      '/' +
+      "/" +
       parts
         .slice(0, len - 2)
         .concat(last)
-        .join('/'),
+        .join("/"),
   };
 }
 
@@ -172,16 +177,16 @@ export function parseLinkImport(importString: string) {
 
     // TODO: validate the name of the "name" and "alias" properties (if it's correct name for a type or directive)
 
-    return bindings.map(binding => {
-      if (typeof binding === 'string') {
+    return bindings.map((binding) => {
+      if (typeof binding === "string") {
         return {
-          kind: binding.startsWith('@') ? 'directive' : 'type',
+          kind: binding.startsWith("@") ? "directive" : "type",
           name: binding,
         } as const;
       }
 
-      if (typeof binding === 'object' && binding.name) {
-        const nameKind = binding.name.startsWith('@') ? 'directive' : 'type';
+      if (typeof binding === "object" && binding.name) {
+        const nameKind = binding.name.startsWith("@") ? "directive" : "type";
 
         if (!binding.as) {
           return {
@@ -190,10 +195,12 @@ export function parseLinkImport(importString: string) {
           } as const;
         }
 
-        const aliasKind = binding.as.startsWith('@') ? 'directive' : 'type';
+        const aliasKind = binding.as.startsWith("@") ? "directive" : "type";
 
         if (nameKind !== aliasKind) {
-          throw new Error(`${binding.name} and ${binding.as} must be of the same kind`);
+          throw new Error(
+            `${binding.name} and ${binding.as} must be of the same kind`,
+          );
         }
 
         return {
@@ -206,7 +213,9 @@ export function parseLinkImport(importString: string) {
       throw new Error(`Syntax`);
     });
   } catch (error) {
-    throw new Error(`Invalid import binding: ${importString}: ${String(error)}`);
+    throw new Error(
+      `Invalid import binding: ${importString}: ${String(error)}`,
+    );
   }
 }
 
@@ -217,7 +226,7 @@ export function mergeLinks(links: readonly Link[]): readonly Link[] {
     {
       name: string | null;
       highestVersion: string;
-      imports: Array<Link['imports'][number]>;
+      imports: Array<Link["imports"][number]>;
     }
   >();
 
@@ -225,7 +234,9 @@ export function mergeLinks(links: readonly Link[]): readonly Link[] {
     const existing = groupByIdentity.get(link.identity);
 
     if (!existing) {
-      const importedDirectives = link.imports.filter(im => im.kind === 'directive');
+      const importedDirectives = link.imports.filter(
+        (im) => im.kind === "directive",
+      );
 
       if (importedDirectives.length === 0) {
         continue;
@@ -233,15 +244,15 @@ export function mergeLinks(links: readonly Link[]): readonly Link[] {
 
       groupByIdentity.set(link.identity, {
         name: link.name,
-        highestVersion: link.version ?? '',
-        imports: link.imports.filter(im => im.kind === 'directive'),
+        highestVersion: link.version ?? "",
+        imports: link.imports.filter((im) => im.kind === "directive"),
       });
     } else {
       // select highest version
       if (
         link.version &&
-        parseFloat(link.version.replace('v', '')) >
-          parseFloat(existing.highestVersion.replace('v', ''))
+        parseFloat(link.version.replace("v", "")) >
+          parseFloat(existing.highestVersion.replace("v", ""))
       ) {
         existing.highestVersion = link.version;
       }
@@ -249,12 +260,13 @@ export function mergeLinks(links: readonly Link[]): readonly Link[] {
       // merge imports
       for (const im of link.imports) {
         // Federation v2 ignores type imports in Supergraph SDL
-        if (im.kind === 'type') {
+        if (im.kind === "type") {
           continue;
         }
 
         const hasImport = existing.imports.some(
-          existingIm => existingIm.kind === im.kind && existingIm.name === im.name,
+          (existingIm) =>
+            existingIm.kind === im.kind && existingIm.name === im.name,
         );
 
         if (!hasImport) {
@@ -271,7 +283,7 @@ export function mergeLinks(links: readonly Link[]): readonly Link[] {
   return Array.from(groupByIdentity.entries()).map(([identity, link]) => ({
     identity,
     version: link.highestVersion,
-    imports: Array.from(link.imports).map(link => ({
+    imports: Array.from(link.imports).map((link) => ({
       kind: link.kind,
       name: link.name,
       alias: link.alias,
@@ -306,14 +318,14 @@ export function parseLinkDirective(directive: ConstDirectiveNode) {
     name: spec.name,
     version: spec.version,
     identity: spec.identity,
-    imports: parseLinkImport(importArg ? print(importArg.value) : '[]'),
+    imports: parseLinkImport(importArg ? print(importArg.value) : "[]"),
   };
 }
 
 function isUrlArgument(arg: ConstArgumentNode): arg is {
   name: {
     kind: Kind.NAME;
-    value: 'url';
+    value: "url";
   };
   kind: Kind.ARGUMENT;
   value: {
@@ -321,13 +333,13 @@ function isUrlArgument(arg: ConstArgumentNode): arg is {
     value: string;
   };
 } {
-  return arg.name.value === 'url' && arg.value.kind === Kind.STRING;
+  return arg.name.value === "url" && arg.value.kind === Kind.STRING;
 }
 
 function isImportArgument(arg: ConstArgumentNode): arg is {
   name: {
     kind: Kind.NAME;
-    value: 'import';
+    value: "import";
   };
   kind: Kind.ARGUMENT;
   value: {
@@ -335,7 +347,7 @@ function isImportArgument(arg: ConstArgumentNode): arg is {
     values: readonly ConstValueNode[];
   };
 } {
-  return arg.name.value === 'import' && arg.value.kind === Kind.LIST;
+  return arg.name.value === "import" && arg.value.kind === Kind.LIST;
 }
 
 export const sdl = /* GraphQL */ `

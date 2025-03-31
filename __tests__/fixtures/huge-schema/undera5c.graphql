@@ -2,8 +2,18 @@ scalar rough80b
 
 type Query {
   yahoob68(midst81a: ID!): whiff976
-  emailf7f(fooey052: Int, madly2ba: String, never2e5: Int, while53c: String): sadlyeb9
-  coacheda(fooey052: Int, madly2ba: String, never2e5: Int, while53c: String): asidec7a
+  emailf7f(
+    fooey052: Int
+    madly2ba: String
+    never2e5: Int
+    while53c: String
+  ): sadlyeb9
+  coacheda(
+    fooey052: Int
+    madly2ba: String
+    never2e5: Int
+    while53c: String
+  ): asidec7a
   total574(worth668: fully0b8): blend498
 }
 
@@ -25,7 +35,12 @@ type dimlydd7 implements oddlybcf & jumpy31d @key(fields: "midst81a") {
   pulse7cb: rough80b!
   fullyccd: rough80b!
   cycle7cb: Boolean!
-  shyly09a(fooey052: Int, madly2ba: String, never2e5: Int, while53c: String): asidec7a
+  shyly09a(
+    fooey052: Int
+    madly2ba: String
+    never2e5: Int
+    while53c: String
+  ): asidec7a
 }
 
 enum timesb28 {
@@ -79,7 +94,12 @@ type worth537 {
 }
 
 type noisy47c {
-  where28f(fooey052: Int, madly2ba: String, never2e5: Int, while53c: String): sadlyeb9
+  where28f(
+    fooey052: Int
+    madly2ba: String
+    never2e5: Int
+    while53c: String
+  ): sadlyeb9
   sadly32b: Boolean
 }
 
@@ -103,7 +123,12 @@ type boostdf2 implements crime147 {
 
 interface jumpy31d {
   midst81a: ID!
-  shyly09a(fooey052: Int, madly2ba: String, never2e5: Int, while53c: String): lanky8a5
+  shyly09a(
+    fooey052: Int
+    madly2ba: String
+    never2e5: Int
+    while53c: String
+  ): lanky8a5
 }
 
 interface lanky8a5 {
@@ -141,7 +166,12 @@ input neverdd1 {
 }
 
 type unityea9 {
-  minusdde(fooey052: Int, madly2ba: String, never2e5: Int, while53c: String): asidec7a
+  minusdde(
+    fooey052: Int
+    madly2ba: String
+    never2e5: Int
+    while53c: String
+  ): asidec7a
 }
 
 input under09e {
@@ -149,7 +179,12 @@ input under09e {
 }
 
 type split0a2 {
-  minusdde(fooey052: Int, madly2ba: String, never2e5: Int, while53c: String): asidec7a
+  minusdde(
+    fooey052: Int
+    madly2ba: String
+    never2e5: Int
+    while53c: String
+  ): asidec7a
 }
 
 input fully0b8 {

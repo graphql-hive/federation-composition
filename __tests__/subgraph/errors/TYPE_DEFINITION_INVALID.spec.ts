@@ -1,12 +1,12 @@
-import { expect, test } from 'vitest';
-import { graphql, testVersions } from '../../shared/testkit.js';
+import { expect, test } from "vitest";
+import { graphql, testVersions } from "../../shared/testkit.js";
 
 testVersions((api, version) => {
-  test('TYPE_DEFINITION_INVALID', () => {
+  test("TYPE_DEFINITION_INVALID", () => {
     expect(
       api.composeServices([
         {
-          name: 'users',
+          name: "users",
           typeDefs: graphql`
             extend schema
               @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@key", "FieldSet"])
@@ -37,7 +37,7 @@ testVersions((api, version) => {
           expect.objectContaining({
             message: `[users] Invalid definition for type FieldSet: FieldSet should be a ScalarType but is defined as a InputObjectType`,
             extensions: expect.objectContaining({
-              code: 'TYPE_DEFINITION_INVALID',
+              code: "TYPE_DEFINITION_INVALID",
             }),
           }),
         ]),

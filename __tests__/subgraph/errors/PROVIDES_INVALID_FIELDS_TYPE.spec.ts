@@ -1,12 +1,12 @@
-import { expect, test } from 'vitest';
-import { graphql, testVersions } from '../../shared/testkit.js';
+import { expect, test } from "vitest";
+import { graphql, testVersions } from "../../shared/testkit.js";
 
 testVersions((api, version) => {
-  test('PROVIDES_INVALID_FIELDS_TYPE - boolean', () => {
+  test("PROVIDES_INVALID_FIELDS_TYPE - boolean", () => {
     expect(
       api.composeServices([
         {
-          name: 'billing',
+          name: "billing",
           typeDefs: graphql`
             extend schema
               @link(
@@ -35,7 +35,7 @@ testVersions((api, version) => {
               `[billing] On field "Invoice.payment", for @provides(fields: true): Invalid value for argument "fields": must be a string.`,
             ),
             extensions: expect.objectContaining({
-              code: 'PROVIDES_INVALID_FIELDS_TYPE',
+              code: "PROVIDES_INVALID_FIELDS_TYPE",
             }),
           }),
         ]),

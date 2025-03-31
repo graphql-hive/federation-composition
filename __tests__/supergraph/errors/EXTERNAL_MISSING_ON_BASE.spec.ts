@@ -1,12 +1,16 @@
-import { expect, test } from 'vitest';
-import { assertCompositionSuccess, graphql, testVersions } from '../../shared/testkit.js';
+import { expect, test } from "vitest";
+import {
+  assertCompositionSuccess,
+  graphql,
+  testVersions,
+} from "../../shared/testkit.js";
 
 testVersions((api, version) => {
-  test('EXTERNAL_MISSING_ON_BASE', () => {
+  test("EXTERNAL_MISSING_ON_BASE", () => {
     expect(
       api.composeServices([
         {
-          name: 'users',
+          name: "users",
           typeDefs: graphql`
             extend schema @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@key", "@external", "@requires"])
             
@@ -34,7 +38,7 @@ testVersions((api, version) => {
               `Field "User.profile" is marked @external on all the subgraphs in which it is listed (subgraph "users").`,
             ),
             extensions: expect.objectContaining({
-              code: 'EXTERNAL_MISSING_ON_BASE',
+              code: "EXTERNAL_MISSING_ON_BASE",
             }),
           }),
         ]),
@@ -44,7 +48,7 @@ testVersions((api, version) => {
     expect(
       api.composeServices([
         {
-          name: 'users',
+          name: "users",
           typeDefs: graphql`
             extend schema @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@key", "@external", "@requires", "@extends"])
             
@@ -68,7 +72,7 @@ testVersions((api, version) => {
               `Field "User.name" is marked @external on all the subgraphs in which it is listed (subgraph "users").`,
             ),
             extensions: expect.objectContaining({
-              code: 'EXTERNAL_MISSING_ON_BASE',
+              code: "EXTERNAL_MISSING_ON_BASE",
             }),
           }),
         ]),
@@ -78,7 +82,7 @@ testVersions((api, version) => {
     assertCompositionSuccess(
       api.composeServices([
         {
-          name: 'users',
+          name: "users",
           typeDefs: graphql`
             extend schema @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@key", "@external", "@extends"])
             
@@ -95,11 +99,11 @@ testVersions((api, version) => {
     );
   });
 
-  test('Fed v1: EXTERNAL_MISSING_ON_BASE', () => {
+  test("Fed v1: EXTERNAL_MISSING_ON_BASE", () => {
     expect(
       api.composeServices([
         {
-          name: 'a',
+          name: "a",
           typeDefs: graphql`
             type User @extends @key(fields: "id") {
               internalId: String @external
@@ -113,7 +117,7 @@ testVersions((api, version) => {
           `,
         },
         {
-          name: 'b',
+          name: "b",
           typeDefs: graphql`
             type User @extends @key(fields: "id") {
               tags: [String!]!
@@ -134,7 +138,7 @@ testVersions((api, version) => {
               `Field "User.internalId" is marked @external on all the subgraphs in which it is listed (subgraph "a").`,
             ),
             extensions: expect.objectContaining({
-              code: 'EXTERNAL_MISSING_ON_BASE',
+              code: "EXTERNAL_MISSING_ON_BASE",
             }),
           }),
         ]),
@@ -144,7 +148,7 @@ testVersions((api, version) => {
     assertCompositionSuccess(
       api.composeServices([
         {
-          name: 'a',
+          name: "a",
           typeDefs: graphql`
             type User @extends @key(fields: "id") {
               internalId: String @external
@@ -157,7 +161,7 @@ testVersions((api, version) => {
           `,
         },
         {
-          name: 'b',
+          name: "b",
           typeDefs: graphql`
             type User @extends @key(fields: "id") {
               tags: [String!]!

@@ -1,6 +1,16 @@
 type Query {
-  knock61f(zowie14f: ID!, worth668: yahoo740!, fooey052: Int, madly2ba: String): sharpfc6
-  frankb1e(zowie14f: ID!, worth668: thumb363!, fooey052: Int, madly2ba: String): fooey456
+  knock61f(
+    zowie14f: ID!
+    worth668: yahoo740!
+    fooey052: Int
+    madly2ba: String
+  ): sharpfc6
+  frankb1e(
+    zowie14f: ID!
+    worth668: thumb363!
+    fooey052: Int
+    madly2ba: String
+  ): fooey456
 }
 
 type blankb4f @key(fields: "midst81a") @extends {

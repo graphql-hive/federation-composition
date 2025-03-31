@@ -1,4 +1,4 @@
-import { ASTVisitor, GraphQLError } from 'graphql';
+import { ASTVisitor, GraphQLError } from "graphql";
 
 export function UniqueDirectiveNamesRule(context: {
   reportError: (error: GraphQLError) => void;
@@ -12,11 +12,14 @@ export function UniqueDirectiveNamesRule(context: {
 
       if (existingNameNode) {
         context.reportError(
-          new GraphQLError(`There can be only one directive named "@${directiveName}".`, {
-            extensions: {
-              code: 'INVALID_GRAPHQL',
+          new GraphQLError(
+            `There can be only one directive named "@${directiveName}".`,
+            {
+              extensions: {
+                code: "INVALID_GRAPHQL",
+              },
             },
-          }),
+          ),
         );
       } else {
         knownDirectiveNameNodes.add(directiveName);

@@ -1,7 +1,7 @@
-import { GraphQLError } from 'graphql';
-import { SupergraphVisitorMap } from '../../composition/visitor.js';
-import { SupergraphState } from '../../state.js';
-import { SupergraphValidationContext } from '../validation-context.js';
+import { GraphQLError } from "graphql";
+import { SupergraphVisitorMap } from "../../composition/visitor.js";
+import { SupergraphState } from "../../state.js";
+import { SupergraphValidationContext } from "../validation-context.js";
 
 export function InterfaceFieldNoImplementationRule(
   context: SupergraphValidationContext,
@@ -14,26 +14,36 @@ export function InterfaceFieldNoImplementationRule(
       }
 
       for (const interfaceName of objectTypeState.interfaces) {
-        const interfaceTypeState = getTypeFromSupergraph(supergraph, interfaceName);
+        const interfaceTypeState = getTypeFromSupergraph(
+          supergraph,
+          interfaceName,
+        );
 
         if (!interfaceTypeState) {
           throw new Error(`Expected an interface to exist in supergraph state`);
         }
 
-        if (interfaceTypeState.kind !== 'interface') {
+        if (interfaceTypeState.kind !== "interface") {
           // Covered by TYPE_KIND_MISMATCH rule
           return;
         }
 
         const nonRequiredFields: string[] = [];
 
-        for (const [graph, interfaceStateInGraph] of interfaceTypeState.byGraph) {
+        for (const [
+          graph,
+          interfaceStateInGraph,
+        ] of interfaceTypeState.byGraph) {
           if (!interfaceStateInGraph.isInterfaceObject) {
             continue;
           }
 
-          for (const [fieldName, interfaceFieldState] of interfaceTypeState.fields) {
-            const interfaceFieldStateInGraph = interfaceFieldState.byGraph.get(graph);
+          for (const [
+            fieldName,
+            interfaceFieldState,
+          ] of interfaceTypeState.fields) {
+            const interfaceFieldStateInGraph =
+              interfaceFieldState.byGraph.get(graph);
             if (!interfaceFieldStateInGraph) {
               continue;
             }
@@ -46,14 +56,20 @@ export function InterfaceFieldNoImplementationRule(
           }
         }
 
-        for (const [fieldName, interfaceFieldState] of interfaceTypeState.fields) {
+        for (const [
+          fieldName,
+          interfaceFieldState,
+        ] of interfaceTypeState.fields) {
           // skip fields that are defined in interface objects or in interface entities
           if (nonRequiredFields.includes(fieldName)) {
             continue;
           }
 
           // TODO: detect if a field is missing in a non-entity object type definition
-          if (objectTypeState.fields.has(fieldName) && objectTypeState.isEntity) {
+          if (
+            objectTypeState.fields.has(fieldName) &&
+            objectTypeState.isEntity
+          ) {
             continue;
           }
 
@@ -75,14 +91,14 @@ export function InterfaceFieldNoImplementationRule(
               const declaredIn =
                 interfaceFieldDefinedInGraphs.length === 1
                   ? `subgraph "${interfaceFieldDefinedInGraphs[0]}"`
-                  : `subgraphs ${interfaceFieldDefinedInGraphs.map(g => `"${g}"`).join(', ')}`;
+                  : `subgraphs ${interfaceFieldDefinedInGraphs.map((g) => `"${g}"`).join(", ")}`;
 
               context.reportError(
                 new GraphQLError(
                   `Interface field "${interfaceName}.${fieldName}" is declared in ${declaredIn} but type "${objectTypeState.name}", which implements "${interfaceName}" in subgraph "${context.graphIdToName(graph)}" does not have field "${fieldName}".`,
                   {
                     extensions: {
-                      code: 'INTERFACE_FIELD_NO_IMPLEM',
+                      code: "INTERFACE_FIELD_NO_IMPLEM",
                     },
                   },
                 ),
@@ -97,6 +113,8 @@ export function InterfaceFieldNoImplementationRule(
 
 function getTypeFromSupergraph(state: SupergraphState, name: string) {
   return (
-    state.objectTypes.get(name) ?? state.interfaceTypes.get(name) ?? state.unionTypes.get(name)
+    state.objectTypes.get(name) ??
+    state.interfaceTypes.get(name) ??
+    state.unionTypes.get(name)
   );
 }

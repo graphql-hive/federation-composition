@@ -1,12 +1,16 @@
-import { expect, test } from 'vitest';
-import { assertCompositionSuccess, graphql, testVersions } from '../../shared/testkit.js';
+import { expect, test } from "vitest";
+import {
+  assertCompositionSuccess,
+  graphql,
+  testVersions,
+} from "../../shared/testkit.js";
 
 testVersions((api, version) => {
-  test('FIELD_TYPE_MISMATCH', () => {
+  test("FIELD_TYPE_MISMATCH", () => {
     expect(
       api.composeServices([
         {
-          name: 'users',
+          name: "users",
           typeDefs: graphql`
             extend schema @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@key"])
             
@@ -25,7 +29,7 @@ testVersions((api, version) => {
           `,
         },
         {
-          name: 'feed',
+          name: "feed",
           typeDefs: graphql`
             extend schema @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@key"])
             
@@ -53,7 +57,7 @@ testVersions((api, version) => {
               `Type of field "User.name" is incompatible across subgraphs: it has type "UserName!" in subgraph "feed" but type "String!" in subgraph "users"`,
             ),
             extensions: expect.objectContaining({
-              code: 'FIELD_TYPE_MISMATCH',
+              code: "FIELD_TYPE_MISMATCH",
             }),
           }),
           expect.objectContaining({
@@ -61,7 +65,7 @@ testVersions((api, version) => {
               `Type of field "Filter.ids" is incompatible across subgraphs: it has type "[Int!]" in subgraph "feed" but type "[ID!]!" in subgraph "users"`,
             ),
             extensions: expect.objectContaining({
-              code: 'FIELD_TYPE_MISMATCH',
+              code: "FIELD_TYPE_MISMATCH",
             }),
           }),
         ]),
@@ -71,7 +75,7 @@ testVersions((api, version) => {
     expect(
       api.composeServices([
         {
-          name: 'auth',
+          name: "auth",
           typeDefs: graphql`
             type User @key(fields: "id") {
               id: ID!
@@ -84,7 +88,7 @@ testVersions((api, version) => {
           `,
         },
         {
-          name: 'images',
+          name: "images",
           typeDefs: graphql`
             type Image @key(fields: "url") {
               url: Url
@@ -104,7 +108,7 @@ testVersions((api, version) => {
           `,
         },
         {
-          name: 'albums',
+          name: "albums",
           typeDefs: graphql`
             type Album @key(fields: "id") {
               id: ID!
@@ -131,7 +135,7 @@ testVersions((api, version) => {
               `Type of field "User.favorite" is incompatible across subgraphs: it has type "Album" in subgraph "albums" but type "Image" in subgraph "images"`,
             ),
             extensions: expect.objectContaining({
-              code: 'FIELD_TYPE_MISMATCH',
+              code: "FIELD_TYPE_MISMATCH",
             }),
           }),
         ]),
@@ -141,7 +145,7 @@ testVersions((api, version) => {
     assertCompositionSuccess(
       api.composeServices([
         {
-          name: 'me',
+          name: "me",
           typeDefs: graphql`
             extend schema @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@key", "@shareable"])
 
@@ -160,7 +164,7 @@ testVersions((api, version) => {
           `,
         },
         {
-          name: 'users',
+          name: "users",
           typeDefs: graphql`
             extend schema @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@key", "@shareable"])
 
@@ -184,7 +188,7 @@ testVersions((api, version) => {
     assertCompositionSuccess(
       api.composeServices([
         {
-          name: 'me',
+          name: "me",
           typeDefs: graphql`
             extend schema @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@key", "@shareable"])
 
@@ -203,7 +207,7 @@ testVersions((api, version) => {
           `,
         },
         {
-          name: 'users',
+          name: "users",
           typeDefs: graphql`
             extend schema @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@key", "@shareable"])
 
@@ -225,11 +229,11 @@ testVersions((api, version) => {
     );
   });
 
-  test('FIELD_TYPE_MISMATCH (unions)', () => {
+  test("FIELD_TYPE_MISMATCH (unions)", () => {
     assertCompositionSuccess(
       api.composeServices([
         {
-          name: 'foo',
+          name: "foo",
           typeDefs: graphql`
           extend schema @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@shareable"])
 
@@ -256,7 +260,7 @@ testVersions((api, version) => {
         `,
         },
         {
-          name: 'bar',
+          name: "bar",
           typeDefs: graphql`
             extend schema @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@key", "@shareable"])
 
@@ -276,7 +280,7 @@ testVersions((api, version) => {
     expect(
       api.composeServices([
         {
-          name: 'foo',
+          name: "foo",
           typeDefs: graphql`
           extend schema @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@shareable"])
           
@@ -303,7 +307,7 @@ testVersions((api, version) => {
         `,
         },
         {
-          name: 'bar',
+          name: "bar",
           typeDefs: graphql`
             extend schema @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@key", "@shareable"])
 
@@ -332,7 +336,9 @@ testVersions((api, version) => {
             message: expect.stringContaining(
               `Type of field "Query.foo" is incompatible across subgraphs: it has type "AnotherItem" in subgraph "bar" but type "Item" in subgraph "foo"`,
             ),
-            extensions: expect.objectContaining({ code: 'FIELD_TYPE_MISMATCH' }),
+            extensions: expect.objectContaining({
+              code: "FIELD_TYPE_MISMATCH",
+            }),
           }),
         ]),
       }),

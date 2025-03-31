@@ -415,7 +415,9 @@ interface oddlybcf {
   midst81a: ID!
 }
 
-directive @tag(name: String!) repeatable on FIELD_DEFINITION | INTERFACE | OBJECT | UNION
+directive @tag(
+  name: String!
+) repeatable on FIELD_DEFINITION | INTERFACE | OBJECT | UNION
 
 type fooey1b7 {
   alongd72: String

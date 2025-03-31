@@ -1,12 +1,12 @@
-import { expect, test } from 'vitest';
-import { graphql, testVersions } from '../../shared/testkit.js';
+import { expect, test } from "vitest";
+import { graphql, testVersions } from "../../shared/testkit.js";
 
 testVersions((api, version) => {
-  test('INPUT_FIELD_DEFAULT_MISMATCH', () => {
+  test("INPUT_FIELD_DEFAULT_MISMATCH", () => {
     expect(
       api.composeServices([
         {
-          name: 'users',
+          name: "users",
           typeDefs: graphql`
             extend schema @link(url: "https://specs.apollo.dev/federation/${version}" import: ["@key"])
             
@@ -24,7 +24,7 @@ testVersions((api, version) => {
           `,
         },
         {
-          name: 'friends',
+          name: "friends",
           typeDefs: graphql`
             extend schema @link(url: "https://specs.apollo.dev/federation/${version}" import: ["@key"])
             
@@ -42,7 +42,7 @@ testVersions((api, version) => {
               `Input field "Filter.limit" has incompatible default values across subgraphs: it has default value 10 in subgraph "friends" but default value 5 in subgraph "users"`,
             ),
             extensions: expect.objectContaining({
-              code: 'INPUT_FIELD_DEFAULT_MISMATCH',
+              code: "INPUT_FIELD_DEFAULT_MISMATCH",
             }),
           }),
         ]),
@@ -52,7 +52,7 @@ testVersions((api, version) => {
     expect(
       api.composeServices([
         {
-          name: 'users',
+          name: "users",
           typeDefs: graphql`
             extend schema @link(url: "https://specs.apollo.dev/federation/${version}" import: ["@key"])
             
@@ -75,7 +75,7 @@ testVersions((api, version) => {
           `,
         },
         {
-          name: 'friends',
+          name: "friends",
           typeDefs: graphql`
             extend schema @link(url: "https://specs.apollo.dev/federation/${version}" import: ["@key"])
             
@@ -95,12 +95,12 @@ testVersions((api, version) => {
         errors: expect.arrayContaining([
           expect.objectContaining({
             message: expect.stringContaining(
-              api.library === 'apollo'
+              api.library === "apollo"
                 ? `Input field "Filter.type" has incompatible default values across subgraphs: it has default value "FRIEND" in undefined but default value FRIEND in subgraph "friends" and default value FAMILY in subgraph "users"`
                 : `Input field "Filter.type" has incompatible default values across subgraphs: it has default value FRIEND in subgraph "friends" but default value FAMILY in subgraph "users"`,
             ),
             extensions: expect.objectContaining({
-              code: 'INPUT_FIELD_DEFAULT_MISMATCH',
+              code: "INPUT_FIELD_DEFAULT_MISMATCH",
             }),
           }),
         ]),

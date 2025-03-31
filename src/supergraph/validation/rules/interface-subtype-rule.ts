@@ -1,13 +1,18 @@
-import { GraphQLError } from 'graphql';
-import { isList, isNonNull, stripList, stripNonNull } from '../../../utils/state.js';
-import { EnumTypeState } from '../../composition/enum-type.js';
-import { InterfaceTypeState } from '../../composition/interface-type.js';
-import { ObjectTypeState } from '../../composition/object-type.js';
-import { ScalarTypeState } from '../../composition/scalar-type.js';
-import { UnionTypeState } from '../../composition/union-type.js';
-import { SupergraphVisitorMap } from '../../composition/visitor.js';
-import { SupergraphState } from '../../state.js';
-import { SupergraphValidationContext } from '../validation-context.js';
+import { GraphQLError } from "graphql";
+import {
+  isList,
+  isNonNull,
+  stripList,
+  stripNonNull,
+} from "../../../utils/state.js";
+import { EnumTypeState } from "../../composition/enum-type.js";
+import { InterfaceTypeState } from "../../composition/interface-type.js";
+import { ObjectTypeState } from "../../composition/object-type.js";
+import { ScalarTypeState } from "../../composition/scalar-type.js";
+import { UnionTypeState } from "../../composition/union-type.js";
+import { SupergraphVisitorMap } from "../../composition/visitor.js";
+import { SupergraphState } from "../../state.js";
+import { SupergraphValidationContext } from "../validation-context.js";
 
 export function InterfaceSubtypeRule(
   context: SupergraphValidationContext,
@@ -65,14 +70,19 @@ export function InterfaceSubtypeRule(
         }
 
         if (
-          !isTypeSubTypeOf(supergraph, implementationsMap, fieldState.type, interfaceField.type)
+          !isTypeSubTypeOf(
+            supergraph,
+            implementationsMap,
+            fieldState.type,
+            interfaceField.type,
+          )
         ) {
           context.reportError(
             new GraphQLError(
               `Interface field ${interfaceName}.${interfaceField.name} expects type ${interfaceField.type} but ${objectTypeState.name}.${fieldState.name} of type ${fieldState.type} is not a proper subtype.`,
               {
                 extensions: {
-                  code: 'INVALID_GRAPHQL',
+                  code: "INVALID_GRAPHQL",
                 },
               },
             ),
@@ -157,7 +167,9 @@ function isTypeSubTypeOf(
 
 function getTypeFromSupergraph(state: SupergraphState, name: string) {
   return (
-    state.objectTypes.get(name) ?? state.interfaceTypes.get(name) ?? state.unionTypes.get(name)
+    state.objectTypes.get(name) ??
+    state.interfaceTypes.get(name) ??
+    state.unionTypes.get(name)
   );
 }
 
@@ -170,7 +182,9 @@ function isSubType(
     return abstractType.members.has(maybeSubType.name);
   }
 
-  return implementationsMap.get(abstractType.name)?.has(maybeSubType.name) ?? false;
+  return (
+    implementationsMap.get(abstractType.name)?.has(maybeSubType.name) ?? false
+  );
 }
 
 type SupergraphType =
@@ -180,18 +194,20 @@ type SupergraphType =
   | UnionTypeState
   | InterfaceTypeState;
 
-function isAbstractType(type: SupergraphType): type is UnionTypeState | InterfaceTypeState {
+function isAbstractType(
+  type: SupergraphType,
+): type is UnionTypeState | InterfaceTypeState {
   return isInterfaceType(type) || isUnionType(type);
 }
 
 function isObjectType(type: SupergraphType): type is ObjectTypeState {
-  return type.kind === 'object';
+  return type.kind === "object";
 }
 
 function isInterfaceType(type: SupergraphType): type is InterfaceTypeState {
-  return type.kind === 'interface';
+  return type.kind === "interface";
 }
 
 function isUnionType(type: SupergraphType): type is UnionTypeState {
-  return type.kind === 'union';
+  return type.kind === "union";
 }

@@ -1,4 +1,4 @@
-import { ASTVisitor, GraphQLError, TypeDefinitionNode } from 'graphql';
+import { ASTVisitor, GraphQLError, TypeDefinitionNode } from "graphql";
 
 export function UniqueTypeNamesRule(context: {
   reportError: (error: GraphQLError) => void;
@@ -21,7 +21,7 @@ export function UniqueTypeNamesRule(context: {
       context.reportError(
         new GraphQLError(`There can be only one type named "${typeName}".`, {
           extensions: {
-            code: 'INVALID_GRAPHQL',
+            code: "INVALID_GRAPHQL",
           },
         }),
       );

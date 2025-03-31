@@ -1,8 +1,10 @@
-import { GraphQLError } from 'graphql';
-import { SupergraphVisitorMap } from '../../composition/visitor.js';
-import { SupergraphValidationContext } from '../validation-context.js';
+import { GraphQLError } from "graphql";
+import { SupergraphVisitorMap } from "../../composition/visitor.js";
+import { SupergraphValidationContext } from "../validation-context.js";
 
-export function InputObjectValuesRule(context: SupergraphValidationContext): SupergraphVisitorMap {
+export function InputObjectValuesRule(
+  context: SupergraphValidationContext,
+): SupergraphVisitorMap {
   return {
     InputObjectType(inputObjectTypeState) {
       const fieldsInCommon: string[] = [];
@@ -19,7 +21,7 @@ export function InputObjectValuesRule(context: SupergraphValidationContext): Sup
             `None of the fields of input object type "${inputObjectTypeState.name}" are consistently defined in all the subgraphs defining that type. As only fields common to all subgraphs are merged, this would result in an empty type.`,
             {
               extensions: {
-                code: 'EMPTY_MERGED_INPUT_TYPE',
+                code: "EMPTY_MERGED_INPUT_TYPE",
               },
             },
           ),

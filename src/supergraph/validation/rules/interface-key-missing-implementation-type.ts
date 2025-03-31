@@ -1,7 +1,7 @@
-import { GraphQLError } from 'graphql';
-import { satisfiesVersionRange } from '../../../utils/version.js';
-import { SupergraphVisitorMap } from '../../composition/visitor.js';
-import { SupergraphValidationContext } from '../validation-context.js';
+import { GraphQLError } from "graphql";
+import { satisfiesVersionRange } from "../../../utils/version.js";
+import { SupergraphVisitorMap } from "../../composition/visitor.js";
+import { SupergraphValidationContext } from "../validation-context.js";
 
 export function InterfaceKeyMissingImplementationTypeRule(
   context: SupergraphValidationContext,
@@ -16,7 +16,7 @@ export function InterfaceKeyMissingImplementationTypeRule(
       let someSubgraphsAreMissingImplementation = false;
 
       for (const interfaceStateInGraph of interfaceState.byGraph.values()) {
-        if (satisfiesVersionRange(interfaceStateInGraph.version, '< v2.3')) {
+        if (satisfiesVersionRange(interfaceStateInGraph.version, "< v2.3")) {
           continue;
         }
 
@@ -46,7 +46,10 @@ export function InterfaceKeyMissingImplementationTypeRule(
         const graphName = context.graphIdToName(graph);
 
         const typesToDefine = Array.from(interfaceState.implementedBy)
-          .filter(objectTypeName => !interfaceStateInGraph.implementedBy.has(objectTypeName))
+          .filter(
+            (objectTypeName) =>
+              !interfaceStateInGraph.implementedBy.has(objectTypeName),
+          )
           .sort();
 
         context.reportError(
@@ -56,13 +59,13 @@ export function InterfaceKeyMissingImplementationTypeRule(
             }" has a resolvable key (@key(fields: "${firstKeyFields}")) in subgraph "${graphName}" but that subgraph is missing some of the supergraph implementation types of "${
               interfaceState.name
             }". Subgraph "${graphName}" should define ${
-              typesToDefine.length > 1 ? 'types' : 'type'
+              typesToDefine.length > 1 ? "types" : "type"
             } ${joinWithAnd(typesToDefine)} (and have ${
-              typesToDefine.length > 1 ? 'them' : 'it'
+              typesToDefine.length > 1 ? "them" : "it"
             } implement "${interfaceState.name}").`,
             {
               extensions: {
-                code: 'INTERFACE_KEY_MISSING_IMPLEMENTATION_TYPE',
+                code: "INTERFACE_KEY_MISSING_IMPLEMENTATION_TYPE",
               },
             },
           ),

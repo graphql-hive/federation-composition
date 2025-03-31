@@ -1,4 +1,4 @@
-import debug from 'debug';
+import debug from "debug";
 
 const originalFormatArgs = debug.formatArgs;
 debug.formatArgs = function (args) {
@@ -18,12 +18,12 @@ debug.formatArgs = function (args) {
 export class LoggerContext {
   private indent = {
     level: 0,
-    str: '',
+    str: "",
     times: [] as number[],
   };
   private maxIdLength = 0;
   private idUpdateFns: ((len: number) => void)[] = [];
-  private logger = debug('composition');
+  private logger = debug("composition");
   private firstLoggerAt: number = 0;
 
   down(time: number) {
@@ -57,7 +57,7 @@ export class LoggerContext {
     const newMaxIdLength = Math.max(this.maxIdLength, id.length);
     if (newMaxIdLength > this.maxIdLength) {
       this.maxIdLength = newMaxIdLength;
-      this.idUpdateFns.forEach(fn => fn(newMaxIdLength));
+      this.idUpdateFns.forEach((fn) => fn(newMaxIdLength));
     }
 
     return this.logger.extend(id);
@@ -73,7 +73,7 @@ export class LoggerContext {
     }
 
     this.indent.level += delta;
-    this.indent.str = '│ '.repeat(this.indent.level);
+    this.indent.str = "│ ".repeat(this.indent.level);
   }
 }
 
@@ -89,13 +89,16 @@ export class Logger {
     this.id = id;
     this.context = context;
     this.idPrefix = `${id}`;
-    this.debug = this.context.register(this.id, this._updateIdPrefix.bind(this));
+    this.debug = this.context.register(
+      this.id,
+      this._updateIdPrefix.bind(this),
+    );
     this.isEnabled = this.debug.enabled;
     // quick fix to ignore process.stderr.write in Node
     this.debug.log = console.log;
   }
 
-  log(msg: string | (() => string), prefix = '- ') {
+  log(msg: string | (() => string), prefix = "- ") {
     if (this.isEnabled) {
       this._log(prefix, msg);
     }
@@ -103,7 +106,7 @@ export class Logger {
 
   group(msg: string | (() => string)) {
     if (this.isEnabled) {
-      this.log(msg, '┌ ');
+      this.log(msg, "┌ ");
       this.context.down(Date.now());
     }
   }
@@ -112,13 +115,13 @@ export class Logger {
     if (this.isEnabled) {
       const time = this.context.up(Date.now());
 
-      let message = msg ? (typeof msg === 'string' ? msg : msg()) : '';
+      let message = msg ? (typeof msg === "string" ? msg : msg()) : "";
 
       if (time) {
         message += ` (${Date.now() - time}ms)`;
       }
 
-      this.log(message, '└ ');
+      this.log(message, "└ ");
     }
   }
 
@@ -128,15 +131,16 @@ export class Logger {
 
   private _log(prefix: string, msg: string | (() => string)) {
     const indent = this.context.getIndent().str;
-    const message = typeof msg === 'string' ? msg : msg();
+    const message = typeof msg === "string" ? msg : msg();
     if (this.isEnabled) {
       const sinceStart = this.context.getTime();
-      const text = this.idPrefix + ' ' + indent + prefix + message + ` +${sinceStart}ms`;
+      const text =
+        this.idPrefix + " " + indent + prefix + message + ` +${sinceStart}ms`;
       this.debug(text);
     }
   }
 
   private _updateIdPrefix(maxLength: number) {
-    this.idPrefix = this.id.padEnd(maxLength, ' ');
+    this.idPrefix = this.id.padEnd(maxLength, " ");
   }
 }

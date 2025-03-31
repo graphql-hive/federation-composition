@@ -1,12 +1,12 @@
-import { expect, test } from 'vitest';
-import { graphql, testVersions } from '../../shared/testkit.js';
+import { expect, test } from "vitest";
+import { graphql, testVersions } from "../../shared/testkit.js";
 
 testVersions((api, version) => {
-  test('PROVIDES_ON_NON_OBJECT_FIELD', () => {
+  test("PROVIDES_ON_NON_OBJECT_FIELD", () => {
     expect(
       api.composeServices([
         {
-          name: 'users',
+          name: "users",
           typeDefs: graphql`
             extend schema
               @link(
@@ -40,7 +40,7 @@ testVersions((api, version) => {
               `[users] Invalid @provides directive on field "User.email": field has type "String" which is not a Composite Type`,
             ),
             extensions: expect.objectContaining({
-              code: 'PROVIDES_ON_NON_OBJECT_FIELD',
+              code: "PROVIDES_ON_NON_OBJECT_FIELD",
             }),
           }),
         ]),

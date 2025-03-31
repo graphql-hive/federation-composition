@@ -1,20 +1,22 @@
-import { ASTVisitor, Kind } from 'graphql';
-import { validateDirectiveAgainstOriginal } from '../../../helpers.js';
-import type { SubgraphValidationContext } from '../../validation-context.js';
+import { ASTVisitor, Kind } from "graphql";
+import { validateDirectiveAgainstOriginal } from "../../../helpers.js";
+import type { SubgraphValidationContext } from "../../validation-context.js";
 
-export function AuthenticatedRule(context: SubgraphValidationContext): ASTVisitor {
+export function AuthenticatedRule(
+  context: SubgraphValidationContext,
+): ASTVisitor {
   return {
     DirectiveDefinition(node) {
-      validateDirectiveAgainstOriginal(node, 'authenticated', context);
+      validateDirectiveAgainstOriginal(node, "authenticated", context);
     },
     Directive(node, _key, _parent, paths, ancestors) {
-      if (!context.isAvailableFederationDirective('authenticated', node)) {
+      if (!context.isAvailableFederationDirective("authenticated", node)) {
         return;
       }
 
-      context.stateBuilder.markSpecAsUsed('authenticated');
+      context.stateBuilder.markSpecAsUsed("authenticated");
 
-      const directivesKeyAt = paths.findIndex(path => path === 'directives');
+      const directivesKeyAt = paths.findIndex((path) => path === "directives");
 
       if (directivesKeyAt === -1) {
         throw new Error('Could not find "directives" key in ancestors');
@@ -24,15 +26,17 @@ export function AuthenticatedRule(context: SubgraphValidationContext): ASTVisito
       const parent = ancestors[directivesKeyAt];
 
       if (!parent) {
-        throw new Error('Could not find the node annotated with @authenticated');
+        throw new Error(
+          "Could not find the node annotated with @authenticated",
+        );
       }
 
       if (Array.isArray(parent)) {
-        throw new Error('Expected parent to be a single node');
+        throw new Error("Expected parent to be a single node");
       }
 
-      if (!('kind' in parent)) {
-        throw new Error('Expected parent to be a node');
+      if (!("kind" in parent)) {
+        throw new Error("Expected parent to be a node");
       }
 
       // FIELD_DEFINITION | OBJECT | INTERFACE | SCALAR | ENUM
@@ -42,7 +46,7 @@ export function AuthenticatedRule(context: SubgraphValidationContext): ASTVisito
 
           if (!typeDef) {
             throw new Error(
-              'Could not find the parent type of the field annotated with @authenticated',
+              "Could not find the parent type of the field annotated with @authenticated",
             );
           }
 
@@ -63,7 +67,9 @@ export function AuthenticatedRule(context: SubgraphValidationContext): ASTVisito
           break;
         case Kind.INTERFACE_TYPE_DEFINITION:
         case Kind.INTERFACE_TYPE_DEFINITION:
-          context.stateBuilder.interfaceType.setAuthenticated(parent.name.value);
+          context.stateBuilder.interfaceType.setAuthenticated(
+            parent.name.value,
+          );
           break;
         case Kind.SCALAR_TYPE_DEFINITION:
         case Kind.SCALAR_TYPE_EXTENSION:

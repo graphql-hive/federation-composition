@@ -1,12 +1,16 @@
-import { expect, test } from 'vitest';
-import { graphql, satisfiesVersionRange, testVersions } from '../../shared/testkit.js';
+import { expect, test } from "vitest";
+import {
+  graphql,
+  satisfiesVersionRange,
+  testVersions,
+} from "../../shared/testkit.js";
 
 testVersions((api, version) => {
-  test('INTERFACE_OBJECT_USAGE_ERROR', () => {
+  test("INTERFACE_OBJECT_USAGE_ERROR", () => {
     expect(
       api.composeServices([
         {
-          name: 'book',
+          name: "book",
           typeDefs: graphql`
             extend schema @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@key"])
 
@@ -22,7 +26,7 @@ testVersions((api, version) => {
           `,
         },
         {
-          name: 'review',
+          name: "review",
           typeDefs: graphql`
             extend schema
               @link(
@@ -48,13 +52,13 @@ testVersions((api, version) => {
     ).toEqual(
       expect.objectContaining({
         errors: expect.arrayContaining([
-          satisfiesVersionRange('>= v2.3', version)
+          satisfiesVersionRange(">= v2.3", version)
             ? expect.objectContaining({
                 message: expect.stringContaining(
                   `The @interfaceObject directive can only be applied to entity types but type "Media" has no @key in this subgraph.`,
                 ),
                 extensions: expect.objectContaining({
-                  code: 'INTERFACE_OBJECT_USAGE_ERROR',
+                  code: "INTERFACE_OBJECT_USAGE_ERROR",
                 }),
               })
             : expect.objectContaining({
@@ -62,7 +66,7 @@ testVersions((api, version) => {
                   `[review] Cannot import unknown element "@interfaceObject".`,
                 ),
                 extensions: expect.objectContaining({
-                  code: 'INVALID_LINK_DIRECTIVE_USAGE',
+                  code: "INVALID_LINK_DIRECTIVE_USAGE",
                 }),
               }),
         ]),

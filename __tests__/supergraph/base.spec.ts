@@ -1,12 +1,16 @@
-import { expect, test } from 'vitest';
-import { assertCompositionSuccess, graphql, testVersions } from '../shared/testkit.js';
+import { expect, test } from "vitest";
+import {
+  assertCompositionSuccess,
+  graphql,
+  testVersions,
+} from "../shared/testkit.js";
 
 testVersions((api, version) => {
-  test('detect name collisions', () => {
+  test("detect name collisions", () => {
     expect(() => {
       api.composeServices([
         {
-          name: 'foo',
+          name: "foo",
           typeDefs: graphql`
             extend schema
               @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@key"])
@@ -21,7 +25,7 @@ testVersions((api, version) => {
           `,
         },
         {
-          name: 'foo',
+          name: "foo",
           typeDefs: graphql`
             extend schema
               @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@key"])
@@ -36,12 +40,14 @@ testVersions((api, version) => {
           `,
         },
       ]);
-    }, 'detected exact same names').toThrowError('A subgraph named foo already exists');
+    }, "detected exact same names").toThrowError(
+      "A subgraph named foo already exists",
+    );
 
     expect(() => {
       api.composeServices([
         {
-          name: 'Foo',
+          name: "Foo",
           typeDefs: graphql`
             extend schema
               @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@key"])
@@ -56,7 +62,7 @@ testVersions((api, version) => {
           `,
         },
         {
-          name: 'foo',
+          name: "foo",
           typeDefs: graphql`
             extend schema
               @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@key"])
@@ -71,13 +77,13 @@ testVersions((api, version) => {
           `,
         },
       ]);
-    }, 'names are almost identical (one starts with a capital letter)').not.toThrow();
+    }, "names are almost identical (one starts with a capital letter)").not.toThrow();
   });
 
   test('suffix "identical" (foo vs Foo) names with a number', () => {
     const result = api.composeServices([
       {
-        name: 'Foo',
+        name: "Foo",
         typeDefs: graphql`
           extend schema @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@key"])
 
@@ -91,7 +97,7 @@ testVersions((api, version) => {
         `,
       },
       {
-        name: 'foo',
+        name: "foo",
         typeDefs: graphql`
           extend schema @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@key"])
 
@@ -116,12 +122,12 @@ testVersions((api, version) => {
     `);
   });
 
-  test('NOT detect url collisions', () => {
+  test("NOT detect url collisions", () => {
     expect(() => {
       api.composeServices([
         {
-          name: 'foo',
-          url: 'http://foo.com',
+          name: "foo",
+          url: "http://foo.com",
           typeDefs: graphql`
             extend schema
               @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@key"])
@@ -136,8 +142,8 @@ testVersions((api, version) => {
           `,
         },
         {
-          name: 'bar',
-          url: 'http://foo.com',
+          name: "bar",
+          url: "http://foo.com",
           typeDefs: graphql`
             extend schema
               @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@key"])
@@ -152,6 +158,6 @@ testVersions((api, version) => {
           `,
         },
       ]);
-    }, 'detected exact same urls').not.toThrow();
+    }, "detected exact same urls").not.toThrow();
   });
 });

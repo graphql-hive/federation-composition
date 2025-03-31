@@ -23,9 +23,18 @@ type decry78c {
   provebb7: String
   oddly33e: decry78c
   yowza299: String
-  price091(madly2ba: String, while53c: String, fooey052: Int, never2e5: Int): hyena34f!
-  small22e(madly2ba: String, while53c: String, fooey052: Int, never2e5: Int): hyena34f!
-    @deprecated(reason: "")
+  price091(
+    madly2ba: String
+    while53c: String
+    fooey052: Int
+    never2e5: Int
+  ): hyena34f!
+  small22e(
+    madly2ba: String
+    while53c: String
+    fooey052: Int
+    never2e5: Int
+  ): hyena34f! @deprecated(reason: "")
   hence177: Boolean!
   shylyf6e: Boolean!
   vivid71d: String

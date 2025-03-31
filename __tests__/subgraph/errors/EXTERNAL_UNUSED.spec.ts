@@ -1,12 +1,16 @@
-import { expect, test } from 'vitest';
-import { assertCompositionSuccess, graphql, testVersions } from '../../shared/testkit.js';
+import { expect, test } from "vitest";
+import {
+  assertCompositionSuccess,
+  graphql,
+  testVersions,
+} from "../../shared/testkit.js";
 
 testVersions((api, version) => {
-  test('EXTERNAL_UNUSED on field', () => {
+  test("EXTERNAL_UNUSED on field", () => {
     expect(
       api.composeServices([
         {
-          name: 'users',
+          name: "users",
           typeDefs: graphql`
             extend schema
               @link(
@@ -33,7 +37,7 @@ testVersions((api, version) => {
               `[users] Field "User.name" is marked @external but is not used in any federation directive (@key, @provides, @requires) or to satisfy an interface; the field declaration has no use and should be removed (or the field should not be @external).`,
             ),
             extensions: expect.objectContaining({
-              code: 'EXTERNAL_UNUSED',
+              code: "EXTERNAL_UNUSED",
             }),
           }),
         ]),
@@ -41,11 +45,11 @@ testVersions((api, version) => {
     );
   });
 
-  test('EXTERNAL_UNUSED on type', () => {
+  test("EXTERNAL_UNUSED on type", () => {
     expect(
       api.composeServices([
         {
-          name: 'users',
+          name: "users",
           typeDefs: graphql`
             extend schema
               @link(
@@ -72,7 +76,7 @@ testVersions((api, version) => {
               `[users] Field "User.name" is marked @external but is not used in any federation directive (@key, @provides, @requires) or to satisfy an interface; the field declaration has no use and should be removed (or the field should not be @external).`,
             ),
             extensions: expect.objectContaining({
-              code: 'EXTERNAL_UNUSED',
+              code: "EXTERNAL_UNUSED",
             }),
           }),
         ]),
@@ -80,10 +84,10 @@ testVersions((api, version) => {
     );
   });
 
-  test('Fed v1: No EXTERNAL_UNUSED', () => {
+  test("Fed v1: No EXTERNAL_UNUSED", () => {
     const result = api.composeServices([
       {
-        name: 'b',
+        name: "b",
         typeDefs: graphql`
           type User @key(fields: "id") {
             id: ID!
@@ -97,7 +101,7 @@ testVersions((api, version) => {
         `,
       },
       {
-        name: 'a',
+        name: "a",
         typeDefs: graphql`
           type Admin @key(fields: "id") {
             id: ID!
@@ -113,11 +117,11 @@ testVersions((api, version) => {
     assertCompositionSuccess(result);
   });
 
-  test('Fed v1: No EXTERNAL_UNUSED when @external is used on a type', () => {
+  test("Fed v1: No EXTERNAL_UNUSED when @external is used on a type", () => {
     assertCompositionSuccess(
       api.composeServices([
         {
-          name: 'users',
+          name: "users",
           typeDefs: graphql`
             directive @external on FIELD_DEFINITION | OBJECT
             directive @key(fields: String!) on INTERFACE | OBJECT
@@ -136,11 +140,11 @@ testVersions((api, version) => {
     );
   });
 
-  test('Fed v1: No EXTERNAL_UNUSED but EXTERNAL_MISSING_ON_BASE on key field', () => {
+  test("Fed v1: No EXTERNAL_UNUSED but EXTERNAL_MISSING_ON_BASE on key field", () => {
     expect(
       api.composeServices([
         {
-          name: 'users',
+          name: "users",
           typeDefs: graphql`
             type Query {
               users: [User]
@@ -161,7 +165,7 @@ testVersions((api, version) => {
               `Field "User.id" is marked @external on all the subgraphs in which it is listed (subgraph "users").`,
             ),
             extensions: expect.objectContaining({
-              code: 'EXTERNAL_MISSING_ON_BASE',
+              code: "EXTERNAL_MISSING_ON_BASE",
             }),
           }),
         ]),
@@ -171,7 +175,7 @@ testVersions((api, version) => {
     assertCompositionSuccess(
       api.composeServices([
         {
-          name: 'b',
+          name: "b",
           typeDefs: graphql`
             type User @key(fields: "id") {
               id: ID!
@@ -185,7 +189,7 @@ testVersions((api, version) => {
           `,
         },
         {
-          name: 'a',
+          name: "a",
           typeDefs: graphql`
             type Admin @key(fields: "id") {
               id: ID!
@@ -203,7 +207,7 @@ testVersions((api, version) => {
     expect(
       api.composeServices([
         {
-          name: 'a',
+          name: "a",
           typeDefs: graphql`
             type User @key(fields: "id") {
               id: ID!
@@ -216,7 +220,7 @@ testVersions((api, version) => {
           `,
         },
         {
-          name: 'b',
+          name: "b",
           typeDefs: graphql`
             extend type User @key(fields: "nickname") {
               nickname: String! @external
@@ -234,7 +238,7 @@ testVersions((api, version) => {
     assertCompositionSuccess(
       api.composeServices([
         {
-          name: 'users',
+          name: "users",
           typeDefs: graphql`
             type Query {
               users: [User]

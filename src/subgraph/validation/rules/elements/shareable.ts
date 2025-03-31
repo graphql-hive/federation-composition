@@ -1,14 +1,14 @@
-import { ASTVisitor, GraphQLError, Kind } from 'graphql';
-import { validateDirectiveAgainstOriginal } from '../../../helpers.js';
-import type { SubgraphValidationContext } from '../../validation-context.js';
+import { ASTVisitor, GraphQLError, Kind } from "graphql";
+import { validateDirectiveAgainstOriginal } from "../../../helpers.js";
+import type { SubgraphValidationContext } from "../../validation-context.js";
 
 export function ShareableRules(context: SubgraphValidationContext): ASTVisitor {
   return {
     DirectiveDefinition(node) {
-      validateDirectiveAgainstOriginal(node, 'shareable', context);
+      validateDirectiveAgainstOriginal(node, "shareable", context);
     },
     Directive(node) {
-      if (!context.isAvailableFederationDirective('shareable', node)) {
+      if (!context.isAvailableFederationDirective("shareable", node)) {
         return;
       }
 
@@ -56,7 +56,7 @@ export function ShareableRules(context: SubgraphValidationContext): ASTVisitor {
             `Invalid use of @shareable on field "${typeDef.name.value}.${fieldDef.name.value}": only object type fields can be marked with @shareable`,
             {
               nodes: node,
-              extensions: { code: 'INVALID_SHAREABLE_USAGE' },
+              extensions: { code: "INVALID_SHAREABLE_USAGE" },
             },
           ),
         );

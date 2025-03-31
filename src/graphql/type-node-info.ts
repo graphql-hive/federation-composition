@@ -9,7 +9,7 @@ import {
   Kind,
   TypeDefinitionNode,
   TypeExtensionNode,
-} from 'graphql';
+} from "graphql";
 
 // Ported from GraphQL-JS
 type Maybe<T> = T | null | undefined;
@@ -23,12 +23,12 @@ function getEnterLeaveForKind(
 } {
   const kindVisitor = (visitor as any)[kind];
 
-  if (typeof kindVisitor === 'object') {
+  if (typeof kindVisitor === "object") {
     // { Kind: { enter() {}, leave() {} } }
     return kindVisitor;
   }
 
-  if (typeof kindVisitor === 'function') {
+  if (typeof kindVisitor === "function") {
     // { Kind() {} }
     return { enter: kindVisitor, leave: undefined };
   }
@@ -39,11 +39,13 @@ function getEnterLeaveForKind(
 
 function isNode(maybeNode: any): maybeNode is ASTNode {
   const maybeKind = maybeNode?.kind;
-  return typeof maybeKind === 'string';
+  return typeof maybeKind === "string";
 }
 
 export class TypeNodeInfo {
-  private _type: Maybe<TypeDefinitionNode | TypeExtensionNode | DirectiveDefinitionNode>;
+  private _type: Maybe<
+    TypeDefinitionNode | TypeExtensionNode | DirectiveDefinitionNode
+  >;
   private _field: Maybe<FieldDefinitionNode | InputValueDefinitionNode>;
   private _arg: Maybe<InputValueDefinitionNode>;
   private _value: Maybe<EnumValueDefinitionNode>;
@@ -56,7 +58,7 @@ export class TypeNodeInfo {
   }
 
   get [Symbol.toStringTag]() {
-    return 'TypeNodeInfo';
+    return "TypeNodeInfo";
   }
 
   getTypeDef() {
@@ -158,7 +160,10 @@ export class TypeNodeInfo {
  * Creates a new visitor instance which maintains a provided TypeNodeInfo instance
  * along with visiting visitor.
  */
-export function visitWithTypeNodeInfo(typeInfo: TypeNodeInfo, visitor: ASTVisitor): ASTVisitor {
+export function visitWithTypeNodeInfo(
+  typeInfo: TypeNodeInfo,
+  visitor: ASTVisitor,
+): ASTVisitor {
   return {
     enter(
       node: ASTNode,

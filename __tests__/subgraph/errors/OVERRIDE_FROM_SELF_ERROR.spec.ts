@@ -1,12 +1,12 @@
-import { expect, test } from 'vitest';
-import { graphql, testVersions } from '../../shared/testkit.js';
+import { expect, test } from "vitest";
+import { graphql, testVersions } from "../../shared/testkit.js";
 
 testVersions((api, version) => {
-  test('OVERRIDE_FROM_SELF_ERROR', () => {
+  test("OVERRIDE_FROM_SELF_ERROR", () => {
     expect(
       api.composeServices([
         {
-          name: 'billing',
+          name: "billing",
           typeDefs: graphql`
             extend schema
               @link(
@@ -33,7 +33,7 @@ testVersions((api, version) => {
               `Source and destination subgraphs "billing" are the same for overridden field "Bill.amount"`,
             ),
             extensions: expect.objectContaining({
-              code: 'OVERRIDE_FROM_SELF_ERROR',
+              code: "OVERRIDE_FROM_SELF_ERROR",
             }),
           }),
         ]),

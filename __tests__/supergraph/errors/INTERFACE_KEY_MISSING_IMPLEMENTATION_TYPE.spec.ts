@@ -1,17 +1,17 @@
-import { expect, test } from 'vitest';
+import { expect, test } from "vitest";
 import {
   assertCompositionSuccess,
   graphql,
   satisfiesVersionRange,
   testVersions,
-} from '../../shared/testkit.js';
+} from "../../shared/testkit.js";
 
 testVersions((api, version) => {
-  test('INTERFACE_KEY_MISSING_IMPLEMENTATION_TYPE', () => {
+  test("INTERFACE_KEY_MISSING_IMPLEMENTATION_TYPE", () => {
     expect(
       api.composeServices([
         {
-          name: 'users',
+          name: "users",
           typeDefs: graphql`
             extend schema @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@key"])
 
@@ -27,7 +27,7 @@ testVersions((api, version) => {
           `,
         },
         {
-          name: 'extra',
+          name: "extra",
           typeDefs: graphql`
             extend schema @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@key"])
             
@@ -45,7 +45,7 @@ testVersions((api, version) => {
           `,
         },
         {
-          name: 'blocked',
+          name: "blocked",
           typeDefs: graphql`
             extend schema @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@key"])
             
@@ -66,7 +66,7 @@ testVersions((api, version) => {
     ).toEqual(
       expect.objectContaining({
         errors: expect.arrayContaining(
-          satisfiesVersionRange('>= v2.3', version)
+          satisfiesVersionRange(">= v2.3", version)
             ? [
                 // Federation should ignore a situation where an interface has a `@key` field but the subgraph doesn't implement the interface.
                 // It should check if at least one subgraph does it and if it does, then it should ignore the missing implementation (or create a hint instead).
@@ -75,7 +75,7 @@ testVersions((api, version) => {
                     `[users] Interface type "User" has a resolvable key (@key(fields: "id")) in subgraph "users" but that subgraph is missing some of the supergraph implementation types of "User". Subgraph "users" should define types "BlockedUser" and "RegisteredUser" (and have them implement "User").`,
                   ),
                   extensions: expect.objectContaining({
-                    code: 'INTERFACE_KEY_MISSING_IMPLEMENTATION_TYPE',
+                    code: "INTERFACE_KEY_MISSING_IMPLEMENTATION_TYPE",
                   }),
                 }),
                 expect.objectContaining({
@@ -83,7 +83,7 @@ testVersions((api, version) => {
                     `[extra] Interface type "User" has a resolvable key (@key(fields: "id")) in subgraph "extra" but that subgraph is missing some of the supergraph implementation types of "User". Subgraph "extra" should define type "BlockedUser" (and have it implement "User").`,
                   ),
                   extensions: expect.objectContaining({
-                    code: 'INTERFACE_KEY_MISSING_IMPLEMENTATION_TYPE',
+                    code: "INTERFACE_KEY_MISSING_IMPLEMENTATION_TYPE",
                   }),
                 }),
                 expect.objectContaining({
@@ -91,7 +91,7 @@ testVersions((api, version) => {
                     `[blocked] Interface type "User" has a resolvable key (@key(fields: "id")) in subgraph "blocked" but that subgraph is missing some of the supergraph implementation types of "User". Subgraph "blocked" should define type "RegisteredUser" (and have it implement "User").`,
                   ),
                   extensions: expect.objectContaining({
-                    code: 'INTERFACE_KEY_MISSING_IMPLEMENTATION_TYPE',
+                    code: "INTERFACE_KEY_MISSING_IMPLEMENTATION_TYPE",
                   }),
                 }),
               ]
@@ -101,7 +101,7 @@ testVersions((api, version) => {
                     `[users] Cannot use @key on interface "User": @key is not yet supported on interfaces`,
                   ),
                   extensions: expect.objectContaining({
-                    code: 'KEY_UNSUPPORTED_ON_INTERFACE',
+                    code: "KEY_UNSUPPORTED_ON_INTERFACE",
                   }),
                 }),
               ],
@@ -112,7 +112,7 @@ testVersions((api, version) => {
     assertCompositionSuccess(
       api.composeServices([
         {
-          name: 'a',
+          name: "a",
           typeDefs: graphql`
             type Query {
               a: String
@@ -125,7 +125,7 @@ testVersions((api, version) => {
           `,
         },
         {
-          name: 'b',
+          name: "b",
           typeDefs: graphql`
             type Query {
               b: String
@@ -145,11 +145,11 @@ testVersions((api, version) => {
     );
   });
 
-  test('INTERFACE_KEY_MISSING_IMPLEMENTATION_TYPE: multiple keys', () => {
+  test("INTERFACE_KEY_MISSING_IMPLEMENTATION_TYPE: multiple keys", () => {
     expect(
       api.composeServices([
         {
-          name: 'users',
+          name: "users",
           typeDefs: graphql`
             extend schema @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@key"])
 
@@ -165,7 +165,7 @@ testVersions((api, version) => {
           `,
         },
         {
-          name: 'extra',
+          name: "extra",
           typeDefs: graphql`
             extend schema @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@key"])
             
@@ -183,7 +183,7 @@ testVersions((api, version) => {
           `,
         },
         {
-          name: 'blocked',
+          name: "blocked",
           typeDefs: graphql`
             extend schema @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@key"])
             
@@ -204,7 +204,7 @@ testVersions((api, version) => {
     ).toEqual(
       expect.objectContaining({
         errors: expect.arrayContaining(
-          satisfiesVersionRange('>= v2.3', version)
+          satisfiesVersionRange(">= v2.3", version)
             ? [
                 // Federation should ignore a situation where an interface has a `@key` field but the subgraph doesn't implement the interface.
                 // It should check if at least one subgraph does it and if it does, then it should ignore the missing implementation (or create a hint instead).
@@ -213,7 +213,7 @@ testVersions((api, version) => {
                     `[users] Interface type "User" has a resolvable key (@key(fields: "email")) in subgraph "users" but that subgraph is missing some of the supergraph implementation types of "User". Subgraph "users" should define types "BlockedUser" and "RegisteredUser" (and have them implement "User").`,
                   ),
                   extensions: expect.objectContaining({
-                    code: 'INTERFACE_KEY_MISSING_IMPLEMENTATION_TYPE',
+                    code: "INTERFACE_KEY_MISSING_IMPLEMENTATION_TYPE",
                   }),
                 }),
                 expect.objectContaining({
@@ -221,7 +221,7 @@ testVersions((api, version) => {
                     `[extra] Interface type "User" has a resolvable key (@key(fields: "id")) in subgraph "extra" but that subgraph is missing some of the supergraph implementation types of "User". Subgraph "extra" should define type "BlockedUser" (and have it implement "User").`,
                   ),
                   extensions: expect.objectContaining({
-                    code: 'INTERFACE_KEY_MISSING_IMPLEMENTATION_TYPE',
+                    code: "INTERFACE_KEY_MISSING_IMPLEMENTATION_TYPE",
                   }),
                 }),
                 expect.objectContaining({
@@ -229,7 +229,7 @@ testVersions((api, version) => {
                     `[blocked] Interface type "User" has a resolvable key (@key(fields: "id")) in subgraph "blocked" but that subgraph is missing some of the supergraph implementation types of "User". Subgraph "blocked" should define type "RegisteredUser" (and have it implement "User").`,
                   ),
                   extensions: expect.objectContaining({
-                    code: 'INTERFACE_KEY_MISSING_IMPLEMENTATION_TYPE',
+                    code: "INTERFACE_KEY_MISSING_IMPLEMENTATION_TYPE",
                   }),
                 }),
               ]
@@ -239,7 +239,7 @@ testVersions((api, version) => {
                     `[users] Cannot use @key on interface "User": @key is not yet supported on interfaces`,
                   ),
                   extensions: expect.objectContaining({
-                    code: 'KEY_UNSUPPORTED_ON_INTERFACE',
+                    code: "KEY_UNSUPPORTED_ON_INTERFACE",
                   }),
                 }),
               ],
@@ -248,11 +248,11 @@ testVersions((api, version) => {
     );
   });
 
-  test('INTERFACE_KEY_MISSING_IMPLEMENTATION_TYPE: @interfaceObject + interface is valid', () => {
+  test("INTERFACE_KEY_MISSING_IMPLEMENTATION_TYPE: @interfaceObject + interface is valid", () => {
     assertCompositionSuccess(
       api.composeServices([
         {
-          name: 'a',
+          name: "a",
           typeDefs: graphql`
             extend schema
               @link(
@@ -270,7 +270,7 @@ testVersions((api, version) => {
           `,
         },
         {
-          name: 'b',
+          name: "b",
           typeDefs: graphql`
             extend schema
               @link(

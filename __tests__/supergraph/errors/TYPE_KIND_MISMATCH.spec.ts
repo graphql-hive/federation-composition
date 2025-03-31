@@ -1,12 +1,12 @@
-import { expect, test } from 'vitest';
-import { graphql, testVersions } from '../../shared/testkit.js';
+import { expect, test } from "vitest";
+import { graphql, testVersions } from "../../shared/testkit.js";
 
 testVersions((api, version) => {
-  test('TYPE_KIND_MISMATCH', () => {
+  test("TYPE_KIND_MISMATCH", () => {
     expect(
       api.composeServices([
         {
-          name: 'users',
+          name: "users",
           typeDefs: graphql`
             extend schema @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@key"])
 
@@ -20,7 +20,7 @@ testVersions((api, version) => {
           `,
         },
         {
-          name: 'friends',
+          name: "friends",
           typeDefs: graphql`
             extend schema @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@key"])
 
@@ -31,7 +31,7 @@ testVersions((api, version) => {
           `,
         },
         {
-          name: 'pets',
+          name: "pets",
           typeDefs: graphql`
             extend schema @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@key"])
 
@@ -54,7 +54,7 @@ testVersions((api, version) => {
               `Type "User" has mismatched kind: it is defined as Interface Type in subgraph "friends" but InputObject Type in subgraph "pets" and Object Type in subgraph "users"`,
             ),
             extensions: expect.objectContaining({
-              code: 'TYPE_KIND_MISMATCH',
+              code: "TYPE_KIND_MISMATCH",
             }),
           }),
         ]),

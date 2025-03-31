@@ -1,11 +1,11 @@
-import { expect, test } from 'vitest';
-import { graphql, testVersions } from '../../shared/testkit.js';
+import { expect, test } from "vitest";
+import { graphql, testVersions } from "../../shared/testkit.js";
 
 testVersions((api, version) => {
-  test('EMPTY_MERGED_ENUM_TYPE', () => {
+  test("EMPTY_MERGED_ENUM_TYPE", () => {
     const result = api.composeServices([
       {
-        name: 'a',
+        name: "a",
         typeDefs: graphql`
           extend schema
             @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@shareable"])
@@ -21,7 +21,7 @@ testVersions((api, version) => {
         `,
       },
       {
-        name: 'b',
+        name: "b",
         typeDefs: graphql`
           extend schema
             @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@shareable"])
@@ -48,7 +48,7 @@ testVersions((api, version) => {
           expect.objectContaining({
             message: `None of the values of enum type "UserType" are defined consistently in all the subgraphs defining that type. As only values common to all subgraphs are merged, this would result in an empty type.`,
             extensions: expect.objectContaining({
-              code: 'EMPTY_MERGED_ENUM_TYPE',
+              code: "EMPTY_MERGED_ENUM_TYPE",
             }),
           }),
         ]),

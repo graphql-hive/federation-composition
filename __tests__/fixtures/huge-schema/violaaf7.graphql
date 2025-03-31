@@ -35,5 +35,9 @@ type Mutation {
 }
 
 type Query {
-  where1e3(scorn513: String!, fresh597: String!, above032: String!): [times7ac!]!
+  where1e3(
+    scorn513: String!
+    fresh597: String!
+    above032: String!
+  ): [times7ac!]!
 }

@@ -1,7 +1,7 @@
-import { GraphQLError } from 'graphql';
-import { SupergraphVisitorMap } from '../../composition/visitor.js';
-import { SupergraphState } from '../../state.js';
-import { SupergraphValidationContext } from '../validation-context.js';
+import { GraphQLError } from "graphql";
+import { SupergraphVisitorMap } from "../../composition/visitor.js";
+import { SupergraphState } from "../../state.js";
+import { SupergraphValidationContext } from "../validation-context.js";
 
 export function DirectiveCompositionRule(
   context: SupergraphValidationContext,
@@ -15,16 +15,16 @@ export function DirectiveCompositionRule(
 
   for (const link of supergraph.links) {
     if (link.version) {
-      const major = parseInt(link.version.replace('v', '').split('.')[0]);
+      const major = parseInt(link.version.replace("v", "").split(".")[0]);
 
       const existing = linkIdentityToMajorVersion.get(link.identity);
-      if (typeof existing === 'number' && existing !== major) {
+      if (typeof existing === "number" && existing !== major) {
         context.reportError(
           new GraphQLError(
             `Core feature "${link.identity}" requested to be merged has major version mismatch across subgraphs`,
             {
               extensions: {
-                code: 'DIRECTIVE_COMPOSITION_ERROR',
+                code: "DIRECTIVE_COMPOSITION_ERROR",
                 versions: [existing, major],
               },
             },
@@ -36,12 +36,13 @@ export function DirectiveCompositionRule(
     }
 
     for (const im of link.imports) {
-      if (im.kind === 'directive') {
+      if (im.kind === "directive") {
         const appliedName = im.alias ?? im.name;
         const originalName = im.name;
 
         // Look for directives, their aliases and graphs.
-        const appliedDirectiveToGraph = appliedDirectiveToGraphs.get(originalName);
+        const appliedDirectiveToGraph =
+          appliedDirectiveToGraphs.get(originalName);
         if (appliedDirectiveToGraph) {
           const graphs = appliedDirectiveToGraph.get(appliedName);
           if (graphs) {
@@ -57,33 +58,44 @@ export function DirectiveCompositionRule(
         }
 
         // Look for directives linked from different specs
-        const appliedDirectiveToLinkIdentity = appliedDirectiveToLinkIdentities.get(appliedName);
+        const appliedDirectiveToLinkIdentity =
+          appliedDirectiveToLinkIdentities.get(appliedName);
         if (appliedDirectiveToLinkIdentity) {
           appliedDirectiveToLinkIdentity.add(link.identity);
         } else {
-          appliedDirectiveToLinkIdentities.set(appliedName, new Set([link.identity]));
+          appliedDirectiveToLinkIdentities.set(
+            appliedName,
+            new Set([link.identity]),
+          );
         }
       }
     }
   }
 
-  for (const [originalDirectiveName, appliedNames] of appliedDirectiveToGraphs) {
+  for (const [
+    originalDirectiveName,
+    appliedNames,
+  ] of appliedDirectiveToGraphs) {
     if (appliedNames.size > 1) {
-      const groups = Array.from(appliedNames.entries()).map(([appliedName, graphs]) => {
-        const plural = graphs.size > 1 ? 's' : '';
-        return `name "${appliedName}" in subgraph${plural} "${Array.from(graphs)
-          .map(context.graphIdToName)
-          .join('", "')}"`;
-      });
+      const groups = Array.from(appliedNames.entries()).map(
+        ([appliedName, graphs]) => {
+          const plural = graphs.size > 1 ? "s" : "";
+          return `name "${appliedName}" in subgraph${plural} "${Array.from(
+            graphs,
+          )
+            .map(context.graphIdToName)
+            .join('", "')}"`;
+        },
+      );
       const [first, second, ...rest] = groups;
       context.reportError(
         new GraphQLError(
           `Composed directive "${originalDirectiveName}" has incompatible name across subgraphs: it has ${first} but ${second}${
-            rest.length ? ` and ${rest.join(' and ')}` : ''
+            rest.length ? ` and ${rest.join(" and ")}` : ""
           }. Composed directive must have the same name across all subgraphs.`,
           {
             extensions: {
-              code: 'DIRECTIVE_COMPOSITION_ERROR',
+              code: "DIRECTIVE_COMPOSITION_ERROR",
             },
           },
         ),
@@ -91,14 +103,17 @@ export function DirectiveCompositionRule(
     }
   }
 
-  for (const [directiveName, linkIdentities] of appliedDirectiveToLinkIdentities) {
+  for (const [
+    directiveName,
+    linkIdentities,
+  ] of appliedDirectiveToLinkIdentities) {
     if (linkIdentities.size > 1) {
       context.reportError(
         new GraphQLError(
           `Composed directive "${directiveName}" is not linked by the same core feature in every subgraph`,
           {
             extensions: {
-              code: 'DIRECTIVE_COMPOSITION_ERROR',
+              code: "DIRECTIVE_COMPOSITION_ERROR",
             },
           },
         ),
@@ -114,7 +129,9 @@ export function DirectiveCompositionRule(
 
       const graphsSize = directiveState.byGraph.size;
 
-      const hasLocationDefinedInAllGraphs = Array.from(directiveState.locations).some(location => {
+      const hasLocationDefinedInAllGraphs = Array.from(
+        directiveState.locations,
+      ).some((location) => {
         let count = 0;
         for (const [_, graphState] of directiveState.byGraph) {
           if (graphState.locations.has(location)) {

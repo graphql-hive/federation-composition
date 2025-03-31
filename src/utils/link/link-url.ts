@@ -29,23 +29,28 @@ export class FederatedLinkUrl {
   }
 
   public toString(): string {
-    return `${this.identity}${this.version ? `/${this.version}` : ''}`;
+    return `${this.identity}${this.version ? `/${this.version}` : ""}`;
   }
 
   static fromUrl = (urlSource: string): FederatedLinkUrl => {
     const url = new URL(urlSource);
-    const parts = url.pathname.split('/').filter(Boolean);
+    const parts = url.pathname.split("/").filter(Boolean);
     const versionOrName = parts[parts.length - 1];
     if (versionOrName) {
       if (VERSION_MATCH.test(versionOrName)) {
         const maybeName = parts[parts.length - 2];
         return new FederatedLinkUrl(
-          url.origin + (maybeName ? `/${parts.slice(0, parts.length - 1).join('/')}` : ''),
+          url.origin +
+            (maybeName ? `/${parts.slice(0, parts.length - 1).join("/")}` : ""),
           maybeName ?? null,
           versionOrName,
         );
       }
-      return new FederatedLinkUrl(`${url.origin}/${parts.join('/')}`, versionOrName, null);
+      return new FederatedLinkUrl(
+        `${url.origin}/${parts.join("/")}`,
+        versionOrName,
+        null,
+      );
     }
     return new FederatedLinkUrl(url.origin, null, null);
   };
@@ -55,12 +60,14 @@ export class FederatedLinkUrl {
   supports(major: number, minor: number): boolean;
   supports(version: FederatedLinkUrl): boolean;
   supports(version: null): boolean;
-  supports(...args: [string] | [number, number] | [FederatedLinkUrl] | [null]): boolean {
+  supports(
+    ...args: [string] | [number, number] | [FederatedLinkUrl] | [null]
+  ): boolean {
     const majorOrVersion = args[0];
     let major: number, minor: number;
-    if (typeof majorOrVersion === 'string') {
+    if (typeof majorOrVersion === "string") {
       [major, minor] = parseVersion(majorOrVersion);
-    } else if (typeof majorOrVersion === 'number') {
+    } else if (typeof majorOrVersion === "number") {
       [major, minor] = args as [number, number];
     } else if (majorOrVersion instanceof FederatedLinkUrl) {
       // check that it is the same spec
@@ -73,7 +80,9 @@ export class FederatedLinkUrl {
       // handles null case
       return majorOrVersion === this.version;
     } else {
-      throw new Error(`Unsupported version argument: ${JSON.stringify(args)} [${typeof args}].`);
+      throw new Error(
+        `Unsupported version argument: ${JSON.stringify(args)} [${typeof args}].`,
+      );
     }
     return this.isCompatibleVersion(major, minor);
   }

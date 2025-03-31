@@ -1,18 +1,21 @@
-import { expect, test } from 'vitest';
+import { expect, test } from "vitest";
 import {
   assertCompositionFailure,
   assertCompositionSuccess,
   graphql,
   testVersions,
-} from '../../shared/testkit.js';
+} from "../../shared/testkit.js";
 
 testVersions((api, version) => {
-  test('interface field -> object field subtype', () => {
+  test("interface field -> object field subtype", () => {
     const result = api.composeServices([
       {
         typeDefs: graphql`
           extend schema
-            @link(url: "https://specs.apollo.dev/federation/v2.6", import: ["@shareable"])
+            @link(
+              url: "https://specs.apollo.dev/federation/v2.6"
+              import: ["@shareable"]
+            )
 
           type Query {
             a: Admin
@@ -30,11 +33,15 @@ testVersions((api, version) => {
             id: ID!
           }
         `,
-        name: 'a',
+        name: "a",
       },
       {
         typeDefs: graphql`
-          extend schema @link(url: "https://specs.apollo.dev/federation/v2.6", import: ["@key"])
+          extend schema
+            @link(
+              url: "https://specs.apollo.dev/federation/v2.6"
+              import: ["@key"]
+            )
 
           type Query {
             b: Admin
@@ -45,7 +52,7 @@ testVersions((api, version) => {
             name: String!
           }
         `,
-        name: 'b',
+        name: "b",
       },
     ]);
 
@@ -54,8 +61,8 @@ testVersions((api, version) => {
     expect(result.errors).toContainEqual(
       expect.objectContaining({
         message:
-          'Interface field Node.id expects type ID! but Admin.id of type ID is not a proper subtype.',
-        extensions: expect.objectContaining({ code: 'INVALID_GRAPHQL' }),
+          "Interface field Node.id expects type ID! but Admin.id of type ID is not a proper subtype.",
+        extensions: expect.objectContaining({ code: "INVALID_GRAPHQL" }),
       }),
     );
 
@@ -64,7 +71,10 @@ testVersions((api, version) => {
         {
           typeDefs: graphql`
             extend schema
-              @link(url: "https://specs.apollo.dev/federation/v2.6", import: ["@shareable"])
+              @link(
+                url: "https://specs.apollo.dev/federation/v2.6"
+                import: ["@shareable"]
+              )
 
             type Query {
               a: Admin
@@ -85,7 +95,7 @@ testVersions((api, version) => {
               parent: Node
             }
           `,
-          name: 'a',
+          name: "a",
         },
       ]),
     );

@@ -147,7 +147,9 @@ enum above852 {
   tired210
 }
 
-type oftene2e @key(fields: "midst81a") @key(fields: "sincec96 { midst81a } decay64d { midst81a }") {
+type oftene2e
+  @key(fields: "midst81a")
+  @key(fields: "sincec96 { midst81a } decay64d { midst81a }") {
   midst81a: ID!
   sincec96: given74b
   decay64d: blankb4f

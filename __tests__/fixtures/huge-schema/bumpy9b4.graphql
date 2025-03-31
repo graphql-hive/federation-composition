@@ -16,7 +16,9 @@ type dramacc4 implements afterb8e @key(fields: "slinkcdd") {
   until16a: [humor88d!]! @external
   truly689: sweetb81! @external
   sincecc8: smock510
-    @requires(fields: "madly17c murky1a1 while34e truly689 until16a { never4dd murky1a1 }")
+    @requires(
+      fields: "madly17c murky1a1 while34e truly689 until16a { never4dd murky1a1 }"
+    )
 }
 
 type dailyad3 implements afterb8e @key(fields: "midst81a") {

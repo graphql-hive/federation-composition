@@ -11,7 +11,12 @@ type belowf7f {
 
 interface jumpy31d {
   midst81a: ID!
-  shyly09a(fooey052: Int, madly2ba: String, never2e5: Int, while53c: String): lanky8a5
+  shyly09a(
+    fooey052: Int
+    madly2ba: String
+    never2e5: Int
+    while53c: String
+  ): lanky8a5
 }
 
 interface lanky8a5 {
@@ -28,10 +33,17 @@ interface crime147 {
 
 union asidedae = after42f | belowf7f
 
-type fooeyba2 implements oddlybcf & jumpy31d @key(fields: "midst81a") @key(fields: "zowiebc0") {
+type fooeyba2 implements oddlybcf & jumpy31d
+  @key(fields: "midst81a")
+  @key(fields: "zowiebc0") {
   midst81a: ID!
   zowiebc0: ID!
-  shyly09a(fooey052: Int, madly2ba: String, never2e5: Int, while53c: String): ferry65f
+  shyly09a(
+    fooey052: Int
+    madly2ba: String
+    never2e5: Int
+    while53c: String
+  ): ferry65f
   yahoo69f: asidedae
 }
 

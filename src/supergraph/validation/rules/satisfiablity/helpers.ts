@@ -18,8 +18,8 @@ export function occurrences(str: string, subString: string) {
 }
 
 export function scoreKeyFields(keyFields: string) {
-  const fields = occurrences(keyFields, ' ') + 1;
-  const innerSelectionSets = occurrences(keyFields, '{') * 3;
+  const fields = occurrences(keyFields, " ") + 1;
+  const innerSelectionSets = occurrences(keyFields, "{") * 3;
 
   return fields + innerSelectionSets;
 }
@@ -46,7 +46,7 @@ export function lazy<T>(factory: () => T) {
   };
 }
 
-export class OverrideLabels  {
+export class OverrideLabels {
   private state: Record<string, boolean>;
 
   constructor(state?: Record<string, boolean>) {
@@ -74,7 +74,7 @@ export class OverrideLabels  {
 
   clone() {
     return new OverrideLabels({
-      ...this.state
+      ...this.state,
     });
   }
 }

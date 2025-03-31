@@ -1,19 +1,23 @@
-import { expect, test } from 'vitest';
+import { expect, test } from "vitest";
 import {
   assertCompositionFailure,
   assertCompositionSuccess,
   graphql,
   testVersions,
-} from '../../shared/testkit.js';
+} from "../../shared/testkit.js";
 
 testVersions((api, version) => {
-  test('INVALID_GRAPHQL - invalid value for fields (input object)', () => {
+  test("INVALID_GRAPHQL - invalid value for fields (input object)", () => {
     expect(
       api.composeServices([
         {
-          name: 'users',
+          name: "users",
           typeDefs: graphql`
-            extend schema @link(url: "https://specs.apollo.dev/federation/v2.2", import: ["@key"])
+            extend schema
+              @link(
+                url: "https://specs.apollo.dev/federation/v2.2"
+                import: ["@key"]
+              )
 
             directive @key(
               fields: FieldSet!
@@ -41,7 +45,7 @@ testVersions((api, version) => {
           expect.objectContaining({
             message: `[users] Invalid value for "@key(fields:)" of type "FieldSet!" in application of "@key" to "User".`,
             extensions: expect.objectContaining({
-              code: 'INVALID_GRAPHQL',
+              code: "INVALID_GRAPHQL",
             }),
           }),
         ]),
@@ -49,11 +53,11 @@ testVersions((api, version) => {
     );
   });
 
-  test('INVALID_GRAPHQL - @provides without fields', () => {
+  test("INVALID_GRAPHQL - @provides without fields", () => {
     expect(
       api.composeServices([
         {
-          name: 'billing',
+          name: "billing",
           typeDefs: graphql`
             extend schema
               @link(
@@ -81,11 +85,11 @@ testVersions((api, version) => {
             message: expect.stringContaining(
               // TODO: federation__FieldSet for Apollo `String!` for guild but it should be the same
               `Directive "@provides" argument "fields" of type "${
-                api.library === 'guild' ? 'FieldSet' : 'federation__FieldSet'
+                api.library === "guild" ? "FieldSet" : "federation__FieldSet"
               }!" is required, but it was not provided.`,
             ),
             extensions: expect.objectContaining({
-              code: 'INVALID_GRAPHQL',
+              code: "INVALID_GRAPHQL",
             }),
           }),
         ]),
@@ -93,11 +97,11 @@ testVersions((api, version) => {
     );
   });
 
-  test('INVALID_GRAPHQL - unknown type', () => {
+  test("INVALID_GRAPHQL - unknown type", () => {
     expect(
       api.composeServices([
         {
-          name: 'users',
+          name: "users",
           typeDefs: graphql`
             extend schema
               @link(
@@ -122,7 +126,7 @@ testVersions((api, version) => {
           expect.objectContaining({
             message: expect.stringContaining(`[users] Unknown type Profile`),
             extensions: expect.objectContaining({
-              code: 'INVALID_GRAPHQL',
+              code: "INVALID_GRAPHQL",
             }),
           }),
         ]),
@@ -130,10 +134,10 @@ testVersions((api, version) => {
     );
   });
 
-  test('INVALID_GRAPHQL - default value', () => {
+  test("INVALID_GRAPHQL - default value", () => {
     const result = api.composeServices([
       {
-        name: 'users',
+        name: "users",
         typeDefs: graphql`
           extend schema
             @link(
@@ -178,17 +182,17 @@ testVersions((api, version) => {
               `[users] Invalid default value (got: "Oopsie") provided for argument Query.users(role:) of type Role.`,
             ),
             extensions: expect.objectContaining({
-              code: 'INVALID_GRAPHQL',
+              code: "INVALID_GRAPHQL",
             }),
           }),
           expect.objectContaining({
             message: expect.stringContaining(
               `[users] Invalid default value (got: ${
-                api.library === 'apollo' ? `"OOPSIE"` : 'OOPSIE'
+                api.library === "apollo" ? `"OOPSIE"` : "OOPSIE"
               }) provided for argument Query.allUsers(role:) of type Role.`,
             ),
             extensions: expect.objectContaining({
-              code: 'INVALID_GRAPHQL',
+              code: "INVALID_GRAPHQL",
             }),
           }),
           expect.objectContaining({
@@ -196,17 +200,17 @@ testVersions((api, version) => {
               `[users] Invalid default value (got: {role: "Oopsie"}) provided for argument Query.filterUsers(filter:) of type Filter.`,
             ),
             extensions: expect.objectContaining({
-              code: 'INVALID_GRAPHQL',
+              code: "INVALID_GRAPHQL",
             }),
           }),
           expect.objectContaining({
             message: expect.stringContaining(
               `[users] Invalid default value (got: ${
-                api.library === 'apollo' ? `"OOPSIE"` : 'OOPSIE'
+                api.library === "apollo" ? `"OOPSIE"` : "OOPSIE"
               }) provided for input field Filter.role of type Role.`,
             ),
             extensions: expect.objectContaining({
-              code: 'INVALID_GRAPHQL',
+              code: "INVALID_GRAPHQL",
             }),
           }),
           expect.objectContaining({
@@ -214,14 +218,14 @@ testVersions((api, version) => {
               `[users] Invalid default value (got: null) provided for argument Query.usersByID2(id:) of type ID!.`,
             ),
             extensions: expect.objectContaining({
-              code: 'INVALID_GRAPHQL',
+              code: "INVALID_GRAPHQL",
             }),
           }),
         ]),
       }),
     );
 
-    if (api.library === 'apollo') {
+    if (api.library === "apollo") {
       // Apollo has less strict validation for default values.
       return;
     }
@@ -231,7 +235,7 @@ testVersions((api, version) => {
         expect.objectContaining({
           message: expect.stringContaining(`Query.usersByIDs(ids:)`),
           extensions: expect.objectContaining({
-            code: 'INVALID_GRAPHQL',
+            code: "INVALID_GRAPHQL",
           }),
         }),
       ]),
@@ -242,18 +246,18 @@ testVersions((api, version) => {
         expect.objectContaining({
           message: expect.stringContaining(`Query.usersByID(id:)`),
           extensions: expect.objectContaining({
-            code: 'INVALID_GRAPHQL',
+            code: "INVALID_GRAPHQL",
           }),
         }),
       ]),
     );
   });
 
-  test('INVALID_GRAPHQL - composeDirective gets a Boolean instead of String', () => {
+  test("INVALID_GRAPHQL - composeDirective gets a Boolean instead of String", () => {
     expect(
       api.composeServices([
         {
-          name: 'users',
+          name: "users",
           typeDefs: graphql`
             extend schema
               @link(url: "https://specs.apollo.dev/link/v1.0")
@@ -275,8 +279,8 @@ testVersions((api, version) => {
     ).toEqual(
       expect.objectContaining({
         errors: expect.arrayContaining(
-          version === 'v2.0'
-            ? api.library === 'apollo'
+          version === "v2.0"
+            ? api.library === "apollo"
               ? // Apollo is weird here and thinks that the schema is a Federation v1 schema, even though it's not (@link usage).
                 // It also has a typo :)
                 [
@@ -285,7 +289,7 @@ testVersions((api, version) => {
                       `[users] Unknown directive "@composeDirective". If you meant the "@composeDirective" federation 2 directive, note that this schema is a federation 1 schema. To be a federation 2 schema, it needs to @link to the federation specifcation v2.`,
                     ),
                     extensions: expect.objectContaining({
-                      code: 'INVALID_GRAPHQL',
+                      code: "INVALID_GRAPHQL",
                     }),
                   }),
                 ]
@@ -296,23 +300,23 @@ testVersions((api, version) => {
                       `[users] Cannot import unknown element "@composeDirective".`,
                     ),
                     extensions: expect.objectContaining({
-                      code: 'INVALID_LINK_DIRECTIVE_USAGE',
+                      code: "INVALID_LINK_DIRECTIVE_USAGE",
                     }),
                   }),
                 ]
             : [
                 expect.objectContaining({
                   message: `[users] Invalid value for "@composeDirective(name:)" of type "${
-                    api.library === 'apollo' ? 'String' : 'String!'
+                    api.library === "apollo" ? "String" : "String!"
                   }" in application of "@composeDirective" to "schema".`,
                   extensions: expect.objectContaining({
-                    code: 'INVALID_GRAPHQL',
+                    code: "INVALID_GRAPHQL",
                   }),
                 }),
                 expect.objectContaining({
                   message: `[users] Invalid value for "@hello(name:)" of type "String" in application of "@hello" to "Query.words".`,
                   extensions: expect.objectContaining({
-                    code: 'INVALID_GRAPHQL',
+                    code: "INVALID_GRAPHQL",
                   }),
                 }),
               ],
@@ -321,11 +325,11 @@ testVersions((api, version) => {
     );
   });
 
-  test('INVALID_GRAPHQL - composed directive gets an Int instead of Input type', () => {
+  test("INVALID_GRAPHQL - composed directive gets an Int instead of Input type", () => {
     expect(
       api.composeServices([
         {
-          name: 'users',
+          name: "users",
           typeDefs: graphql`
             extend schema
               @link(url: "https://specs.apollo.dev/link/v1.0")
@@ -351,8 +355,8 @@ testVersions((api, version) => {
     ).toEqual(
       expect.objectContaining({
         errors: expect.arrayContaining([
-          version === 'v2.0'
-            ? api.library === 'apollo'
+          version === "v2.0"
+            ? api.library === "apollo"
               ? // Apollo is weird here and thinks that the schema is a Federation v1 schema, even though it's not (@link usage).
                 // It also has a typo :)
                 expect.objectContaining({
@@ -360,7 +364,7 @@ testVersions((api, version) => {
                     `[users] Unknown directive "@composeDirective". If you meant the "@composeDirective" federation 2 directive, note that this schema is a federation 1 schema. To be a federation 2 schema, it needs to @link to the federation specifcation v2.`,
                   ),
                   extensions: expect.objectContaining({
-                    code: 'INVALID_GRAPHQL',
+                    code: "INVALID_GRAPHQL",
                   }),
                 })
               : // We don't want to follow Apollo's example here as returning the INVALID_LINK_DIRECTIVE_USAGE error makes more sense.
@@ -369,13 +373,13 @@ testVersions((api, version) => {
                     `[users] Cannot import unknown element "@composeDirective".`,
                   ),
                   extensions: expect.objectContaining({
-                    code: 'INVALID_LINK_DIRECTIVE_USAGE',
+                    code: "INVALID_LINK_DIRECTIVE_USAGE",
                   }),
                 })
             : expect.objectContaining({
                 message: `[users] Invalid value for "@hello(person:)" of type "Person" in application of "@hello" to "Query.words".`,
                 extensions: expect.objectContaining({
-                  code: 'INVALID_GRAPHQL',
+                  code: "INVALID_GRAPHQL",
                 }),
               }),
         ]),
@@ -383,11 +387,11 @@ testVersions((api, version) => {
     );
   });
 
-  test('INVALID_GRAPHQL - composed directive gets a Float instead of Input type', () => {
+  test("INVALID_GRAPHQL - composed directive gets a Float instead of Input type", () => {
     expect(
       api.composeServices([
         {
-          name: 'users',
+          name: "users",
           typeDefs: graphql`
             extend schema
               @link(url: "https://specs.apollo.dev/link/v1.0")
@@ -413,8 +417,8 @@ testVersions((api, version) => {
     ).toEqual(
       expect.objectContaining({
         errors: expect.arrayContaining([
-          version === 'v2.0'
-            ? api.library === 'apollo'
+          version === "v2.0"
+            ? api.library === "apollo"
               ? // Apollo is weird here and thinks that the schema is a Federation v1 schema, even though it's not (@link usage).
                 // It also has a typo :)
                 expect.objectContaining({
@@ -422,7 +426,7 @@ testVersions((api, version) => {
                     `[users] Unknown directive "@composeDirective". If you meant the "@composeDirective" federation 2 directive, note that this schema is a federation 1 schema. To be a federation 2 schema, it needs to @link to the federation specifcation v2.`,
                   ),
                   extensions: expect.objectContaining({
-                    code: 'INVALID_GRAPHQL',
+                    code: "INVALID_GRAPHQL",
                   }),
                 })
               : // We don't want to follow Apollo's example here as returning the INVALID_LINK_DIRECTIVE_USAGE error makes more sense.
@@ -431,13 +435,13 @@ testVersions((api, version) => {
                     `[users] Cannot import unknown element "@composeDirective".`,
                   ),
                   extensions: expect.objectContaining({
-                    code: 'INVALID_LINK_DIRECTIVE_USAGE',
+                    code: "INVALID_LINK_DIRECTIVE_USAGE",
                   }),
                 })
             : expect.objectContaining({
                 message: `[users] Invalid value for "@hello(person:)" of type "Person" in application of "@hello" to "Query.words".`,
                 extensions: expect.objectContaining({
-                  code: 'INVALID_GRAPHQL',
+                  code: "INVALID_GRAPHQL",
                 }),
               }),
         ]),
@@ -445,11 +449,11 @@ testVersions((api, version) => {
     );
   });
 
-  test('No INVALID_GRAPHQL when directive gets [] instead of [STRING]', () => {
+  test("No INVALID_GRAPHQL when directive gets [] instead of [STRING]", () => {
     assertCompositionSuccess(
       api.composeServices([
         {
-          name: 'users',
+          name: "users",
           typeDefs: graphql`
           extend schema
             @link(
@@ -468,11 +472,11 @@ testVersions((api, version) => {
     );
   });
 
-  test('directive overwritten specified directive (like @deprecated) on wrong location', () => {
+  test("directive overwritten specified directive (like @deprecated) on wrong location", () => {
     assertCompositionFailure(
       api.composeServices([
         {
-          name: 'mono',
+          name: "mono",
           typeDefs: graphql`
             schema
               @link(url: "https://specs.apollo.dev/link/v1.0")
@@ -502,11 +506,15 @@ testVersions((api, version) => {
     );
   });
 
-  test('interface field -> object field subtype', () => {
+  test("interface field -> object field subtype", () => {
     const result = api.composeServices([
       {
         typeDefs: graphql`
-          extend schema @link(url: "https://specs.apollo.dev/federation/v2.6", import: ["@key"])
+          extend schema
+            @link(
+              url: "https://specs.apollo.dev/federation/v2.6"
+              import: ["@key"]
+            )
 
           type Query {
             a: Admin
@@ -520,7 +528,7 @@ testVersions((api, version) => {
             id: ID!
           }
         `,
-        name: 'a',
+        name: "a",
       },
     ]);
 
@@ -529,8 +537,8 @@ testVersions((api, version) => {
     expect(result.errors).toContainEqual(
       expect.objectContaining({
         message:
-          '[a] Interface field Node.id expects type ID! but Admin.id of type ID is not a proper subtype.',
-        extensions: expect.objectContaining({ code: 'INVALID_GRAPHQL' }),
+          "[a] Interface field Node.id expects type ID! but Admin.id of type ID is not a proper subtype.",
+        extensions: expect.objectContaining({ code: "INVALID_GRAPHQL" }),
       }),
     );
   });

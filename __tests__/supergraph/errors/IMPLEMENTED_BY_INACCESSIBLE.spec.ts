@@ -1,12 +1,12 @@
-import { expect, test } from 'vitest';
-import { graphql, testVersions } from '../../shared/testkit.js';
+import { expect, test } from "vitest";
+import { graphql, testVersions } from "../../shared/testkit.js";
 
 testVersions((api, version) => {
-  test('IMPLEMENTED_BY_INACCESSIBLE', () => {
+  test("IMPLEMENTED_BY_INACCESSIBLE", () => {
     expect(
       api.composeServices([
         {
-          name: 'users',
+          name: "users",
           typeDefs: graphql`
             extend schema
               @link(
@@ -42,7 +42,7 @@ testVersions((api, version) => {
               `Field "A.sharedField" is @inaccessible but implements the interface field "Shared.sharedField", which is in the API schema.`,
             ),
             extensions: expect.objectContaining({
-              code: 'IMPLEMENTED_BY_INACCESSIBLE',
+              code: "IMPLEMENTED_BY_INACCESSIBLE",
             }),
           }),
         ]),
@@ -52,7 +52,7 @@ testVersions((api, version) => {
     expect(
       api.composeServices([
         {
-          name: 'users',
+          name: "users",
           typeDefs: graphql`
             extend schema
               @link(

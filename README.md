@@ -29,14 +29,18 @@ yarn add @theguild/federation-composition
 ## Usage
 
 ```ts
-import { parse } from 'graphql'
-import { composeServices, compositionHasErrors } from '@theguild/federation-composition'
+import { parse } from "graphql";
+import {
+  composeServices,
+  compositionHasErrors,
+} from "@theguild/federation-composition";
 
 const result = composeServices([
   {
-    name: 'users',
+    name: "users",
     typeDefs: parse(/* GraphQL */ `
-      extend schema @link(url: "https://specs.apollo.dev/federation/v2.3", import: ["@key"])
+      extend schema
+        @link(url: "https://specs.apollo.dev/federation/v2.3", import: ["@key"])
 
       type User @key(fields: "id") {
         id: ID!
@@ -46,13 +50,16 @@ const result = composeServices([
       type Query {
         users: [User]
       }
-    `)
+    `),
   },
   {
-    name: 'comments',
+    name: "comments",
     typeDefs: parse(/* GraphQL */ `
       extend schema
-        @link(url: "https://specs.apollo.dev/federation/v2.3", import: ["@key", "@external"])
+        @link(
+          url: "https://specs.apollo.dev/federation/v2.3"
+          import: ["@key", "@external"]
+        )
 
       extend type User @key(fields: "id") {
         id: ID! @external
@@ -64,14 +71,14 @@ const result = composeServices([
         text: String!
         author: User!
       }
-    `)
-  }
-])
+    `),
+  },
+]);
 
 if (compositionHasErrors(result)) {
-  console.error(result.errors)
+  console.error(result.errors);
 } else {
-  console.log(result.supergraphSdl)
+  console.log(result.supergraphSdl);
 }
 ```
 

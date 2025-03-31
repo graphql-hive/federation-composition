@@ -4,7 +4,7 @@ import {
   GraphQLError,
   InputValueDefinitionNode,
   NameNode,
-} from 'graphql';
+} from "graphql";
 
 export function UniqueFieldDefinitionNamesRule(context: {
   reportError: (error: GraphQLError) => void;
@@ -22,7 +22,9 @@ export function UniqueFieldDefinitionNamesRule(context: {
 
   function checkFieldUniqueness(node: {
     readonly name: NameNode;
-    readonly fields?: ReadonlyArray<InputValueDefinitionNode | FieldDefinitionNode> | undefined;
+    readonly fields?:
+      | ReadonlyArray<InputValueDefinitionNode | FieldDefinitionNode>
+      | undefined;
   }) {
     const typeName = node.name.value;
 
@@ -38,11 +40,14 @@ export function UniqueFieldDefinitionNamesRule(context: {
 
       if (fieldNames.has(fieldName)) {
         context.reportError(
-          new GraphQLError(`Field "${typeName}.${fieldName}" can only be defined once.`, {
-            extensions: {
-              code: 'INVALID_GRAPHQL',
+          new GraphQLError(
+            `Field "${typeName}.${fieldName}" can only be defined once.`,
+            {
+              extensions: {
+                code: "INVALID_GRAPHQL",
+              },
             },
-          }),
+          ),
         );
       } else {
         fieldNames.add(fieldName);

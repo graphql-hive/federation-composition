@@ -1,14 +1,21 @@
-import type { DocumentNode, TypeSystemDefinitionNode } from 'graphql';
-import { Kind, parse, print } from 'graphql';
-import { expect } from 'vitest';
-import { sortSDL } from '../../src/graphql/sort-sdl.js';
+import type { DocumentNode, TypeSystemDefinitionNode } from "graphql";
+import { Kind, parse, print } from "graphql";
+import { expect } from "vitest";
+import { sortSDL } from "../../src/graphql/sort-sdl.js";
 
-function isStringOrNode(value: unknown): value is string | DocumentNode | TypeSystemDefinitionNode {
-  return typeof value === 'string' || (!!value && typeof value === 'object' && 'kind' in value);
+function isStringOrNode(
+  value: unknown,
+): value is string | DocumentNode | TypeSystemDefinitionNode {
+  return (
+    typeof value === "string" ||
+    (!!value && typeof value === "object" && "kind" in value)
+  );
 }
 
-function ensureDocumentNode(value: string | DocumentNode | TypeSystemDefinitionNode): DocumentNode {
-  if (typeof value === 'string') {
+function ensureDocumentNode(
+  value: string | DocumentNode | TypeSystemDefinitionNode,
+): DocumentNode {
+  if (typeof value === "string") {
     return parse(value);
   }
 
@@ -45,7 +52,7 @@ expect.extend({
 
     if (printed.received !== printed.expected) {
       return {
-        message: () => 'expected to be equal',
+        message: () => "expected to be equal",
         pass: false,
         actual: printed.received,
         expected: printed.expected,

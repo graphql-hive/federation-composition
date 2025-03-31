@@ -1,23 +1,31 @@
-import { DirectiveNode } from 'graphql';
-import { FederationVersion } from '../../specifications/federation.js';
+import { DirectiveNode } from "graphql";
+import { FederationVersion } from "../../specifications/federation.js";
 import {
   ArgumentKind,
   Deprecated,
   Description,
   InterfaceType,
   ListSize,
-} from '../../subgraph/state.js';
-import { ensureValue, mathMax, mathMaxNullable, nullableArrayUnion } from '../../utils/helpers.js';
-import { createInterfaceTypeNode, JoinFieldAST } from './ast.js';
-import { convertToConst } from './common.js';
-import type { Key, MapByGraph, TypeBuilder } from './common.js';
+} from "../../subgraph/state.js";
+import {
+  ensureValue,
+  mathMax,
+  mathMaxNullable,
+  nullableArrayUnion,
+} from "../../utils/helpers.js";
+import { createInterfaceTypeNode, JoinFieldAST } from "./ast.js";
+import { convertToConst } from "./common.js";
+import type { Key, MapByGraph, TypeBuilder } from "./common.js";
 
-export function interfaceTypeBuilder(): TypeBuilder<InterfaceType, InterfaceTypeState> {
+export function interfaceTypeBuilder(): TypeBuilder<
+  InterfaceType,
+  InterfaceTypeState
+> {
   return {
     visitSubgraphState(graph, state, typeName, type) {
       const interfaceTypeState = getOrCreateInterfaceType(state, typeName);
 
-      type.tags.forEach(tag => interfaceTypeState.tags.add(tag));
+      type.tags.forEach((tag) => interfaceTypeState.tags.add(tag));
 
       if (type.inaccessible) {
         interfaceTypeState.inaccessible = true;
@@ -48,12 +56,14 @@ export function interfaceTypeBuilder(): TypeBuilder<InterfaceType, InterfaceType
         interfaceTypeState.description = type.description;
       }
 
-      type.ast.directives.forEach(directive => {
+      type.ast.directives.forEach((directive) => {
         interfaceTypeState.ast.directives.push(directive);
       });
 
-      type.interfaces.forEach(interfaceName => interfaceTypeState.interfaces.add(interfaceName));
-      type.implementedBy.forEach(objectTypeName =>
+      type.interfaces.forEach((interfaceName) =>
+        interfaceTypeState.interfaces.add(interfaceName),
+      );
+      type.implementedBy.forEach((objectTypeName) =>
         interfaceTypeState.implementedBy.add(objectTypeName),
       );
 
@@ -71,11 +81,15 @@ export function interfaceTypeBuilder(): TypeBuilder<InterfaceType, InterfaceType
       });
 
       for (const field of type.fields.values()) {
-        const fieldState = getOrCreateInterfaceField(interfaceTypeState, field.name, field.type);
+        const fieldState = getOrCreateInterfaceField(
+          interfaceTypeState,
+          field.name,
+          field.type,
+        );
 
-        field.tags.forEach(tag => fieldState.tags.add(tag));
+        field.tags.forEach((tag) => fieldState.tags.add(tag));
 
-        if (!field.type.endsWith('!') && fieldState.type.endsWith('!')) {
+        if (!field.type.endsWith("!") && fieldState.type.endsWith("!")) {
           // Replace the non-null type with a nullable type
           fieldState.type = field.type;
         }
@@ -135,7 +149,7 @@ export function interfaceTypeBuilder(): TypeBuilder<InterfaceType, InterfaceType
           fieldState.description = field.description;
         }
 
-        field.ast.directives.forEach(directive => {
+        field.ast.directives.forEach((directive) => {
           fieldState.ast.directives.push(directive);
         });
 
@@ -144,7 +158,6 @@ export function interfaceTypeBuilder(): TypeBuilder<InterfaceType, InterfaceType
         if (usedAsKey) {
           fieldState.usedAsKey = true;
         }
-
 
         fieldState.byGraph.set(graph.id, {
           type: field.type,
@@ -159,11 +172,16 @@ export function interfaceTypeBuilder(): TypeBuilder<InterfaceType, InterfaceType
         });
 
         for (const arg of field.args.values()) {
-          const argState = getOrCreateArg(fieldState, arg.name, arg.type, arg.kind);
+          const argState = getOrCreateArg(
+            fieldState,
+            arg.name,
+            arg.type,
+            arg.kind,
+          );
 
-          arg.tags.forEach(tag => argState.tags.add(tag));
+          arg.tags.forEach((tag) => argState.tags.add(tag));
 
-          if (arg.type.endsWith('!')) {
+          if (arg.type.endsWith("!")) {
             argState.type = arg.type;
           }
 
@@ -176,7 +194,7 @@ export function interfaceTypeBuilder(): TypeBuilder<InterfaceType, InterfaceType
             argState.description = arg.description;
           }
 
-          if (typeof arg.defaultValue !== 'undefined') {
+          if (typeof arg.defaultValue !== "undefined") {
             argState.defaultValue = arg.defaultValue;
           }
 
@@ -184,7 +202,7 @@ export function interfaceTypeBuilder(): TypeBuilder<InterfaceType, InterfaceType
             argState.cost = mathMax(arg.cost, argState.cost);
           }
 
-          arg.ast.directives.forEach(directive => {
+          arg.ast.directives.forEach((directive) => {
             argState.ast.directives.push(directive);
           });
 
@@ -202,7 +220,7 @@ export function interfaceTypeBuilder(): TypeBuilder<InterfaceType, InterfaceType
     composeSupergraphNode(interfaceType, graphs, { supergraphState }) {
       return createInterfaceTypeNode({
         name: interfaceType.name,
-        fields: Array.from(interfaceType.fields.values()).map(field => {
+        fields: Array.from(interfaceType.fields.values()).map((field) => {
           let nonEmptyJoinField = false;
 
           const joinFields: JoinFieldAST[] = [];
@@ -243,7 +261,7 @@ export function interfaceTypeBuilder(): TypeBuilder<InterfaceType, InterfaceType
                     cost: field.cost,
                     directiveName: ensureValue(
                       supergraphState.specs.cost.names.cost,
-                      'Directive name of @cost is not defined',
+                      "Directive name of @cost is not defined",
                     ),
                   }
                 : null,
@@ -253,7 +271,7 @@ export function interfaceTypeBuilder(): TypeBuilder<InterfaceType, InterfaceType
                     ...field.listSize,
                     directiveName: ensureValue(
                       supergraphState.specs.cost.names.listSize,
-                      'Directive name of @listSize is not defined',
+                      "Directive name of @listSize is not defined",
                     ),
                   }
                 : null,
@@ -264,7 +282,7 @@ export function interfaceTypeBuilder(): TypeBuilder<InterfaceType, InterfaceType
               directives: convertToConst(field.ast.directives),
             },
             arguments: Array.from(field.args.values())
-              .filter(arg => {
+              .filter((arg) => {
                 // ignore the argument if it's not available in all subgraphs implementing the field
                 if (arg.byGraph.size !== field.byGraph.size) {
                   return false;
@@ -272,7 +290,7 @@ export function interfaceTypeBuilder(): TypeBuilder<InterfaceType, InterfaceType
 
                 return true;
               })
-              .map(arg => {
+              .map((arg) => {
                 return {
                   name: arg.name,
                   type: arg.type,
@@ -284,7 +302,7 @@ export function interfaceTypeBuilder(): TypeBuilder<InterfaceType, InterfaceType
                           cost: arg.cost,
                           directiveName: ensureValue(
                             supergraphState.specs.cost.names.cost,
-                            'Directive name of @cost is not defined',
+                            "Directive name of @cost is not defined",
                           ),
                         }
                       : null,
@@ -314,8 +332,11 @@ export function interfaceTypeBuilder(): TypeBuilder<InterfaceType, InterfaceType
         join: {
           type: Array.from(interfaceType.byGraph)
             .map(([graphId, meta]) => {
-              if (meta.keys.length && graphs.get(graphId)!.federation.version !== 'v1.0') {
-                return meta.keys.map(key => ({
+              if (
+                meta.keys.length &&
+                graphs.get(graphId)!.federation.version !== "v1.0"
+              ) {
+                return meta.keys.map((key) => ({
                   graph: graphId,
                   key: key.fields,
                   extension: meta.extension,
@@ -336,7 +357,7 @@ export function interfaceTypeBuilder(): TypeBuilder<InterfaceType, InterfaceType
               ? Array.from(interfaceType.byGraph.entries())
                   .map(([graphId, meta]) => {
                     if (meta.interfaces.size) {
-                      return Array.from(meta.interfaces).map(iface => ({
+                      return Array.from(meta.interfaces).map((iface) => ({
                         graph: graphId,
                         interface: iface,
                       }));
@@ -353,7 +374,7 @@ export function interfaceTypeBuilder(): TypeBuilder<InterfaceType, InterfaceType
 }
 
 export type InterfaceTypeState = {
-  kind: 'interface';
+  kind: "interface";
   name: string;
   tags: Set<string>;
   inaccessible: boolean;
@@ -437,7 +458,10 @@ type ArgStateInGraph = {
   version: FederationVersion;
 };
 
-function getOrCreateInterfaceType(state: Map<string, InterfaceTypeState>, typeName: string) {
+function getOrCreateInterfaceType(
+  state: Map<string, InterfaceTypeState>,
+  typeName: string,
+) {
   const existing = state.get(typeName);
 
   if (existing) {
@@ -445,7 +469,7 @@ function getOrCreateInterfaceType(state: Map<string, InterfaceTypeState>, typeNa
   }
 
   const def: InterfaceTypeState = {
-    kind: 'interface',
+    kind: "interface",
     name: typeName,
     tags: new Set(),
     inaccessible: false,

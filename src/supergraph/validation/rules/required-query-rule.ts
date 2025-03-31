@@ -1,10 +1,10 @@
-import { GraphQLError } from 'graphql';
-import { SupergraphValidationContext } from '../validation-context.js';
+import { GraphQLError } from "graphql";
+import { SupergraphValidationContext } from "../validation-context.js";
 
 export function RequiredQueryRule(context: SupergraphValidationContext) {
   if (
     Array.from(context.subgraphStates.values()).every(
-      subgraph => typeof subgraph.schema.queryType === 'undefined',
+      (subgraph) => typeof subgraph.schema.queryType === "undefined",
     )
   ) {
     context.reportError(
@@ -12,7 +12,7 @@ export function RequiredQueryRule(context: SupergraphValidationContext) {
         `No queries found in any subgraph: a supergraph must have a query root type.`,
         {
           extensions: {
-            code: 'NO_QUERIES',
+            code: "NO_QUERIES",
           },
         },
       ),

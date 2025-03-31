@@ -1,4 +1,5 @@
-type zowie365 implements shyly005 & circa10e & fooey15a & oddlybcf @key(fields: "midst81a") {
+type zowie365 implements shyly005 & circa10e & fooey15a & oddlybcf
+  @key(fields: "midst81a") {
   midst81a: ID!
   rabbi80f: chante1e
   sadly62f: neveref2
@@ -86,7 +87,8 @@ input fully17c {
   kookyce5: ID!
 }
 
-type meccaf10 implements shyly005 & circa10e & great7ba & oddlybcf @key(fields: "midst81a") {
+type meccaf10 implements shyly005 & circa10e & great7ba & oddlybcf
+  @key(fields: "midst81a") {
   midst81a: ID!
   sadly62f: neveref2
   alpha143: aside48c
@@ -263,7 +265,14 @@ type worthfef {
   drool984: String
 }
 
-union lever171 = after644 | crush025 | waist25c | sadly01d | zowie858 | staid5db | minus5c3
+union lever171 =
+  | after644
+  | crush025
+  | waist25c
+  | sadly01d
+  | zowie858
+  | staid5db
+  | minus5c3
 
 type after644 {
   where46b: punchaa7!

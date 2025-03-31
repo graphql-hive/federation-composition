@@ -1,12 +1,12 @@
-import { expect, test } from 'vitest';
-import { graphql, testVersions } from '../../shared/testkit.js';
+import { expect, test } from "vitest";
+import { graphql, testVersions } from "../../shared/testkit.js";
 
 testVersions((api, version) => {
-  test('EXTERNAL_ARGUMENT_MISSING', () => {
+  test("EXTERNAL_ARGUMENT_MISSING", () => {
     expect(
       api.composeServices([
         {
-          name: 'users',
+          name: "users",
           typeDefs: graphql`
             extend schema @link(url: "https://specs.apollo.dev/federation/${version}" import: ["@key"])
             
@@ -21,7 +21,7 @@ testVersions((api, version) => {
           `,
         },
         {
-          name: 'feed',
+          name: "feed",
           typeDefs: graphql`
             extend schema @link(url: "https://specs.apollo.dev/federation/${version}" import: ["@key", "@provides", "@external"])
 
@@ -49,7 +49,7 @@ testVersions((api, version) => {
               `Field "User.tags" is missing argument "User.tags(limit:)" in some subgraphs where it is marked @external: argument "User.tags(limit:)" is declared in subgraph "users" but not in subgraph "feed" (where "User.tags" is @external)`,
             ),
             extensions: expect.objectContaining({
-              code: 'EXTERNAL_ARGUMENT_MISSING',
+              code: "EXTERNAL_ARGUMENT_MISSING",
             }),
           }),
         ]),
@@ -59,7 +59,7 @@ testVersions((api, version) => {
     expect(
       api.composeServices([
         {
-          name: 'users',
+          name: "users",
           typeDefs: graphql`
             extend schema @link(url: "https://specs.apollo.dev/federation/${version}" import: ["@key"])
             
@@ -74,7 +74,7 @@ testVersions((api, version) => {
           `,
         },
         {
-          name: 'feed',
+          name: "feed",
           typeDefs: graphql`
             extend schema @link(url: "https://specs.apollo.dev/federation/${version}" import: ["@key", "@requires", "@external"])
 
@@ -102,7 +102,7 @@ testVersions((api, version) => {
               `Field "User.tags" is missing argument "User.tags(limit:)" in some subgraphs where it is marked @external: argument "User.tags(limit:)" is declared in subgraph "users" but not in subgraph "feed" (where "User.tags" is @external)`,
             ),
             extensions: expect.objectContaining({
-              code: 'EXTERNAL_ARGUMENT_MISSING',
+              code: "EXTERNAL_ARGUMENT_MISSING",
             }),
           }),
         ]),

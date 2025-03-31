@@ -2,7 +2,10 @@ export function isDefined<T>(value: T | undefined | null): value is T {
   return value !== undefined && value !== null;
 }
 
-export function ensureValue<T>(value: T | undefined | null, message: string): T {
+export function ensureValue<T>(
+  value: T | undefined | null,
+  message: string,
+): T {
   if (isDefined(value)) {
     return value;
   }
@@ -18,19 +21,25 @@ export function mathMax(firstValue: number, secondValue: null | number) {
   return Math.max(firstValue, secondValue);
 }
 
-export function mathMaxNullable(left: number | null | undefined, right: number | null | undefined) {
-  if (typeof left === 'number') {
+export function mathMaxNullable(
+  left: number | null | undefined,
+  right: number | null | undefined,
+) {
+  if (typeof left === "number") {
     return mathMax(left, right ?? null);
   }
 
-  if (typeof right === 'number') {
+  if (typeof right === "number") {
     return mathMax(right, left ?? null);
   }
 
   return null;
 }
 
-export function nullableArrayUnion<T>(left: T[] | null | undefined, right: T[] | null | undefined) {
+export function nullableArrayUnion<T>(
+  left: T[] | null | undefined,
+  right: T[] | null | undefined,
+) {
   if (!Array.isArray(left) && !Array.isArray(right)) {
     return null;
   }
@@ -38,11 +47,11 @@ export function nullableArrayUnion<T>(left: T[] | null | undefined, right: T[] |
   const uniqueSet = new Set<T>();
 
   if (Array.isArray(left)) {
-    left.forEach(v => uniqueSet.add(v));
+    left.forEach((v) => uniqueSet.add(v));
   }
 
   if (Array.isArray(right)) {
-    right.forEach(v => uniqueSet.add(v));
+    right.forEach((v) => uniqueSet.add(v));
   }
 
   return Array.from(uniqueSet);

@@ -201,7 +201,8 @@ interface zowiea36 {
   burstc92: afore9b6
 }
 
-type sinced79 implements zowiea36 @key(fields: "midst81a abovefa4 aside2ed circad7b") {
+type sinced79 implements zowiea36
+  @key(fields: "midst81a abovefa4 aside2ed circad7b") {
   midst81a: ID!
   burstc92: afore9b6
   abovefa4: Boolean

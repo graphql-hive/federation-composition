@@ -1,21 +1,22 @@
-import { ASTVisitor, GraphQLError, Kind, ValueNode } from 'graphql';
-import { validateDirectiveAgainstOriginal } from '../../../helpers.js';
-import { print } from '../../../../graphql/printer.js'
-import type { SubgraphValidationContext } from '../../validation-context.js';
+import { ASTVisitor, GraphQLError, Kind, ValueNode } from "graphql";
+import { validateDirectiveAgainstOriginal } from "../../../helpers.js";
+import { print } from "../../../../graphql/printer.js";
+import type { SubgraphValidationContext } from "../../validation-context.js";
 
 // Supergraph context:
 // - save what field is being overridden and from which subgraph
 
 const labelNonPercentRegex = /^[a-zA-Z][a-zA-Z0-9_\-:./]*$/;
-const labelPercentRegex = /^percent\(((\d{1,2}(\.\d{1,8})?)|100(\.[0]{1,8})?)\)$/
+const labelPercentRegex =
+  /^percent\(((\d{1,2}(\.\d{1,8})?)|100(\.[0]{1,8})?)\)$/;
 
 export function OverrideRules(context: SubgraphValidationContext): ASTVisitor {
   return {
     DirectiveDefinition(node) {
-      validateDirectiveAgainstOriginal(node, 'override', context);
+      validateDirectiveAgainstOriginal(node, "override", context);
     },
     Directive(node) {
-      if (!context.isAvailableFederationDirective('override', node)) {
+      if (!context.isAvailableFederationDirective("override", node)) {
         return;
       }
 
@@ -29,27 +30,33 @@ export function OverrideRules(context: SubgraphValidationContext): ASTVisitor {
       if (
         (typeDef.kind === Kind.INTERFACE_TYPE_DEFINITION ||
           typeDef.kind === Kind.INTERFACE_TYPE_EXTENSION) &&
-        context.satisfiesVersionRange('>= v2.3')
+        context.satisfiesVersionRange(">= v2.3")
       ) {
         context.reportError(
           new GraphQLError(
             `@override cannot be used on field "${typeDef.name.value}.${
               fieldDef.name.value
             }" on subgraph "${context.getSubgraphName()}": @override is not supported on interface type fields.`,
-            { nodes: node, extensions: { code: 'OVERRIDE_ON_INTERFACE' } },
+            { nodes: node, extensions: { code: "OVERRIDE_ON_INTERFACE" } },
           ),
         );
         // We stop here as we don't want to report other errors on this field (Apollo Composition does not)
         return;
       }
 
-      const labelArg = node.arguments?.find(arg => arg.name.value === 'label');
-      if (labelArg && context.satisfiesVersionRange('>= v2.7')) {
-        if(!isValidLabel(labelArg.value)) {
+      const labelArg = node.arguments?.find(
+        (arg) => arg.name.value === "label",
+      );
+      if (labelArg && context.satisfiesVersionRange(">= v2.7")) {
+        if (!isValidLabel(labelArg.value)) {
           context.reportError(
             new GraphQLError(
-              invalidLabelValueError(print(labelArg.value), `${typeDef.name.value}.${fieldDef.name.value}`, context.getSubgraphName()),
-              { extensions: { code: 'OVERRIDE_LABEL_INVALID' } },
+              invalidLabelValueError(
+                print(labelArg.value),
+                `${typeDef.name.value}.${fieldDef.name.value}`,
+                context.getSubgraphName(),
+              ),
+              { extensions: { code: "OVERRIDE_LABEL_INVALID" } },
             ),
           );
           return;
@@ -64,22 +71,24 @@ export function OverrideRules(context: SubgraphValidationContext): ASTVisitor {
         return;
       }
 
-      const fromArg = node.arguments?.find(arg => arg.name.value === 'from');
+      const fromArg = node.arguments?.find((arg) => arg.name.value === "from");
 
       if (!fromArg || fromArg.value.kind !== Kind.STRING) {
         return;
       }
 
       if (!typeDef) {
-        throw new Error('Parent type not found but `@override` directive is present on a field.');
+        throw new Error(
+          "Parent type not found but `@override` directive is present on a field.",
+        );
       }
 
-      const conflictingDirectives = fieldDef.directives?.filter(directive =>
-        context.isAvailableFederationDirective('external', directive),
+      const conflictingDirectives = fieldDef.directives?.filter((directive) =>
+        context.isAvailableFederationDirective("external", directive),
       );
 
       if (conflictingDirectives?.length) {
-        conflictingDirectives.forEach(directive => {
+        conflictingDirectives.forEach((directive) => {
           context.reportError(
             new GraphQLError(
               `@override cannot be used on field "${typeDef.name.value}.${
@@ -91,7 +100,7 @@ export function OverrideRules(context: SubgraphValidationContext): ASTVisitor {
               }"`,
               {
                 extensions: {
-                  code: 'OVERRIDE_COLLISION_WITH_ANOTHER_DIRECTIVE',
+                  code: "OVERRIDE_COLLISION_WITH_ANOTHER_DIRECTIVE",
                 },
               },
             ),
@@ -103,7 +112,7 @@ export function OverrideRules(context: SubgraphValidationContext): ASTVisitor {
         context.reportError(
           new GraphQLError(
             `Source and destination subgraphs "${fromArg.value.value}" are the same for overridden field "${typeDef.name.value}.${fieldDef.name.value}"`,
-            { nodes: node, extensions: { code: 'OVERRIDE_FROM_SELF_ERROR' } },
+            { nodes: node, extensions: { code: "OVERRIDE_FROM_SELF_ERROR" } },
           ),
         );
       }
@@ -130,8 +139,12 @@ export function OverrideRules(context: SubgraphValidationContext): ASTVisitor {
   };
 }
 
-function invalidLabelValueError(value: string, coordinate: string, subgraphName: string) {
-  return `Invalid @override label ${value} on field "${coordinate}" on subgraph "${subgraphName}": labels must start with a letter and after that may contain alphanumerics, underscores, minuses, colons, periods, or slashes. Alternatively, labels may be of the form "percent(x)" where x is a float between 0-100 inclusive.`
+function invalidLabelValueError(
+  value: string,
+  coordinate: string,
+  subgraphName: string,
+) {
+  return `Invalid @override label ${value} on field "${coordinate}" on subgraph "${subgraphName}": labels must start with a letter and after that may contain alphanumerics, underscores, minuses, colons, periods, or slashes. Alternatively, labels may be of the form "percent(x)" where x is a float between 0-100 inclusive.`;
 }
 
 function isValidLabel(valueNode: ValueNode) {
@@ -141,16 +154,18 @@ function isValidLabel(valueNode: ValueNode) {
 
   const value = valueNode.value;
 
-  if (value.startsWith('percent(+') || value.startsWith('percent(-')) {
+  if (value.startsWith("percent(+") || value.startsWith("percent(-")) {
     return false;
   }
 
-  if (value.startsWith('percent(') && value.endsWith(')')) {
+  if (value.startsWith("percent(") && value.endsWith(")")) {
     if (!labelPercentRegex.test(value)) {
       return false;
     }
 
-    const percentage = parseFloat(value.replace('percent(', '').replace(')', ''));
+    const percentage = parseFloat(
+      value.replace("percent(", "").replace(")", ""),
+    );
     return percentage >= 0 && percentage <= 100;
   }
 

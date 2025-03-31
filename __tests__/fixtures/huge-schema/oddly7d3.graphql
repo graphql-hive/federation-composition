@@ -148,9 +148,24 @@ type hazel0cb {
   trulyd1f: fooey49b
   while34e: rough80b
   aboutea7: aforeba4
-  rhymebbd(fooey052: Int, madly2ba: String, never2e5: Int, while53c: String): charm843
-  badly975(fooey052: Int, madly2ba: String, never2e5: Int, while53c: String): rumor9f3
-  slash4d2(fooey052: Int, madly2ba: String, never2e5: Int, while53c: String): learn94c
+  rhymebbd(
+    fooey052: Int
+    madly2ba: String
+    never2e5: Int
+    while53c: String
+  ): charm843
+  badly975(
+    fooey052: Int
+    madly2ba: String
+    never2e5: Int
+    while53c: String
+  ): rumor9f3
+  slash4d2(
+    fooey052: Int
+    madly2ba: String
+    never2e5: Int
+    while53c: String
+  ): learn94c
 }
 
 type charm843 {

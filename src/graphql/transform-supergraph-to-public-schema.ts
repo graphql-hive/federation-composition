@@ -7,19 +7,22 @@ import {
   type DirectiveNode,
   type DocumentNode,
   type SchemaDefinitionNode,
-} from 'graphql';
-import { extractLinkImplementations } from '../utils/link/index.js';
+} from "graphql";
+import { extractLinkImplementations } from "../utils/link/index.js";
 import {
   extraFederationDirectiveNames,
   extraFederationTypeNames,
   getSupergraphSpecNodes,
-} from './supergraph-spec.js';
+} from "./supergraph-spec.js";
 
-const specifiedDirectives = new Set(specifiedDirectivesArray.map(d => d.name));
+const specifiedDirectives = new Set(
+  specifiedDirectivesArray.map((d) => d.name),
+);
 
 function getAdditionalDirectivesToStrip(documentNode: DocumentNode) {
   const schemaDefinitionNode = documentNode.definitions.find(
-    (node): node is SchemaDefinitionNode => node.kind === Kind.SCHEMA_DEFINITION,
+    (node): node is SchemaDefinitionNode =>
+      node.kind === Kind.SCHEMA_DEFINITION,
   );
   if (!schemaDefinitionNode?.directives?.length) {
     return null;
@@ -27,10 +30,10 @@ function getAdditionalDirectivesToStrip(documentNode: DocumentNode) {
 
   const additionalDirectivesToStrip = new Set<string>();
   for (const directive of schemaDefinitionNode.directives) {
-    if (directive.name.value !== 'link') {
+    if (directive.name.value !== "link") {
       continue;
     }
-    const asArg = directive.arguments?.find(arg => arg.name.value === 'as');
+    const asArg = directive.arguments?.find((arg) => arg.name.value === "as");
 
     if (asArg?.value.kind === Kind.STRING) {
       additionalDirectivesToStrip.add(asArg.value.value);
@@ -40,19 +43,23 @@ function getAdditionalDirectivesToStrip(documentNode: DocumentNode) {
   return additionalDirectivesToStrip;
 }
 
-const federationInaccessibleDirectiveUrlPrefix = 'https://specs.apollo.dev/inaccessible';
+const federationInaccessibleDirectiveUrlPrefix =
+  "https://specs.apollo.dev/inaccessible";
 
 function getInaccessibleDirectiveName(documentNode: DocumentNode) {
   const schemaDefinitionNode = documentNode.definitions.find(
-    (node): node is SchemaDefinitionNode => node.kind === Kind.SCHEMA_DEFINITION,
+    (node): node is SchemaDefinitionNode =>
+      node.kind === Kind.SCHEMA_DEFINITION,
   );
   if (schemaDefinitionNode?.directives?.length) {
     for (const directive of schemaDefinitionNode.directives) {
-      if (directive.name.value !== 'link') {
+      if (directive.name.value !== "link") {
         continue;
       }
-      const urlArg = directive.arguments?.find(arg => arg.name.value === 'url');
-      const asArg = directive.arguments?.find(arg => arg.name.value === 'as');
+      const urlArg = directive.arguments?.find(
+        (arg) => arg.name.value === "url",
+      );
+      const asArg = directive.arguments?.find((arg) => arg.name.value === "as");
 
       if (
         urlArg?.value.kind === Kind.STRING &&
@@ -66,22 +73,25 @@ function getInaccessibleDirectiveName(documentNode: DocumentNode) {
     }
   }
 
-  return 'inaccessible';
+  return "inaccessible";
 }
 
 /**
  * Transform a supergraph document node to the public API schema, as served by a gateway.
  */
-export function transformSupergraphToPublicSchema(documentNode: DocumentNode): DocumentNode {
-  const additionalFederationDirectives = getAdditionalDirectivesToStrip(documentNode);
+export function transformSupergraphToPublicSchema(
+  documentNode: DocumentNode,
+): DocumentNode {
+  const additionalFederationDirectives =
+    getAdditionalDirectivesToStrip(documentNode);
   const inaccessibleDirectiveName = getInaccessibleDirectiveName(documentNode);
 
-  const specLinks = extractLinkImplementations(documentNode).links.filter(link =>
-    link.identity.includes('//specs.apollo.dev/'),
+  const specLinks = extractLinkImplementations(documentNode).links.filter(
+    (link) => link.identity.includes("//specs.apollo.dev/"),
   );
 
   const specPrefixes = specLinks.map(
-    l => l.identity.substring(l.identity.lastIndexOf('/') + 1) + '__',
+    (l) => l.identity.substring(l.identity.lastIndexOf("/") + 1) + "__",
   );
 
   const supergraphSpecNodeNames = getSupergraphSpecNodes();
@@ -103,10 +113,16 @@ export function transformSupergraphToPublicSchema(documentNode: DocumentNode): D
     }
   }
 
-  const importedPieces = specLinks.map(l => l.imports.map(i => i.as ?? i.name)).flat();
-  const definitionsToRemove = new Set(importedPieces.map(name => name.replace('@', '')));
+  const importedPieces = specLinks
+    .map((l) => l.imports.map((i) => i.as ?? i.name))
+    .flat();
+  const definitionsToRemove = new Set(
+    importedPieces.map((name) => name.replace("@", "")),
+  );
   const directivesToRemove = new Set(
-    importedPieces.filter(name => name.startsWith('@')).map(name => name.substring(1)),
+    importedPieces
+      .filter((name) => name.startsWith("@"))
+      .map((name) => name.substring(1)),
   );
 
   function removeFederationOrSpecifiedDirectives(
@@ -118,7 +134,8 @@ export function transformSupergraphToPublicSchema(documentNode: DocumentNode): D
       extraFederationDirectiveNames.has(node.name.value) ||
       additionalFederationDirectives?.has(node.name.value) ||
       directivesToRemove.has(node.name.value) ||
-      (node.kind === Kind.DIRECTIVE_DEFINITION && specifiedDirectives.has(node.name.value))
+      (node.kind === Kind.DIRECTIVE_DEFINITION &&
+        specifiedDirectives.has(node.name.value))
     ) {
       return null;
     }
@@ -129,11 +146,15 @@ export function transformSupergraphToPublicSchema(documentNode: DocumentNode): D
       value: string;
     };
   }) {
-    return specPrefixes.some(prefix => node.name.value.startsWith(prefix));
+    return specPrefixes.some((prefix) => node.name.value.startsWith(prefix));
   }
 
-  function hasInaccessibleDirective(node: { directives?: readonly ConstDirectiveNode[] }) {
-    return node.directives?.some(d => d.name.value === inaccessibleDirectiveName);
+  function hasInaccessibleDirective(node: {
+    directives?: readonly ConstDirectiveNode[];
+  }) {
+    return node.directives?.some(
+      (d) => d.name.value === inaccessibleDirectiveName,
+    );
   }
 
   function removeInaccessibleNode(node: {

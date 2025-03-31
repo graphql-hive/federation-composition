@@ -6,17 +6,22 @@ import {
   print,
   specifiedScalarTypes,
   ValueNode,
-} from 'graphql';
-import { isList, isNonNull, stripNonNull, stripTypeModifiers } from '../../../utils/state.js';
-import { InterfaceTypeFieldState } from '../../composition/interface-type.js';
-import { ObjectTypeFieldState } from '../../composition/object-type.js';
-import type { SupergraphVisitorMap } from '../../composition/visitor.js';
-import type { SupergraphState } from '../../state.js';
-import type { SupergraphValidationContext } from '../validation-context.js';
-import { isFieldEdge } from './satisfiablity/edge.js';
-import { SatisfiabilityError } from './satisfiablity/errors.js';
-import { Supergraph } from './satisfiablity/supergraph.js';
-import { WalkTracker } from './satisfiablity/walker.js';
+} from "graphql";
+import {
+  isList,
+  isNonNull,
+  stripNonNull,
+  stripTypeModifiers,
+} from "../../../utils/state.js";
+import { InterfaceTypeFieldState } from "../../composition/interface-type.js";
+import { ObjectTypeFieldState } from "../../composition/object-type.js";
+import type { SupergraphVisitorMap } from "../../composition/visitor.js";
+import type { SupergraphState } from "../../state.js";
+import type { SupergraphValidationContext } from "../validation-context.js";
+import { isFieldEdge } from "./satisfiablity/edge.js";
+import { SatisfiabilityError } from "./satisfiablity/errors.js";
+import { Supergraph } from "./satisfiablity/supergraph.js";
+import { WalkTracker } from "./satisfiablity/walker.js";
 
 type QueryPath = Array<
   | {
@@ -42,7 +47,7 @@ export function SatisfiabilityRule(
     const edge = unreachable.superPath.edge();
 
     if (!edge) {
-      throw new Error('Expected edge to be defined');
+      throw new Error("Expected edge to be defined");
     }
 
     if (isFieldEdge(edge)) {
@@ -74,7 +79,10 @@ export function SatisfiabilityRule(
     }
 
     for (const unreachable of unreachables) {
-      const queryString = printQueryPath(supergraphState, unreachable.superPath.steps());
+      const queryString = printQueryPath(
+        supergraphState,
+        unreachable.superPath.steps(),
+      );
 
       if (!queryString) {
         return;
@@ -95,7 +103,7 @@ export function SatisfiabilityRule(
 
       for (const sourceGraphName in errorsBySourceGraph) {
         const errors = errorsBySourceGraph[sourceGraphName];
-        reasons.push([sourceGraphName, errors.map(e => e.message)]);
+        reasons.push([sourceGraphName, errors.map((e) => e.message)]);
       }
 
       if (reasons.length === 0) {
@@ -105,20 +113,23 @@ export function SatisfiabilityRule(
       context.reportError(
         new GraphQLError(
           [
-            'The following supergraph API query:',
+            "The following supergraph API query:",
             queryString,
-            'cannot be satisfied by the subgraphs because:',
+            "cannot be satisfied by the subgraphs because:",
             ...reasons.map(([graphName, reasons]) => {
               if (reasons.length === 1) {
                 return `- from subgraph "${graphName}": ${reasons[0]}`;
               }
 
-              return `- from subgraph "${graphName}":\n` + reasons.map(r => `  - ${r}`).join('\n');
+              return (
+                `- from subgraph "${graphName}":\n` +
+                reasons.map((r) => `  - ${r}`).join("\n")
+              );
             }),
-          ].join('\n'),
+          ].join("\n"),
           {
             extensions: {
-              code: 'SATISFIABILITY_ERROR',
+              code: "SATISFIABILITY_ERROR",
             },
           },
         ),
@@ -129,14 +140,16 @@ export function SatisfiabilityRule(
   return {
     InterfaceType(interfaceState) {
       check(interfaceState.name);
-      interfaceState.implementedBy.forEach(typeName => check(typeName));
+      interfaceState.implementedBy.forEach((typeName) => check(typeName));
     },
     ObjectType(objectState) {
       check(objectState.name);
     },
     InterfaceTypeField(interfaceState, fieldState) {
       check(interfaceState.name, fieldState.name);
-      interfaceState.implementedBy.forEach(typeName => check(typeName, fieldState.name));
+      interfaceState.implementedBy.forEach((typeName) =>
+        check(typeName, fieldState.name),
+      );
     },
     ObjectTypeField(objectState, fieldState) {
       check(objectState.name, fieldState.name);
@@ -145,10 +158,13 @@ export function SatisfiabilityRule(
 }
 
 function printLine(msg: string, indentLevel: number) {
-  return '  '.repeat(indentLevel + 1) + msg;
+  return "  ".repeat(indentLevel + 1) + msg;
 }
 
-function printQueryPath(supergraphState: SupergraphState, queryPath: QueryPath) {
+function printQueryPath(
+  supergraphState: SupergraphState,
+  queryPath: QueryPath,
+) {
   const lines: string[] = [];
 
   let endsWithScalar = false;
@@ -156,22 +172,29 @@ function printQueryPath(supergraphState: SupergraphState, queryPath: QueryPath) 
   for (let i = 0; i < queryPath.length; i++) {
     const point = queryPath[i];
 
-    if ('fieldName' in point) {
+    if ("fieldName" in point) {
       const typeState = supergraphState.objectTypes.get(point.typeName);
 
       if (!typeState) {
-        throw new Error(`Object type "${point.typeName}" not found in Supergraph state`);
+        throw new Error(
+          `Object type "${point.typeName}" not found in Supergraph state`,
+        );
       }
 
-      let fieldState: ObjectTypeFieldState | InterfaceTypeFieldState | undefined =
-        typeState?.fields.get(point.fieldName);
+      let fieldState:
+        | ObjectTypeFieldState
+        | InterfaceTypeFieldState
+        | undefined = typeState?.fields.get(point.fieldName);
 
       if (!fieldState) {
         for (const interfaceName of typeState.interfaces) {
-          const interfaceState = supergraphState.interfaceTypes.get(interfaceName);
+          const interfaceState =
+            supergraphState.interfaceTypes.get(interfaceName);
 
           if (!interfaceState) {
-            throw new Error(`Interface type "${interfaceName}" not found in Supergraph state`);
+            throw new Error(
+              `Interface type "${interfaceName}" not found in Supergraph state`,
+            );
           }
 
           fieldState = interfaceState.fields.get(point.fieldName);
@@ -193,15 +216,15 @@ function printQueryPath(supergraphState: SupergraphState, queryPath: QueryPath) 
           ([name, argState]) =>
             `${name}: ${print(createEmptyValueNode(argState.type, supergraphState))}`,
         )
-        .join(', ');
-      const argsPrinted = args.length > 0 ? `(${args})` : '';
+        .join(", ");
+      const argsPrinted = args.length > 0 ? `(${args})` : "";
 
       if (i == queryPath.length - 1) {
         const outputTypeName = stripTypeModifiers(fieldState.type);
         endsWithScalar =
           supergraphState.scalarTypes.has(outputTypeName) ||
           supergraphState.enumTypes.has(outputTypeName) ||
-          specifiedScalarTypes.some(s => s.name === outputTypeName);
+          specifiedScalarTypes.some((s) => s.name === outputTypeName);
 
         if (endsWithScalar) {
           lines.push(printLine(`${point.fieldName}${argsPrinted}`, i));
@@ -217,27 +240,30 @@ function printQueryPath(supergraphState: SupergraphState, queryPath: QueryPath) 
   }
 
   if (!endsWithScalar) {
-    lines.push(printLine('...', lines.length));
+    lines.push(printLine("...", lines.length));
   }
 
   const len = lines.length - 1;
   for (let i = 0; i < len; i++) {
-    lines.push(printLine('}', len - i - 1));
+    lines.push(printLine("}", len - i - 1));
   }
 
-  if (queryPath[0].typeName === 'Query') {
-    lines.unshift('{');
-  } else if (queryPath[0].typeName === 'Mutation') {
-    lines.unshift('mutation {');
+  if (queryPath[0].typeName === "Query") {
+    lines.unshift("{");
+  } else if (queryPath[0].typeName === "Mutation") {
+    lines.unshift("mutation {");
   } else {
-    lines.unshift('subscription {');
+    lines.unshift("subscription {");
   }
-  lines.push('}');
+  lines.push("}");
 
-  return lines.join('\n');
+  return lines.join("\n");
 }
 
-function createEmptyValueNode(fullType: string, supergraphState: SupergraphState): ValueNode {
+function createEmptyValueNode(
+  fullType: string,
+  supergraphState: SupergraphState,
+): ValueNode {
   if (isList(fullType)) {
     return {
       kind: Kind.LIST,
@@ -262,12 +288,13 @@ function createEmptyValueNode(fullType: string, supergraphState: SupergraphState
   if (supergraphState.scalarTypes.has(fullType)) {
     return {
       kind: Kind.STRING,
-      value: 'A string value',
+      value: "A string value",
     };
   }
 
   if (supergraphState.inputObjectTypes.has(fullType)) {
-    const inputObjectTypeState = supergraphState.inputObjectTypes.get(fullType)!;
+    const inputObjectTypeState =
+      supergraphState.inputObjectTypes.get(fullType)!;
 
     return {
       kind: Kind.OBJECT,
@@ -284,37 +311,37 @@ function createEmptyValueNode(fullType: string, supergraphState: SupergraphState
     };
   }
 
-  const specifiedScalar = specifiedScalarTypes.find(s => s.name === fullType);
+  const specifiedScalar = specifiedScalarTypes.find((s) => s.name === fullType);
 
   if (!specifiedScalar) {
     throw new Error(`Type "${fullType}" is not defined.`);
   }
 
-  if (specifiedScalar.name === 'String') {
+  if (specifiedScalar.name === "String") {
     return {
       kind: Kind.STRING,
-      value: 'A string value',
+      value: "A string value",
     };
   }
 
-  if (specifiedScalar.name === 'Int' || specifiedScalar.name === 'Float') {
+  if (specifiedScalar.name === "Int" || specifiedScalar.name === "Float") {
     return {
       kind: Kind.INT,
-      value: '0',
+      value: "0",
     };
   }
 
-  if (specifiedScalar.name === 'Boolean') {
+  if (specifiedScalar.name === "Boolean") {
     return {
       kind: Kind.BOOLEAN,
       value: true,
     };
   }
 
-  if (specifiedScalar.name === 'ID') {
+  if (specifiedScalar.name === "ID") {
     return {
       kind: Kind.STRING,
-      value: '<any id>',
+      value: "<any id>",
     };
   }
 

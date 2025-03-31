@@ -5,15 +5,15 @@ import {
   parseValue,
   specifiedScalarTypes,
   ValueNode,
-} from 'graphql';
-import { andList } from '../../utils/format.js';
+} from "graphql";
+import { andList } from "../../utils/format.js";
 import {
   isList,
   isNonNull,
   stripList,
   stripNonNull,
   stripTypeModifiers,
-} from '../../utils/state.js';
+} from "../../utils/state.js";
 import {
   Argument,
   Directive,
@@ -27,23 +27,26 @@ import {
   SubgraphType,
   TypeKind,
   UnionType,
-} from '../state.js';
-import { SubgraphValidationContext } from './validation-context.js';
+} from "../state.js";
+import { SubgraphValidationContext } from "./validation-context.js";
 
-const specifiedScalars = new Set(specifiedScalarTypes.map(t => t.name));
+const specifiedScalars = new Set(specifiedScalarTypes.map((t) => t.name));
 
 type ReportErrorFn = (message: string) => void;
 
-const SKIP = Symbol('skip');
+const SKIP = Symbol("skip");
 
-export function validateSubgraphState(state: SubgraphState, context: SubgraphValidationContext) {
+export function validateSubgraphState(
+  state: SubgraphState,
+  context: SubgraphValidationContext,
+) {
   const errors: GraphQLError[] = [];
 
   function reportError(message: string) {
     errors.push(
       new GraphQLError(message, {
         extensions: {
-          code: 'INVALID_GRAPHQL',
+          code: "INVALID_GRAPHQL",
         },
       }),
     );
@@ -56,7 +59,10 @@ export function validateSubgraphState(state: SubgraphState, context: SubgraphVal
   return errors;
 }
 
-function validateRootTypes(state: SubgraphState, reportError: ReportErrorFn): void {
+function validateRootTypes(
+  state: SubgraphState,
+  reportError: ReportErrorFn,
+): void {
   const rootTypesMap = new Map<string, Set<keyof typeof state.schema>>();
 
   for (const key in state.schema) {
@@ -73,9 +79,9 @@ function validateRootTypes(state: SubgraphState, reportError: ReportErrorFn): vo
       }
 
       if (!isObjectType(rootType)) {
-        const operationTypeStr = capitalize(rootTypeKind.replace('Type', ''));
+        const operationTypeStr = capitalize(rootTypeKind.replace("Type", ""));
         reportError(
-          rootTypeKind === 'queryType'
+          rootTypeKind === "queryType"
             ? `${operationTypeStr} root type must be Object type, it cannot be ${rootTypeName}.`
             : `${operationTypeStr} root type must be Object type if provided, it cannot be ${rootTypeName}.`,
         );
@@ -93,7 +99,9 @@ function validateRootTypes(state: SubgraphState, reportError: ReportErrorFn): vo
   for (const [rootTypeName, operationTypes] of rootTypesMap) {
     if (operationTypes.size > 1) {
       const operationList = andList(
-        Array.from(operationTypes).map(op => capitalize(op.replace('Type', ''))),
+        Array.from(operationTypes).map((op) =>
+          capitalize(op.replace("Type", "")),
+        ),
       );
       reportError(
         `All root types must be different, "${rootTypeName}" type is used as ${operationList} root types.`,
@@ -146,7 +154,9 @@ function validateDirectives(
         }
 
         if (isRequiredArgument(arg) && arg.deprecated?.deprecated === true) {
-          reportError(`Required argument @${directive.name}(${arg.name}:) cannot be deprecated.`);
+          reportError(
+            `Required argument @${directive.name}(${arg.name}:) cannot be deprecated.`,
+          );
         }
       }
     }
@@ -154,10 +164,8 @@ function validateDirectives(
 }
 
 function validateTypes(state: SubgraphState, reportError: ReportErrorFn): void {
-  const validateInputObjectCircularRefs = createInputObjectCircularRefsValidator(
-    state,
-    reportError,
-  );
+  const validateInputObjectCircularRefs =
+    createInputObjectCircularRefsValidator(state, reportError);
   const implementationsMap = new Map<string, Set<string>>();
 
   for (const type of state.types.values()) {
@@ -226,7 +234,7 @@ function validateTypes(state: SubgraphState, reportError: ReportErrorFn): void {
 
 function validateName(reportError: ReportErrorFn, name: string): void {
   // Ensure names are valid, however introspection types opt out.
-  if (name.startsWith('__')) {
+  if (name.startsWith("__")) {
     reportError(
       `Name "${name}" must not begin with "__", which is reserved by GraphQL introspection.`,
     );
@@ -299,9 +307,13 @@ function validateFields(
       }
 
       if (!isInput) {
-        const isList = arg.type.endsWith(']');
-        const isNonNull = arg.type.endsWith('!');
-        const extra = isList ? ', a ListType' : isNonNull ? ', a NonNullType' : '';
+        const isList = arg.type.endsWith("]");
+        const isNonNull = arg.type.endsWith("!");
+        const extra = isList
+          ? ", a ListType"
+          : isNonNull
+            ? ", a NonNullType"
+            : "";
 
         reportError(
           `The type of "${type.name}.${field.name}(${argName}:)" must be Input Type but got "${arg.type}"${extra}.`,
@@ -316,8 +328,13 @@ function validateFields(
 
       // Ensure default value is valid
       if (
-        typeof arg.defaultValue !== 'undefined' &&
-        !isValidateDefaultValue(state, reportError, arg.type, parseValue(arg.defaultValue))
+        typeof arg.defaultValue !== "undefined" &&
+        !isValidateDefaultValue(
+          state,
+          reportError,
+          arg.type,
+          parseValue(arg.defaultValue),
+        )
       ) {
         reportError(
           `Invalid default value (got: ${arg.defaultValue}) provided for argument ${type.name}.${field.name}(${arg.name}:) of type ${arg.type}.`,
@@ -338,7 +355,12 @@ function isValidateDefaultValue(
       return false;
     }
 
-    return isValidateDefaultValue(state, reportError, stripNonNull(inputTypePrinted), value);
+    return isValidateDefaultValue(
+      state,
+      reportError,
+      stripNonNull(inputTypePrinted),
+      value,
+    );
   }
 
   if (value.kind === Kind.NULL) {
@@ -355,16 +377,28 @@ function isValidateDefaultValue(
 
   if (isList(inputTypePrinted)) {
     if (value.kind === Kind.LIST) {
-      return value.values.every(val =>
-        isValidateDefaultValue(state, reportError, stripList(inputTypePrinted), val),
+      return value.values.every((val) =>
+        isValidateDefaultValue(
+          state,
+          reportError,
+          stripList(inputTypePrinted),
+          val,
+        ),
       );
     }
 
-    return isValidateDefaultValue(state, reportError, stripList(inputTypePrinted), value);
+    return isValidateDefaultValue(
+      state,
+      reportError,
+      stripList(inputTypePrinted),
+      value,
+    );
   }
 
   if (specifiedScalars.has(inputTypeName)) {
-    const specifiedScalar = specifiedScalarTypes.find(t => t.name === inputTypeName)!;
+    const specifiedScalar = specifiedScalarTypes.find(
+      (t) => t.name === inputTypeName,
+    )!;
 
     try {
       specifiedScalar.parseLiteral(value);
@@ -392,7 +426,9 @@ function isValidateDefaultValue(
         return false;
       }
 
-      if (!isValidateDefaultValue(state, reportError, field.type, astField.value)) {
+      if (
+        !isValidateDefaultValue(state, reportError, field.type, astField.value)
+      ) {
         return false;
       }
     }
@@ -419,13 +455,17 @@ function validateUnionMembers(
   const memberTypes = union.members;
 
   if (memberTypes.size === 0) {
-    reportError(`Union type ${union.name} must define one or more member types.`);
+    reportError(
+      `Union type ${union.name} must define one or more member types.`,
+    );
   }
 
   const includedTypeNames = new Set<string>();
   for (const memberType of memberTypes) {
     if (includedTypeNames.has(memberType)) {
-      reportError(`Union type ${union.name} can only include type ${memberType} once.`);
+      reportError(
+        `Union type ${union.name} can only include type ${memberType} once.`,
+      );
       continue;
     }
     includedTypeNames.add(memberType);
@@ -461,7 +501,9 @@ function validateInputFields(
   const fields = inputObj.fields;
 
   if (fields.size === 0) {
-    reportError(`Input Object type ${inputObj.name} must define one or more fields.`);
+    reportError(
+      `Input Object type ${inputObj.name} must define one or more fields.`,
+    );
   }
 
   // Ensure the arguments are valid
@@ -486,22 +528,33 @@ function validateInputFields(
     }
 
     if (!isInput) {
-      const isList = field.type.endsWith(']');
-      const isNonNull = field.type.endsWith('!');
-      const extra = isList ? ', a ListType' : isNonNull ? ', a NonNullType' : '';
+      const isList = field.type.endsWith("]");
+      const isNonNull = field.type.endsWith("!");
+      const extra = isList
+        ? ", a ListType"
+        : isNonNull
+          ? ", a NonNullType"
+          : "";
       reportError(
         `The type of ${inputObj.name}.${field.name} must be Input Type but got "${field.type}"${extra}.`,
       );
     }
 
     if (isRequiredInputField(field) && field.deprecated?.deprecated) {
-      reportError(`Required input field ${inputObj.name}.${field.name} cannot be deprecated.`);
+      reportError(
+        `Required input field ${inputObj.name}.${field.name} cannot be deprecated.`,
+      );
     }
 
     // Ensure default value is valid
     if (
-      typeof field.defaultValue !== 'undefined' &&
-      !isValidateDefaultValue(state, reportError, field.type, parseValue(field.defaultValue))
+      typeof field.defaultValue !== "undefined" &&
+      !isValidateDefaultValue(
+        state,
+        reportError,
+        field.type,
+        parseValue(field.defaultValue),
+      )
     ) {
       reportError(
         `Invalid default value (got: ${field.defaultValue}) provided for input field ${inputObj.name}.${field.name} of type ${field.type}.`,
@@ -548,7 +601,13 @@ function validateInterfaces(
     ifaceTypeNames.add(iface);
 
     validateTypeImplementsAncestors(reportError, type, interfaceType);
-    validateTypeImplementsInterface(state, implementationsMap, reportError, type, interfaceType);
+    validateTypeImplementsInterface(
+      state,
+      implementationsMap,
+      reportError,
+      type,
+      interfaceType,
+    );
   }
 }
 
@@ -593,7 +652,14 @@ function validateTypeImplementsInterface(
 
     // Assert interface field type is satisfied by type field type, by being
     // a valid subtype. (covariant)
-    if (!isTypeSubTypeOf(state, implementationsMap, typeField.type, ifaceField.type)) {
+    if (
+      !isTypeSubTypeOf(
+        state,
+        implementationsMap,
+        typeField.type,
+        ifaceField.type,
+      )
+    ) {
       reportError(
         `Interface field ${interfaceType.name}.${fieldName} expects type ` +
           `${ifaceField.type} but ${type.name}.${fieldName} of type ${typeField.type} is not a proper subtype.`,
@@ -719,7 +785,9 @@ function isSubType(
     return abstractType.members.has(maybeSubType.name);
   }
 
-  return implementationsMap.get(abstractType.name)?.has(maybeSubType.name) ?? false;
+  return (
+    implementationsMap.get(abstractType.name)?.has(maybeSubType.name) ?? false
+  );
 }
 
 function createInputObjectCircularRefsValidator(
@@ -764,7 +832,7 @@ function createInputObjectCircularRefsValidator(
             reportError(
               `Cannot reference Input Object "${
                 fieldType.name
-              }" within itself through a series of non-null fields: "${cyclePath.join('.')}".`,
+              }" within itself through a series of non-null fields: "${cyclePath.join(".")}".`,
             );
           }
           fieldPath.pop();
@@ -777,7 +845,7 @@ function createInputObjectCircularRefsValidator(
 }
 
 function isIntrospectionType(typeName: string): boolean {
-  return introspectionTypes.some(t => t.name === typeName);
+  return introspectionTypes.some((t) => t.name === typeName);
 }
 
 function isAbstractType(type: SubgraphType): type is UnionType | InterfaceType {

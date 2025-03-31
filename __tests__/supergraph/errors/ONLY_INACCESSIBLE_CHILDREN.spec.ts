@@ -1,12 +1,16 @@
-import { expect, test } from 'vitest';
-import { assertCompositionSuccess, graphql, testVersions } from '../../shared/testkit.js';
+import { expect, test } from "vitest";
+import {
+  assertCompositionSuccess,
+  graphql,
+  testVersions,
+} from "../../shared/testkit.js";
 
 testVersions((api, version) => {
-  test('ONLY_INACCESSIBLE_CHILDREN', () => {
+  test("ONLY_INACCESSIBLE_CHILDREN", () => {
     expect(
       api.composeServices([
         {
-          name: 'users',
+          name: "users",
           typeDefs: graphql`
             extend schema
               @link(
@@ -37,7 +41,7 @@ testVersions((api, version) => {
               `Type "Profile" is in the API schema but all of its fields are @inaccessible.`,
             ),
             extensions: expect.objectContaining({
-              code: 'ONLY_INACCESSIBLE_CHILDREN',
+              code: "ONLY_INACCESSIBLE_CHILDREN",
             }),
           }),
         ]),
@@ -47,7 +51,7 @@ testVersions((api, version) => {
     expect(
       api.composeServices([
         {
-          name: 'users',
+          name: "users",
           typeDefs: graphql`
             extend schema
               @link(
@@ -85,7 +89,7 @@ testVersions((api, version) => {
           `,
         },
         {
-          name: 'products',
+          name: "products",
           typeDefs: graphql`
             extend schema
               @link(
@@ -112,7 +116,7 @@ testVersions((api, version) => {
               `Type "Address" is in the API schema but all of its fields are @inaccessible.`,
             ),
             extensions: expect.objectContaining({
-              code: 'ONLY_INACCESSIBLE_CHILDREN',
+              code: "ONLY_INACCESSIBLE_CHILDREN",
             }),
           }),
         ]),
@@ -122,7 +126,7 @@ testVersions((api, version) => {
     assertCompositionSuccess(
       api.composeServices([
         {
-          name: 'users',
+          name: "users",
           typeDefs: graphql`
             extend schema
               @link(
@@ -150,7 +154,7 @@ testVersions((api, version) => {
     assertCompositionSuccess(
       api.composeServices([
         {
-          name: 'users',
+          name: "users",
           typeDefs: graphql`
             extend schema
               @link(
@@ -184,7 +188,7 @@ testVersions((api, version) => {
           `,
         },
         {
-          name: 'products',
+          name: "products",
           typeDefs: graphql`
             extend schema
               @link(
@@ -208,7 +212,7 @@ testVersions((api, version) => {
     expect(
       api.composeServices([
         {
-          name: 'users',
+          name: "users",
           typeDefs: graphql`
             extend schema
               @link(
@@ -230,7 +234,7 @@ testVersions((api, version) => {
           `,
         },
         {
-          name: 'products',
+          name: "products",
           typeDefs: graphql`
             extend schema
               @link(
@@ -252,7 +256,7 @@ testVersions((api, version) => {
               `Type "Node" is in the API schema but all of its fields are @inaccessible.`,
             ),
             extensions: expect.objectContaining({
-              code: 'ONLY_INACCESSIBLE_CHILDREN',
+              code: "ONLY_INACCESSIBLE_CHILDREN",
             }),
           }),
         ]),

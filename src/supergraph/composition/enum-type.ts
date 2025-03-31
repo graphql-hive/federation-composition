@@ -1,16 +1,16 @@
-import type { DirectiveNode } from 'graphql';
-import { FederationVersion } from '../../specifications/federation.js';
-import { Deprecated, Description, EnumType } from '../../subgraph/state.js';
-import { ensureValue, mathMax } from '../../utils/helpers.js';
-import { createEnumTypeNode } from './ast.js';
-import { convertToConst, type MapByGraph, type TypeBuilder } from './common.js';
+import type { DirectiveNode } from "graphql";
+import { FederationVersion } from "../../specifications/federation.js";
+import { Deprecated, Description, EnumType } from "../../subgraph/state.js";
+import { ensureValue, mathMax } from "../../utils/helpers.js";
+import { createEnumTypeNode } from "./ast.js";
+import { convertToConst, type MapByGraph, type TypeBuilder } from "./common.js";
 
 export function enumTypeBuilder(): TypeBuilder<EnumType, EnumTypeState> {
   return {
     visitSubgraphState(graph, state, typeName, type) {
       const enumTypeState = getOrCreateEnumType(state, typeName);
 
-      type.tags.forEach(tag => enumTypeState.tags.add(tag));
+      type.tags.forEach((tag) => enumTypeState.tags.add(tag));
 
       if (type.inaccessible) {
         enumTypeState.inaccessible = true;
@@ -44,7 +44,7 @@ export function enumTypeBuilder(): TypeBuilder<EnumType, EnumTypeState> {
       if (type.referencedByInputType) {
         enumTypeState.referencedByInputType = true;
 
-        type.inputTypeReferences.forEach(ref => {
+        type.inputTypeReferences.forEach((ref) => {
           enumTypeState.inputTypeReferences.add(ref);
         });
       }
@@ -52,12 +52,12 @@ export function enumTypeBuilder(): TypeBuilder<EnumType, EnumTypeState> {
       if (type.referencedByOutputType) {
         enumTypeState.referencedByOutputType = true;
 
-        type.outputTypeReferences.forEach(ref => {
+        type.outputTypeReferences.forEach((ref) => {
           enumTypeState.outputTypeReferences.add(ref);
         });
       }
 
-      type.ast.directives.forEach(directive => {
+      type.ast.directives.forEach((directive) => {
         enumTypeState.ast.directives.push(directive);
       });
 
@@ -69,7 +69,7 @@ export function enumTypeBuilder(): TypeBuilder<EnumType, EnumTypeState> {
       for (const value of type.values.values()) {
         const valueState = getOrCreateEnumValue(enumTypeState, value.name);
 
-        value.tags.forEach(tag => valueState.tags.add(tag));
+        value.tags.forEach((tag) => valueState.tags.add(tag));
 
         if (value.inaccessible) {
           valueState.inaccessible = true;
@@ -85,7 +85,7 @@ export function enumTypeBuilder(): TypeBuilder<EnumType, EnumTypeState> {
           valueState.description = value.description;
         }
 
-        value.ast.directives.forEach(directive => {
+        value.ast.directives.forEach((directive) => {
           valueState.ast.directives.push(directive);
         });
 
@@ -95,14 +95,18 @@ export function enumTypeBuilder(): TypeBuilder<EnumType, EnumTypeState> {
         });
       }
     },
-    composeSupergraphNode(enumType: EnumTypeState, _graph, { supergraphState }) {
+    composeSupergraphNode(
+      enumType: EnumTypeState,
+      _graph,
+      { supergraphState },
+    ) {
       const mergeMethod = decideOnEnumMergeStrategy(
         enumType.referencedByInputType,
         enumType.referencedByOutputType,
       );
 
       const values =
-        mergeMethod === 'intersection'
+        mergeMethod === "intersection"
           ? intersectionOfEnumValues(enumType)
           : Array.from(enumType.values);
 
@@ -118,14 +122,14 @@ export function enumTypeBuilder(): TypeBuilder<EnumType, EnumTypeState> {
                 cost: enumType.cost,
                 directiveName: ensureValue(
                   supergraphState.specs.cost.names.cost,
-                  'Directive name of @cost is not defined',
+                  "Directive name of @cost is not defined",
                 ),
               }
             : null,
         values: values.map(([_, value]) => ({
           name: value.name,
           join: {
-            enumValue: Array.from(value.byGraph.keys()).map(graph => ({
+            enumValue: Array.from(value.byGraph.keys()).map((graph) => ({
               graph: graph.toUpperCase(),
             })),
           },
@@ -144,7 +148,7 @@ export function enumTypeBuilder(): TypeBuilder<EnumType, EnumTypeState> {
         scopes: enumType.scopes,
         description: enumType.description,
         join: {
-          type: Array.from(enumType.byGraph.keys()).map(graphName => ({
+          type: Array.from(enumType.byGraph.keys()).map((graphName) => ({
             graph: graphName.toUpperCase(),
           })),
         },
@@ -161,27 +165,29 @@ function decideOnEnumMergeStrategy(
   referencedByOutputType: boolean,
 ) {
   if (referencedByInputType === referencedByOutputType) {
-    return 'equal';
+    return "equal";
   }
 
   if (referencedByInputType) {
-    return 'intersection';
+    return "intersection";
   }
 
   if (referencedByOutputType) {
-    return 'union';
+    return "union";
   }
 
-  return 'equal';
+  return "equal";
 }
 
 function intersectionOfEnumValues(enumType: EnumTypeState) {
   const numberOfGraphs = enumType.byGraph.size;
-  return Array.from(enumType.values).filter(([_, value]) => value.byGraph.size === numberOfGraphs);
+  return Array.from(enumType.values).filter(
+    ([_, value]) => value.byGraph.size === numberOfGraphs,
+  );
 }
 
 export type EnumTypeState = {
-  kind: 'enum';
+  kind: "enum";
   name: string;
   tags: Set<string>;
   inaccessible: boolean;
@@ -224,7 +230,10 @@ type EnumValueStateInGraph = {
   version: FederationVersion;
 };
 
-function getOrCreateEnumType(state: Map<string, EnumTypeState>, typeName: string) {
+function getOrCreateEnumType(
+  state: Map<string, EnumTypeState>,
+  typeName: string,
+) {
   const existing = state.get(typeName);
 
   if (existing) {
@@ -232,7 +241,7 @@ function getOrCreateEnumType(state: Map<string, EnumTypeState>, typeName: string
   }
 
   const def: EnumTypeState = {
-    kind: 'enum',
+    kind: "enum",
     name: typeName,
     values: new Map(),
     tags: new Set(),
@@ -257,7 +266,10 @@ function getOrCreateEnumType(state: Map<string, EnumTypeState>, typeName: string
   return def;
 }
 
-function getOrCreateEnumValue(enumTypeState: EnumTypeState, enumValueName: string) {
+function getOrCreateEnumValue(
+  enumTypeState: EnumTypeState,
+  enumValueName: string,
+) {
   const existing = enumTypeState.values.get(enumValueName);
 
   if (existing) {

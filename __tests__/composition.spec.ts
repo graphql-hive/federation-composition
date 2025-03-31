@@ -1,9 +1,9 @@
-import { parse, print } from 'graphql';
-import { describe, expect, test } from 'vitest';
-import { sortSDL } from '../src/graphql/sort-sdl.js';
-import { sdl as joinSDL } from '../src/specifications/join.js';
-import { sdl as linkSDL } from '../src/specifications/link.js';
-import { directive as tagDirective } from '../src/specifications/tag.js';
+import { parse, print } from "graphql";
+import { describe, expect, test } from "vitest";
+import { sortSDL } from "../src/graphql/sort-sdl.js";
+import { sdl as joinSDL } from "../src/specifications/join.js";
+import { sdl as linkSDL } from "../src/specifications/link.js";
+import { directive as tagDirective } from "../src/specifications/tag.js";
 import {
   assertCompositionFailure,
   assertCompositionSuccess,
@@ -11,22 +11,27 @@ import {
   satisfiesVersionRange,
   testImplementations,
   versions,
-} from './shared/testkit.js';
+} from "./shared/testkit.js";
 
 expect.addSnapshotSerializer({
-  serialize: value => print(sortSDL(parse(value as string))),
-  test: value => typeof value === 'string' && value.includes('specs.apollo.dev'),
+  serialize: (value) => print(sortSDL(parse(value as string))),
+  test: (value) =>
+    typeof value === "string" && value.includes("specs.apollo.dev"),
 });
 
-testImplementations(api => {
+testImplementations((api) => {
   const composeServices = api.composeServices;
 
-  test('enum value as string as default value', () => {
+  test("enum value as string as default value", () => {
     const result = composeServices([
       {
-        name: 'a',
+        name: "a",
         typeDefs: parse(/* GraphQL */ `
-          extend schema @link(url: "https://specs.apollo.dev/federation/v2.3", import: ["@key"])
+          extend schema
+            @link(
+              url: "https://specs.apollo.dev/federation/v2.3"
+              import: ["@key"]
+            )
 
           type User @key(fields: "id") {
             id: ID!
@@ -54,12 +59,16 @@ testImplementations(api => {
     `);
   });
 
-  test('duplicated Query fields', () => {
+  test("duplicated Query fields", () => {
     const result = composeServices([
       {
-        name: 'a',
+        name: "a",
         typeDefs: parse(/* GraphQL */ `
-          extend schema @link(url: "https://specs.apollo.dev/federation/v2.3", import: ["@key"])
+          extend schema
+            @link(
+              url: "https://specs.apollo.dev/federation/v2.3"
+              import: ["@key"]
+            )
 
           type User @key(fields: "id") {
             id: ID!
@@ -72,9 +81,13 @@ testImplementations(api => {
         `),
       },
       {
-        name: 'b',
+        name: "b",
         typeDefs: parse(/* GraphQL */ `
-          extend schema @link(url: "https://specs.apollo.dev/federation/v2.3", import: ["@key"])
+          extend schema
+            @link(
+              url: "https://specs.apollo.dev/federation/v2.3"
+              import: ["@key"]
+            )
 
           type User @key(fields: "id") {
             id: ID!
@@ -91,12 +104,16 @@ testImplementations(api => {
     assertCompositionFailure(result);
   });
 
-  test('@join__field(usedOverridden: true) when field is overridden but defined in an interface', () => {
+  test("@join__field(usedOverridden: true) when field is overridden but defined in an interface", () => {
     let result = composeServices([
       {
-        name: 'a',
+        name: "a",
         typeDefs: parse(/* GraphQL */ `
-          extend schema @link(url: "https://specs.apollo.dev/federation/v2.3", import: ["@key"])
+          extend schema
+            @link(
+              url: "https://specs.apollo.dev/federation/v2.3"
+              import: ["@key"]
+            )
 
           interface Post {
             id: ID!
@@ -114,7 +131,7 @@ testImplementations(api => {
         `),
       },
       {
-        name: 'b',
+        name: "b",
         typeDefs: parse(/* GraphQL */ `
           extend schema
             @link(
@@ -167,9 +184,13 @@ testImplementations(api => {
 
     result = composeServices([
       {
-        name: 'a',
+        name: "a",
         typeDefs: parse(/* GraphQL */ `
-          extend schema @link(url: "https://specs.apollo.dev/federation/v2.3", import: ["@key"])
+          extend schema
+            @link(
+              url: "https://specs.apollo.dev/federation/v2.3"
+              import: ["@key"]
+            )
 
           type ImagePost @key(fields: "id") {
             id: ID!
@@ -178,7 +199,7 @@ testImplementations(api => {
         `),
       },
       {
-        name: 'b',
+        name: "b",
         typeDefs: parse(/* GraphQL */ `
           extend schema
             @link(
@@ -227,10 +248,10 @@ testImplementations(api => {
     `);
   });
 
-  test('@join__field(external: true) when field is overridden', () => {
+  test("@join__field(external: true) when field is overridden", () => {
     let result = composeServices([
       {
-        name: 'a',
+        name: "a",
         typeDefs: parse(/* GraphQL */ `
           extend schema
             @link(
@@ -250,10 +271,13 @@ testImplementations(api => {
         `),
       },
       {
-        name: 'b',
+        name: "b",
         typeDefs: parse(/* GraphQL */ `
           extend schema
-            @link(url: "https://specs.apollo.dev/federation/v2.3", import: ["@key", "@override"])
+            @link(
+              url: "https://specs.apollo.dev/federation/v2.3"
+              import: ["@key", "@override"]
+            )
 
           type User @key(fields: "id") {
             id: ID!
@@ -266,7 +290,7 @@ testImplementations(api => {
         `),
       },
       {
-        name: 'c',
+        name: "c",
         typeDefs: parse(/* GraphQL */ `
           extend schema
             @link(
@@ -306,7 +330,7 @@ testImplementations(api => {
 
     result = composeServices([
       {
-        name: 'a',
+        name: "a",
         typeDefs: parse(/* GraphQL */ `
           extend schema
             @link(
@@ -326,10 +350,13 @@ testImplementations(api => {
         `),
       },
       {
-        name: 'b',
+        name: "b",
         typeDefs: parse(/* GraphQL */ `
           extend schema
-            @link(url: "https://specs.apollo.dev/federation/v2.3", import: ["@key", "@override"])
+            @link(
+              url: "https://specs.apollo.dev/federation/v2.3"
+              import: ["@key", "@override"]
+            )
 
           type User @key(fields: "id") {
             id: ID!
@@ -342,7 +369,7 @@ testImplementations(api => {
         `),
       },
       {
-        name: 'c',
+        name: "c",
         typeDefs: parse(/* GraphQL */ `
           extend schema
             @link(
@@ -370,7 +397,9 @@ testImplementations(api => {
         @join__type(graph: B, key: "id")
         @join__type(graph: C, key: "id") {
         id: ID!
-        name: String! @join__field(external: true, graph: A) @join__field(graph: B, override: "c")
+        name: String!
+          @join__field(external: true, graph: A)
+          @join__field(graph: B, override: "c")
         aName: String! @join__field(graph: A, requires: "name")
         cName: String! @join__field(graph: C)
       }
@@ -378,7 +407,7 @@ testImplementations(api => {
 
     result = composeServices([
       {
-        name: 'a',
+        name: "a",
         typeDefs: parse(/* GraphQL */ `
           extend schema
             @link(
@@ -398,10 +427,13 @@ testImplementations(api => {
         `),
       },
       {
-        name: 'b',
+        name: "b",
         typeDefs: parse(/* GraphQL */ `
           extend schema
-            @link(url: "https://specs.apollo.dev/federation/v2.3", import: ["@key", "@override"])
+            @link(
+              url: "https://specs.apollo.dev/federation/v2.3"
+              import: ["@key", "@override"]
+            )
 
           type User @key(fields: "id") {
             id: ID!
@@ -414,7 +446,7 @@ testImplementations(api => {
         `),
       },
       {
-        name: 'c',
+        name: "c",
         typeDefs: parse(/* GraphQL */ `
           extend schema
             @link(
@@ -454,7 +486,7 @@ testImplementations(api => {
 
     result = composeServices([
       {
-        name: 'a',
+        name: "a",
         typeDefs: parse(/* GraphQL */ `
           extend schema
             @link(
@@ -474,10 +506,13 @@ testImplementations(api => {
         `),
       },
       {
-        name: 'b',
+        name: "b",
         typeDefs: parse(/* GraphQL */ `
           extend schema
-            @link(url: "https://specs.apollo.dev/federation/v2.3", import: ["@key", "@override"])
+            @link(
+              url: "https://specs.apollo.dev/federation/v2.3"
+              import: ["@key", "@override"]
+            )
 
           type User @key(fields: "id") {
             id: ID!
@@ -490,7 +525,7 @@ testImplementations(api => {
         `),
       },
       {
-        name: 'c',
+        name: "c",
         typeDefs: parse(/* GraphQL */ `
           type User @key(fields: "id") {
             id: ID!
@@ -527,16 +562,18 @@ testImplementations(api => {
         @join__type(graph: B, key: "id")
         @join__type(graph: C, key: "id") {
         id: ID!
-        name: String! @join__field(external: true, graph: A) @join__field(graph: B, override: "c")
+        name: String!
+          @join__field(external: true, graph: A)
+          @join__field(graph: B, override: "c")
         aName: String! @join__field(graph: A, requires: "name")
       }
     `);
   });
 
-  test('print @join__field on shareable field defined twice (once with non-effective override)', () => {
+  test("print @join__field on shareable field defined twice (once with non-effective override)", () => {
     const result = api.composeServices([
       {
-        name: 'a',
+        name: "a",
         typeDefs: parse(/* GraphQL */ `
           type Mutation {
             a: String!
@@ -545,7 +582,7 @@ testImplementations(api => {
         `),
       },
       {
-        name: 'b',
+        name: "b",
         typeDefs: parse(/* GraphQL */ `
           extend schema
             @link(
@@ -560,9 +597,13 @@ testImplementations(api => {
         `),
       },
       {
-        name: 'c',
+        name: "c",
         typeDefs: parse(/* GraphQL */ `
-          extend schema @link(url: "https://specs.apollo.dev/federation/v2.0", import: ["@key"])
+          extend schema
+            @link(
+              url: "https://specs.apollo.dev/federation/v2.0"
+              import: ["@key"]
+            )
 
           type Mutation {
             c: String!
@@ -578,20 +619,27 @@ testImplementations(api => {
     assertCompositionSuccess(result);
 
     expect(result.supergraphSdl).toContainGraphQL(/* GraphQL */ `
-      type Mutation @join__type(graph: A) @join__type(graph: B) @join__type(graph: C) {
-        a: String! @join__field(graph: A) @join__field(graph: B, override: "non-existing")
-        b: String! @join__field(graph: A) @join__field(graph: B, override: "non-existing")
+      type Mutation
+        @join__type(graph: A)
+        @join__type(graph: B)
+        @join__type(graph: C) {
+        a: String!
+          @join__field(graph: A)
+          @join__field(graph: B, override: "non-existing")
+        b: String!
+          @join__field(graph: A)
+          @join__field(graph: B, override: "non-existing")
         c: String! @join__field(graph: C)
       }
     `);
   });
 
-  describe.each(versions)('%s', version => {
-    describe('shareable', () => {
-      test('merge two exact same types', () => {
+  describe.each(versions)("%s", (version) => {
+    describe("shareable", () => {
+      test("merge two exact same types", () => {
         const result = composeServices([
           {
-            name: 'a',
+            name: "a",
             typeDefs: parse(/* GraphQL */ `
               extend schema
                 @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@shareable"])
@@ -606,7 +654,7 @@ testImplementations(api => {
             `),
           },
           {
-            name: 'b',
+            name: "b",
             typeDefs: parse(/* GraphQL */ `
               extend schema
                 @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@shareable"])
@@ -627,10 +675,10 @@ testImplementations(api => {
         `);
       });
 
-      test('merge same type with same fields by of different return types (nullable vs non-nullable)', () => {
+      test("merge same type with same fields by of different return types (nullable vs non-nullable)", () => {
         const result = composeServices([
           {
-            name: 'a',
+            name: "a",
             typeDefs: parse(/* GraphQL */ `
               extend schema
                 @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@shareable"])
@@ -645,7 +693,7 @@ testImplementations(api => {
             `),
           },
           {
-            name: 'b',
+            name: "b",
             typeDefs: parse(/* GraphQL */ `
               extend schema
                 @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@shareable"])
@@ -668,10 +716,10 @@ testImplementations(api => {
         `);
       });
 
-      test('merge same types but one has an extension', () => {
+      test("merge same types but one has an extension", () => {
         const result = composeServices([
           {
-            name: 'a',
+            name: "a",
             typeDefs: parse(/* GraphQL */ `
               extend schema
                 @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@shareable"])
@@ -682,7 +730,7 @@ testImplementations(api => {
             `),
           },
           {
-            name: 'b',
+            name: "b",
             typeDefs: parse(/* GraphQL */ `
               extend schema
                 @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@shareable"])
@@ -712,10 +760,10 @@ testImplementations(api => {
         `);
       });
 
-      test('merge same types but one has an extra field', () => {
+      test("merge same types but one has an extra field", () => {
         const result = composeServices([
           {
-            name: 'a',
+            name: "a",
             typeDefs: parse(/* GraphQL */ `
               extend schema
                 @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@shareable"])
@@ -727,7 +775,7 @@ testImplementations(api => {
             `),
           },
           {
-            name: 'b',
+            name: "b",
             typeDefs: parse(/* GraphQL */ `
               extend schema
                 @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@shareable"])
@@ -756,10 +804,10 @@ testImplementations(api => {
         `);
       });
 
-      test('merge extension and definition of object type and print extension:true', () => {
+      test("merge extension and definition of object type and print extension:true", () => {
         const result = composeServices([
           {
-            name: 'a',
+            name: "a",
             typeDefs: parse(/* GraphQL */ `
                 extend schema
                   @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@key", "@shareable"])
@@ -775,7 +823,7 @@ testImplementations(api => {
               `),
           },
           {
-            name: 'b',
+            name: "b",
             typeDefs: parse(/* GraphQL */ `
                 extend schema
                   @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@key", "@shareable"])
@@ -799,7 +847,9 @@ testImplementations(api => {
         assertCompositionSuccess(result);
 
         expect(result.supergraphSdl).toContainGraphQL(/* GraphQL */ `
-          type User @join__type(graph: A, key: "id") @join__type(graph: B, key: "id") {
+          type User
+            @join__type(graph: A, key: "id")
+            @join__type(graph: B, key: "id") {
             email: String! @join__field(graph: B)
             id: ID!
             name: String
@@ -807,10 +857,10 @@ testImplementations(api => {
         `);
       });
 
-      test('merge same types but one has an extra field (inaccessible)', () => {
+      test("merge same types but one has an extra field (inaccessible)", () => {
         const result = composeServices([
           {
-            name: 'a',
+            name: "a",
             typeDefs: parse(/* GraphQL */ `
               extend schema
                 @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@shareable"])
@@ -822,7 +872,7 @@ testImplementations(api => {
             `),
           },
           {
-            name: 'b',
+            name: "b",
             typeDefs: parse(/* GraphQL */ `
               extend schema
                 @link(
@@ -853,13 +903,13 @@ testImplementations(api => {
           }
         `);
 
-        expect(result.publicSdl).not.toMatch('@inaccessible');
+        expect(result.publicSdl).not.toMatch("@inaccessible");
       });
 
-      test('type annotated with @inaccessible should not result in @inaccessible on its fields', () => {
+      test("type annotated with @inaccessible should not result in @inaccessible on its fields", () => {
         const result = composeServices([
           {
-            name: 'a',
+            name: "a",
             typeDefs: parse(/* GraphQL */ `
               extend schema
                 @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@inaccessible"])
@@ -897,10 +947,10 @@ testImplementations(api => {
         `);
       });
 
-      test('merge an argument (nullable vs missing)', () => {
+      test("merge an argument (nullable vs missing)", () => {
         const result = composeServices([
           {
-            name: 'a',
+            name: "a",
             typeDefs: parse(/* GraphQL */ `
               extend schema
                 @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@shareable"])
@@ -916,7 +966,7 @@ testImplementations(api => {
             `),
           },
           {
-            name: 'b',
+            name: "b",
             typeDefs: parse(/* GraphQL */ `
               extend schema
                 @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@shareable"])
@@ -938,10 +988,10 @@ testImplementations(api => {
         `);
       });
 
-      test('merge an argument (non-nullable vs missing)', () => {
+      test("merge an argument (non-nullable vs missing)", () => {
         const result = composeServices([
           {
-            name: 'a',
+            name: "a",
             typeDefs: parse(/* GraphQL */ `
               extend schema
                 @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@shareable"])
@@ -957,7 +1007,7 @@ testImplementations(api => {
             `),
           },
           {
-            name: 'b',
+            name: "b",
             typeDefs: parse(/* GraphQL */ `
               extend schema
                 @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@shareable"])
@@ -973,10 +1023,10 @@ testImplementations(api => {
         assertCompositionFailure(result);
       });
 
-      test('merge an argument (nullable vs non-nullable)', () => {
+      test("merge an argument (nullable vs non-nullable)", () => {
         const result = composeServices([
           {
-            name: 'a',
+            name: "a",
             typeDefs: parse(/* GraphQL */ `
               extend schema
                 @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@shareable"])
@@ -992,7 +1042,7 @@ testImplementations(api => {
             `),
           },
           {
-            name: 'b',
+            name: "b",
             typeDefs: parse(/* GraphQL */ `
               extend schema
                 @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@shareable"])
@@ -1015,10 +1065,10 @@ testImplementations(api => {
       });
     });
 
-    test('merge object types with different fields', () => {
+    test("merge object types with different fields", () => {
       const result = composeServices([
         {
-          name: 'a',
+          name: "a",
           typeDefs: parse(/* GraphQL */ `
             extend schema @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@key"])
 
@@ -1030,7 +1080,7 @@ testImplementations(api => {
           `),
         },
         {
-          name: 'b',
+          name: "b",
           typeDefs: parse(/* GraphQL */ `
             extend schema @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@key"])
 
@@ -1049,7 +1099,9 @@ testImplementations(api => {
       assertCompositionSuccess(result);
 
       expect(result.supergraphSdl).toContainGraphQL(/* GraphQL */ `
-        type User @join__type(graph: B, key: "id") @join__type(graph: A, key: "id") {
+        type User
+          @join__type(graph: B, key: "id")
+          @join__type(graph: A, key: "id") {
           id: ID!
           email: String! @join__field(graph: A)
           name: String! @join__field(graph: A)
@@ -1058,10 +1110,10 @@ testImplementations(api => {
       `);
     });
 
-    test('merge object extension type and non-resolvable object type', () => {
+    test("merge object extension type and non-resolvable object type", () => {
       const result = composeServices([
         {
-          name: 'a',
+          name: "a",
           typeDefs: parse(/* GraphQL */ `
             extend schema
               @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@key", "@external"])
@@ -1076,7 +1128,7 @@ testImplementations(api => {
           `),
         },
         {
-          name: 'b',
+          name: "b",
           typeDefs: parse(/* GraphQL */ `
             extend schema
               @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@key"])
@@ -1098,15 +1150,17 @@ testImplementations(api => {
         type User
           @join__type(graph: A, key: "id", extension: true)
           @join__type(graph: B, key: "id") {
-          id: ID @join__field(graph: A, type: "ID") @join__field(graph: B, type: "ID!")
+          id: ID
+            @join__field(graph: A, type: "ID")
+            @join__field(graph: B, type: "ID!")
         }
       `);
     });
 
-    test('Fed v1: merge object extension type and non-resolvable object type', () => {
+    test("Fed v1: merge object extension type and non-resolvable object type", () => {
       const result = composeServices([
         {
-          name: 'a',
+          name: "a",
           typeDefs: parse(/* GraphQL */ `
             extend type User @key(fields: "id") {
               id: ID @external
@@ -1118,7 +1172,7 @@ testImplementations(api => {
           `),
         },
         {
-          name: 'b',
+          name: "b",
           typeDefs: parse(/* GraphQL */ `
             type User @key(fields: "id") {
               id: ID!
@@ -1134,16 +1188,20 @@ testImplementations(api => {
       assertCompositionSuccess(result);
 
       expect(result.supergraphSdl).toContainGraphQL(/* GraphQL */ `
-        type User @join__type(graph: A, key: "id") @join__type(graph: B, key: "id") {
-          id: ID @join__field(graph: A, type: "ID") @join__field(graph: B, type: "ID!")
+        type User
+          @join__type(graph: A, key: "id")
+          @join__type(graph: B, key: "id") {
+          id: ID
+            @join__field(graph: A, type: "ID")
+            @join__field(graph: B, type: "ID!")
         }
       `);
     });
 
-    test('merge interface types with different fields', () => {
+    test("merge interface types with different fields", () => {
       const result = composeServices([
         {
-          name: 'a',
+          name: "a",
           typeDefs: parse(/* GraphQL */ `
             extend schema @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@key"])
 
@@ -1159,7 +1217,7 @@ testImplementations(api => {
           `),
         },
         {
-          name: 'b',
+          name: "b",
           typeDefs: parse(/* GraphQL */ `
             extend schema @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@key"])
 
@@ -1189,10 +1247,10 @@ testImplementations(api => {
       `);
     });
 
-    test('merge union types with different members (some are overlapping)', () => {
+    test("merge union types with different members (some are overlapping)", () => {
       const result = composeServices([
         {
-          name: 'a',
+          name: "a",
           typeDefs: parse(/* GraphQL */ `
             extend schema
               @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@key", "@shareable"])
@@ -1211,7 +1269,7 @@ testImplementations(api => {
           `),
         },
         {
-          name: 'b',
+          name: "b",
           typeDefs: parse(/* GraphQL */ `
             extend schema
               @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@key", "@shareable"])
@@ -1252,10 +1310,10 @@ testImplementations(api => {
       `);
     });
 
-    test('merge union types with different members', () => {
+    test("merge union types with different members", () => {
       const result = composeServices([
         {
-          name: 'a',
+          name: "a",
           typeDefs: parse(/* GraphQL */ `
             extend schema
               @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@key", "@shareable"])
@@ -1274,7 +1332,7 @@ testImplementations(api => {
           `),
         },
         {
-          name: 'b',
+          name: "b",
           typeDefs: parse(/* GraphQL */ `
             extend schema
               @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@key", "@shareable"])
@@ -1310,10 +1368,10 @@ testImplementations(api => {
       `);
     });
 
-    test('merge input types and field arguments', () => {
+    test("merge input types and field arguments", () => {
       const result = composeServices([
         {
-          name: 'a',
+          name: "a",
           typeDefs: parse(/* GraphQL */ `
             extend schema
               @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@shareable"])
@@ -1329,7 +1387,7 @@ testImplementations(api => {
           `),
         },
         {
-          name: 'b',
+          name: "b",
           typeDefs: parse(/* GraphQL */ `
             extend schema
               @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@shareable"])
@@ -1367,10 +1425,10 @@ testImplementations(api => {
       `);
     });
 
-    test('print default values', () => {
+    test("print default values", () => {
       const result = composeServices([
         {
-          name: 'a',
+          name: "a",
           typeDefs: parse(/* GraphQL */ `
             extend schema
               @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@shareable"])
@@ -1390,7 +1448,7 @@ testImplementations(api => {
           `),
         },
         {
-          name: 'b',
+          name: "b",
           typeDefs: parse(/* GraphQL */ `
             extend schema
               @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@shareable"])
@@ -1410,7 +1468,7 @@ testImplementations(api => {
           `),
         },
         {
-          name: 'c',
+          name: "c",
           typeDefs: parse(/* GraphQL */ `
             extend schema
               @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@shareable"])
@@ -1461,7 +1519,10 @@ testImplementations(api => {
 
       expect(result.supergraphSdl).toContainGraphQL(/* GraphQL */ `
         interface Media @join__type(graph: C) {
-          records(filter: MediaFilter, access: MediaAccess = PRIVATE): [String!]!
+          records(
+            filter: MediaFilter
+            access: MediaAccess = PRIVATE
+          ): [String!]!
         }
       `);
 
@@ -1474,20 +1535,26 @@ testImplementations(api => {
       `);
 
       expect(result.supergraphSdl).toContainGraphQL(/* GraphQL */ `
-        type Query @join__type(graph: A) @join__type(graph: B) @join__type(graph: C) {
-          books(filter: LibraryFilter, access: LibraryAccess = PUBLIC): [String!]!
-            @join__field(graph: A)
-          users(filter: UserFilter, access: UserAccess = PRIVATE): [String!]! @join__field(graph: B)
+        type Query
+          @join__type(graph: A)
+          @join__type(graph: B)
+          @join__type(graph: C) {
+          books(
+            filter: LibraryFilter
+            access: LibraryAccess = PUBLIC
+          ): [String!]! @join__field(graph: A)
+          users(filter: UserFilter, access: UserAccess = PRIVATE): [String!]!
+            @join__field(graph: B)
           media(filter: MediaFilter, access: MediaAccess = PRIVATE): [Media!]!
             @join__field(graph: C)
         }
       `);
     });
 
-    test('merge enum type types when used as the return type for at least one object or interface field', () => {
+    test("merge enum type types when used as the return type for at least one object or interface field", () => {
       const result = composeServices([
         {
-          name: 'a',
+          name: "a",
           typeDefs: parse(/* GraphQL */ `
             extend schema
               @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@shareable"])
@@ -1503,7 +1570,7 @@ testImplementations(api => {
           `),
         },
         {
-          name: 'b',
+          name: "b",
           typeDefs: parse(/* GraphQL */ `
             extend schema
               @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@shareable"])
@@ -1534,10 +1601,10 @@ testImplementations(api => {
       `);
     });
 
-    test('merge enum type types when used as the type for at least one field argument or input type field', () => {
+    test("merge enum type types when used as the type for at least one field argument or input type field", () => {
       const result = composeServices([
         {
-          name: 'a',
+          name: "a",
           typeDefs: parse(/* GraphQL */ `
             extend schema
               @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@shareable"])
@@ -1553,7 +1620,7 @@ testImplementations(api => {
           `),
         },
         {
-          name: 'b',
+          name: "b",
           typeDefs: parse(/* GraphQL */ `
             extend schema
               @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@shareable"])
@@ -1583,10 +1650,10 @@ testImplementations(api => {
       `);
     });
 
-    test('merge enum type types when used as the type for at least one field argument or input type field and as the return type for at least one object or interface field', () => {
+    test("merge enum type types when used as the type for at least one field argument or input type field and as the return type for at least one object or interface field", () => {
       const result = composeServices([
         {
-          name: 'a',
+          name: "a",
           typeDefs: parse(/* GraphQL */ `
             extend schema
               @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@shareable"])
@@ -1603,7 +1670,7 @@ testImplementations(api => {
           `),
         },
         {
-          name: 'b',
+          name: "b",
           typeDefs: parse(/* GraphQL */ `
             extend schema
               @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@shareable"])
@@ -1635,10 +1702,10 @@ testImplementations(api => {
       `);
     });
 
-    test('ignore directive if not defined by @composeDirective', () => {
+    test("ignore directive if not defined by @composeDirective", () => {
       const result = composeServices([
         {
-          name: 'a',
+          name: "a",
           typeDefs: parse(/* GraphQL */ `
             extend schema @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@shareable"])
 
@@ -1654,7 +1721,7 @@ testImplementations(api => {
           `),
         },
         {
-          name: 'b',
+          name: "b",
           typeDefs: parse(/* GraphQL */ `
             extend schema @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@shareable"])
 
@@ -1673,15 +1740,15 @@ testImplementations(api => {
 
       assertCompositionSuccess(result);
 
-      expect(result.supergraphSdl).not.toMatch('lowercase');
-      expect(result.supergraphSdl).not.toMatch('uppercase');
-      expect(result.publicSdl).not.toMatch('lowercase');
+      expect(result.supergraphSdl).not.toMatch("lowercase");
+      expect(result.supergraphSdl).not.toMatch("uppercase");
+      expect(result.publicSdl).not.toMatch("lowercase");
     });
 
-    test('ignore directive if identically defined in all subgraphs', () => {
+    test("ignore directive if identically defined in all subgraphs", () => {
       const result = composeServices([
         {
-          name: 'a',
+          name: "a",
           typeDefs: parse(/* GraphQL */ `
             extend schema @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@shareable"])
 
@@ -1693,7 +1760,7 @@ testImplementations(api => {
           `),
         },
         {
-          name: 'b',
+          name: "b",
           typeDefs: parse(/* GraphQL */ `
             extend schema @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@shareable"])
 
@@ -1712,14 +1779,14 @@ testImplementations(api => {
 
       assertCompositionSuccess(result);
 
-      expect(result.supergraphSdl).not.toMatch('lowercase');
-      expect(result.publicSdl).not.toMatch('lowercase');
+      expect(result.supergraphSdl).not.toMatch("lowercase");
+      expect(result.publicSdl).not.toMatch("lowercase");
     });
 
-    test('ignore directive if not defined in all subgraphs', () => {
+    test("ignore directive if not defined in all subgraphs", () => {
       const result = composeServices([
         {
-          name: 'a',
+          name: "a",
           typeDefs: parse(/* GraphQL */ `
             extend schema
               @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@shareable"])
@@ -1732,7 +1799,7 @@ testImplementations(api => {
           `),
         },
         {
-          name: 'b',
+          name: "b",
           typeDefs: parse(/* GraphQL */ `
             extend schema
               @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@shareable"])
@@ -1750,14 +1817,14 @@ testImplementations(api => {
 
       assertCompositionSuccess(result);
 
-      expect(result.supergraphSdl).not.toMatch('lowercase');
-      expect(result.publicSdl).not.toMatch('lowercase');
+      expect(result.supergraphSdl).not.toMatch("lowercase");
+      expect(result.publicSdl).not.toMatch("lowercase");
     });
 
-    test('ignore directive if defined differently across subgraphs', () => {
+    test("ignore directive if defined differently across subgraphs", () => {
       const result = composeServices([
         {
-          name: 'a',
+          name: "a",
           typeDefs: parse(/* GraphQL */ `
             extend schema
               @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@shareable"])
@@ -1770,7 +1837,7 @@ testImplementations(api => {
           `),
         },
         {
-          name: 'b',
+          name: "b",
           typeDefs: parse(/* GraphQL */ `
             extend schema
               @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@shareable"])
@@ -1790,14 +1857,14 @@ testImplementations(api => {
 
       assertCompositionSuccess(result);
 
-      expect(result.supergraphSdl).not.toMatch('lowercase');
-      expect(result.publicSdl).not.toMatch('lowercase');
+      expect(result.supergraphSdl).not.toMatch("lowercase");
+      expect(result.publicSdl).not.toMatch("lowercase");
     });
 
-    test('ignore directive if it has different locations across subgraphs', () => {
+    test("ignore directive if it has different locations across subgraphs", () => {
       const result = composeServices([
         {
-          name: 'a',
+          name: "a",
           typeDefs: parse(/* GraphQL */ `
             extend schema
               @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@shareable"])
@@ -1810,7 +1877,7 @@ testImplementations(api => {
           `),
         },
         {
-          name: 'b',
+          name: "b",
           typeDefs: parse(/* GraphQL */ `
             extend schema
               @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@shareable"])
@@ -1830,14 +1897,14 @@ testImplementations(api => {
 
       assertCompositionSuccess(result);
 
-      expect(result.supergraphSdl).not.toMatch('lowercase');
-      expect(result.publicSdl).not.toMatch('lowercase');
+      expect(result.supergraphSdl).not.toMatch("lowercase");
+      expect(result.publicSdl).not.toMatch("lowercase");
     });
 
-    test('support @composeDirective when using multiple schema extensions', () => {
+    test("support @composeDirective when using multiple schema extensions", () => {
       const result = composeServices([
         {
-          name: 'a',
+          name: "a",
           typeDefs: parse(/* GraphQL */ `
               extend schema
                 @link(
@@ -1862,7 +1929,7 @@ testImplementations(api => {
             `),
         },
         {
-          name: 'b',
+          name: "b",
           typeDefs: parse(/* GraphQL */ `
               extend schema
                 @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@key"])
@@ -1884,7 +1951,7 @@ testImplementations(api => {
         },
       ]);
 
-      if (version === 'v2.0') {
+      if (version === "v2.0") {
         assertCompositionFailure(result);
         return;
       }
@@ -1895,7 +1962,7 @@ testImplementations(api => {
         directive @lowercase on FIELD_DEFINITION
       `);
 
-      api.runIf('guild', () => {
+      api.runIf("guild", () => {
         expect(result.publicSdl).toContainGraphQL(/* GraphQL */ `
           directive @lowercase on FIELD_DEFINITION
         `);
@@ -1914,7 +1981,7 @@ testImplementations(api => {
       expect(result.publicSdl).toContainGraphQL(/* GraphQL */ `
         type User {
           id: ID!
-          name: String! ${api.injectIf('guild', '@lowercase')}
+          name: String! ${api.injectIf("guild", "@lowercase")}
           reviews: [Review]
         }
       `);
@@ -1929,10 +1996,10 @@ testImplementations(api => {
       `);
     });
 
-    test('preserve directive if not defined in all subgraphs but included in @composeDirective', () => {
+    test("preserve directive if not defined in all subgraphs but included in @composeDirective", () => {
       const result = composeServices([
         {
-          name: 'a',
+          name: "a",
           typeDefs: parse(/* GraphQL */ `
               extend schema
                 @link(
@@ -1955,7 +2022,7 @@ testImplementations(api => {
             `),
         },
         {
-          name: 'b',
+          name: "b",
           typeDefs: parse(/* GraphQL */ `
               extend schema
                 @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@key"])
@@ -1977,7 +2044,7 @@ testImplementations(api => {
         },
       ]);
 
-      if (version === 'v2.0') {
+      if (version === "v2.0") {
         assertCompositionFailure(result);
         return;
       }
@@ -1988,7 +2055,7 @@ testImplementations(api => {
         directive @lowercase on FIELD_DEFINITION
       `);
 
-      api.runIf('guild', () => {
+      api.runIf("guild", () => {
         expect(result.publicSdl).toContainGraphQL(/* GraphQL */ `
           directive @lowercase on FIELD_DEFINITION
         `);
@@ -2007,7 +2074,7 @@ testImplementations(api => {
       expect(result.publicSdl).toContainGraphQL(/* GraphQL */ `
         type User {
           id: ID!
-          name: String! ${api.injectIf('guild', '@lowercase')}
+          name: String! ${api.injectIf("guild", "@lowercase")}
           reviews: [Review]
         }
       `);
@@ -2022,10 +2089,10 @@ testImplementations(api => {
       `);
     });
 
-    test('preserve directive if not applied on a field in all subgraphs but included in @composeDirective', () => {
+    test("preserve directive if not applied on a field in all subgraphs but included in @composeDirective", () => {
       const result = composeServices([
         {
-          name: 'b',
+          name: "b",
           typeDefs: parse(/* GraphQL */ `
               directive @lowercase on FIELD_DEFINITION
 
@@ -2044,9 +2111,13 @@ testImplementations(api => {
             `),
         },
         {
-          name: 'a',
+          name: "a",
           typeDefs: parse(/* GraphQL */ `
-            extend schema @link(url: "https://specs.apollo.dev/federation/v2.0", import: ["@key"])
+            extend schema
+              @link(
+                url: "https://specs.apollo.dev/federation/v2.0"
+                import: ["@key"]
+              )
 
             type Query {
               users: [String]
@@ -2054,9 +2125,13 @@ testImplementations(api => {
           `),
         },
         {
-          name: 'c',
+          name: "c",
           typeDefs: parse(/* GraphQL */ `
-            extend schema @link(url: "https://specs.apollo.dev/federation/v2.0", import: ["@key"])
+            extend schema
+              @link(
+                url: "https://specs.apollo.dev/federation/v2.0"
+                import: ["@key"]
+              )
 
             extend type Query {
               comments: [String]
@@ -2065,7 +2140,7 @@ testImplementations(api => {
         },
       ]);
 
-      if (version === 'v2.0') {
+      if (version === "v2.0") {
         assertCompositionFailure(result);
         return;
       }
@@ -2076,14 +2151,17 @@ testImplementations(api => {
         directive @lowercase on FIELD_DEFINITION
       `);
 
-      api.runIf('guild', () => {
+      api.runIf("guild", () => {
         expect(result.supergraphSdl).toContainGraphQL(/* GraphQL */ `
           directive @lowercase on FIELD_DEFINITION
         `);
       });
 
       expect(result.supergraphSdl).toContainGraphQL(/* GraphQL */ `
-        type Query @join__type(graph: A) @join__type(graph: B) @join__type(graph: C) {
+        type Query
+          @join__type(graph: A)
+          @join__type(graph: B)
+          @join__type(graph: C) {
           comments: [String] @join__field(graph: C)
           """
           users
@@ -2098,7 +2176,7 @@ testImplementations(api => {
           """
           users
           """
-          users: [String] ${api.injectIf('guild', '@lowercase')}
+          users: [String] ${api.injectIf("guild", "@lowercase")}
         }
       `);
 
@@ -2112,10 +2190,10 @@ testImplementations(api => {
       `);
     });
 
-    test('ignore directive if defined identically in all subgraphs and not included in @composeDirective', () => {
+    test("ignore directive if defined identically in all subgraphs and not included in @composeDirective", () => {
       const result = composeServices([
         {
-          name: 'a',
+          name: "a",
           typeDefs: parse(/* GraphQL */ `
               extend schema
                 @link(url: "https://specs.apollo.dev/federation/${version}" import: ["@key"])
@@ -2133,7 +2211,7 @@ testImplementations(api => {
             `),
         },
         {
-          name: 'b',
+          name: "b",
           typeDefs: parse(/* GraphQL */ `
               extend schema
                 @link(url: "https://specs.apollo.dev/federation/${version}" import: ["@key"])
@@ -2157,10 +2235,10 @@ testImplementations(api => {
       expect(result.publicSdl).not.toMatch(/lowercase/);
     });
 
-    test('preserve directive from one subgraph if defined differently across subgraphs but one included in @composeDirective', () => {
+    test("preserve directive from one subgraph if defined differently across subgraphs but one included in @composeDirective", () => {
       const result = composeServices([
         {
-          name: 'a',
+          name: "a",
           typeDefs: parse(/* GraphQL */ `
               extend schema
                 @link(
@@ -2183,7 +2261,7 @@ testImplementations(api => {
             `),
         },
         {
-          name: 'b',
+          name: "b",
           typeDefs: parse(/* GraphQL */ `
               extend schema
                 @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@key"])
@@ -2207,7 +2285,7 @@ testImplementations(api => {
         },
       ]);
 
-      if (version === 'v2.0') {
+      if (version === "v2.0") {
         assertCompositionFailure(result);
         return;
       }
@@ -2218,7 +2296,7 @@ testImplementations(api => {
         directive @lowercase on FIELD_DEFINITION
       `);
 
-      api.runIf('guild', () => {
+      api.runIf("guild", () => {
         expect(result.publicSdl).toContainGraphQL(/* GraphQL */ `
           directive @lowercase on FIELD_DEFINITION
         `);
@@ -2237,7 +2315,7 @@ testImplementations(api => {
       expect(result.publicSdl).toContainGraphQL(/* GraphQL */ `
         type User {
           id: ID!
-          name: String! ${api.injectIf('guild', '@lowercase')}
+          name: String! ${api.injectIf("guild", "@lowercase")}
           comments: [Comment]
         }
       `);
@@ -2266,10 +2344,10 @@ testImplementations(api => {
       `);
     });
 
-    test('preserve directive if defined with overlapping locations across subgraphs and all included in @composeDirective', () => {
+    test("preserve directive if defined with overlapping locations across subgraphs and all included in @composeDirective", () => {
       const result = composeServices([
         {
-          name: 'a',
+          name: "a",
           typeDefs: parse(/* GraphQL */ `
               extend schema
                 @link(url: "https://specs.apollo.dev/federation/${version}" import: ["@key", "@composeDirective"])
@@ -2285,7 +2363,7 @@ testImplementations(api => {
             `),
         },
         {
-          name: 'b',
+          name: "b",
           typeDefs: parse(/* GraphQL */ `
               extend schema
                 @link(url: "https://specs.apollo.dev/federation/${version}" import: ["@key", "@composeDirective"])
@@ -2311,7 +2389,7 @@ testImplementations(api => {
         },
       ]);
 
-      if (version === 'v2.0') {
+      if (version === "v2.0") {
         assertCompositionFailure(result);
         return;
       }
@@ -2322,7 +2400,7 @@ testImplementations(api => {
         directive @lowercase on OBJECT | FIELD_DEFINITION
       `);
 
-      api.runIf('guild', () => {
+      api.runIf("guild", () => {
         expect(result.publicSdl).toContainGraphQL(/* GraphQL */ `
           directive @lowercase on OBJECT | FIELD_DEFINITION
         `);
@@ -2340,9 +2418,9 @@ testImplementations(api => {
       `);
 
       expect(result.publicSdl).toContainGraphQL(/* GraphQL */ `
-        type User ${api.injectIf('guild', '@lowercase')} {
+        type User ${api.injectIf("guild", "@lowercase")} {
           id: ID!
-          name: String! ${api.injectIf('guild', '@lowercase')}
+          name: String! ${api.injectIf("guild", "@lowercase")}
           comments: [Comment]
         }
       `);
@@ -2355,7 +2433,7 @@ testImplementations(api => {
       `);
 
       expect(result.publicSdl).toContainGraphQL(/* GraphQL */ `
-        type Comment ${api.injectIf('guild', '@lowercase')} {
+        type Comment ${api.injectIf("guild", "@lowercase")} {
           id: ID!
           text: String!
         }
@@ -2371,10 +2449,10 @@ testImplementations(api => {
       `);
     });
 
-    test('preserve directive on scalars if included in @composeDirective', () => {
+    test("preserve directive on scalars if included in @composeDirective", () => {
       const result = composeServices([
         {
-          name: 'a',
+          name: "a",
           typeDefs: parse(/* GraphQL */ `
               extend schema
                 @link(
@@ -2401,7 +2479,7 @@ testImplementations(api => {
         },
       ]);
 
-      if (version === 'v2.0') {
+      if (version === "v2.0") {
         assertCompositionFailure(result);
         return;
       }
@@ -2412,7 +2490,7 @@ testImplementations(api => {
         directive @whatever on SCALAR
       `);
 
-      api.runIf('guild', () => {
+      api.runIf("guild", () => {
         expect(result.publicSdl).toContainGraphQL(/* GraphQL */ `
           directive @whatever on SCALAR
         `);
@@ -2435,10 +2513,10 @@ testImplementations(api => {
       `);
     });
 
-    test('preserve directive on enums if included in @composeDirective', () => {
+    test("preserve directive on enums if included in @composeDirective", () => {
       const result = composeServices([
         {
-          name: 'a',
+          name: "a",
           typeDefs: parse(/* GraphQL */ `
               extend schema
                 @link(
@@ -2468,7 +2546,7 @@ testImplementations(api => {
         },
       ]);
 
-      if (version === 'v2.0') {
+      if (version === "v2.0") {
         assertCompositionFailure(result);
         return;
       }
@@ -2479,7 +2557,7 @@ testImplementations(api => {
         directive @whatever on ENUM
       `);
 
-      api.runIf('guild', () => {
+      api.runIf("guild", () => {
         expect(result.publicSdl).toContainGraphQL(/* GraphQL */ `
           directive @whatever on ENUM
         `);
@@ -2494,7 +2572,7 @@ testImplementations(api => {
 
       expect(result.publicSdl).toContainGraphQL(/* GraphQL */ `
         enum UserType
-        ${api.injectIf('guild', '@whatever')}
+        ${api.injectIf("guild", "@whatever")}
         {
           ADMIN
           REGULAR
@@ -2502,10 +2580,10 @@ testImplementations(api => {
       `);
     });
 
-    test('preserve directive on enum values if included in @composeDirective', () => {
+    test("preserve directive on enum values if included in @composeDirective", () => {
       const result = composeServices([
         {
-          name: 'a',
+          name: "a",
           typeDefs: parse(/* GraphQL */ `
               extend schema
                 @link(
@@ -2535,7 +2613,7 @@ testImplementations(api => {
         },
       ]);
 
-      if (version === 'v2.0') {
+      if (version === "v2.0") {
         assertCompositionFailure(result);
         return;
       }
@@ -2546,7 +2624,7 @@ testImplementations(api => {
         directive @whatever on ENUM_VALUE
       `);
 
-      api.runIf('guild', () => {
+      api.runIf("guild", () => {
         expect(result.publicSdl).toContainGraphQL(/* GraphQL */ `
           directive @whatever on ENUM_VALUE
         `);
@@ -2561,16 +2639,16 @@ testImplementations(api => {
 
       expect(result.publicSdl).toContainGraphQL(/* GraphQL */ `
         enum UserType {
-          ADMIN ${api.injectIf('guild', '@whatever')}
+          ADMIN ${api.injectIf("guild", "@whatever")}
           REGULAR
         }
       `);
     });
 
-    test('preserve directive on union types if included in @composeDirective', () => {
+    test("preserve directive on union types if included in @composeDirective", () => {
       const result = composeServices([
         {
-          name: 'a',
+          name: "a",
           typeDefs: parse(/* GraphQL */ `
               extend schema
                 @link(
@@ -2601,7 +2679,7 @@ testImplementations(api => {
         },
       ]);
 
-      if (version === 'v2.0') {
+      if (version === "v2.0") {
         assertCompositionFailure(result);
         return;
       }
@@ -2612,7 +2690,7 @@ testImplementations(api => {
         directive @whatever on UNION
       `);
 
-      api.runIf('guild', () => {
+      api.runIf("guild", () => {
         expect(result.publicSdl).toContainGraphQL(/* GraphQL */ `
           directive @whatever on UNION
         `);
@@ -2629,16 +2707,16 @@ testImplementations(api => {
       `);
 
       expect(result.publicSdl).toContainGraphQL(/* GraphQL */ `
-        union Whoever ${api.injectIf('guild', '@whatever')} =
+        union Whoever ${api.injectIf("guild", "@whatever")} =
           | Admin
           | User
       `);
     });
 
-    test('preserve directive on interface its field and argument if included in @composeDirective', () => {
+    test("preserve directive on interface its field and argument if included in @composeDirective", () => {
       const result = composeServices([
         {
-          name: 'a',
+          name: "a",
           typeDefs: parse(/* GraphQL */ `
               extend schema
                 @link(
@@ -2674,7 +2752,7 @@ testImplementations(api => {
         },
       ]);
 
-      if (version === 'v2.0') {
+      if (version === "v2.0") {
         assertCompositionFailure(result);
         return;
       }
@@ -2685,7 +2763,7 @@ testImplementations(api => {
         directive @whatever on FIELD_DEFINITION | INTERFACE | INPUT_FIELD_DEFINITION | ARGUMENT_DEFINITION
       `);
 
-      api.runIf('guild', () => {
+      api.runIf("guild", () => {
         expect(result.publicSdl).toContainGraphQL(/* GraphQL */ `
           directive @whatever on FIELD_DEFINITION | INTERFACE | INPUT_FIELD_DEFINITION | ARGUMENT_DEFINITION
         `);
@@ -2699,17 +2777,17 @@ testImplementations(api => {
       `);
 
       expect(result.publicSdl).toContainGraphQL(/* GraphQL */ `
-        interface User ${api.injectIf('guild', '@whatever')} {
-          id: ID! ${api.injectIf('guild', '@whatever')}
-          tags(limit: Int ${api.injectIf('guild', '@whatever')}): [String!]!
+        interface User ${api.injectIf("guild", "@whatever")} {
+          id: ID! ${api.injectIf("guild", "@whatever")}
+          tags(limit: Int ${api.injectIf("guild", "@whatever")}): [String!]!
         }
       `);
     });
 
-    test('preserve directive on directive argument if included in @composeDirective', () => {
+    test("preserve directive on directive argument if included in @composeDirective", () => {
       const result = composeServices([
         {
-          name: 'a',
+          name: "a",
           typeDefs: parse(/* GraphQL */ `
               extend schema
                 @link(
@@ -2734,7 +2812,7 @@ testImplementations(api => {
         },
       ]);
 
-      if (version === 'v2.0') {
+      if (version === "v2.0") {
         assertCompositionFailure(result);
         return;
       }
@@ -2749,7 +2827,7 @@ testImplementations(api => {
         directive @whenever on ARGUMENT_DEFINITION
       `);
 
-      api.runIf('guild', () => {
+      api.runIf("guild", () => {
         expect(result.publicSdl).toContainGraphQL(/* GraphQL */ `
           directive @whatever(when: String @whenever) on FIELD_DEFINITION
         `);
@@ -2767,15 +2845,15 @@ testImplementations(api => {
 
       expect(result.publicSdl).toContainGraphQL(/* GraphQL */ `
         type User {
-          id: ID! ${api.injectIf('guild', '@whatever(when: "now")')}
+          id: ID! ${api.injectIf("guild", '@whatever(when: "now")')}
         }
       `);
     });
 
-    test('use highest version of a spec that imports a custom directive (@composeDirective)', () => {
+    test("use highest version of a spec that imports a custom directive (@composeDirective)", () => {
       const result = composeServices([
         {
-          name: 'a',
+          name: "a",
           typeDefs: parse(/* GraphQL */ `
               extend schema
                 @link(url: "https://specs.apollo.dev/federation/${version}" import: ["@key", "@composeDirective"])
@@ -2791,7 +2869,7 @@ testImplementations(api => {
             `),
         },
         {
-          name: 'b',
+          name: "b",
           typeDefs: parse(/* GraphQL */ `
               extend schema
                 @link(url: "https://specs.apollo.dev/federation/${version}" import: ["@key", "@composeDirective"])
@@ -2817,7 +2895,7 @@ testImplementations(api => {
         },
       ]);
 
-      if (version === 'v2.0') {
+      if (version === "v2.0") {
         assertCompositionFailure(result);
         return;
       }
@@ -2856,10 +2934,10 @@ testImplementations(api => {
       `);
     });
 
-    test('two different major versions of the same spec were used to import a scalar of the same name', () => {
+    test("two different major versions of the same spec were used to import a scalar of the same name", () => {
       const result = composeServices([
         {
-          name: 'a',
+          name: "a",
           typeDefs: parse(/* GraphQL */ `
               extend schema
                 @link(url: "https://specs.apollo.dev/federation/${version}" import: ["@key"])
@@ -2874,7 +2952,7 @@ testImplementations(api => {
             `),
         },
         {
-          name: 'b',
+          name: "b",
           typeDefs: parse(/* GraphQL */ `
               extend schema
                 @link(url: "https://specs.apollo.dev/federation/${version}" import: ["@key"])
@@ -2951,10 +3029,10 @@ testImplementations(api => {
       `);
     });
 
-    test('allow to compose a built-in directive (@oneOf)', () => {
+    test("allow to compose a built-in directive (@oneOf)", () => {
       const result = composeServices([
         {
-          name: 'a',
+          name: "a",
           typeDefs: parse(/* GraphQL */ `
               extend schema
                 @link(url: "https://specs.apollo.dev/federation/${version}" import: ["@key", "@composeDirective"])
@@ -2972,10 +3050,10 @@ testImplementations(api => {
                 hello(input: HelloInput): String
               }
             `),
-        }
+        },
       ]);
 
-      if (version === 'v2.0') {
+      if (version === "v2.0") {
         assertCompositionFailure(result);
         return;
       }
@@ -2987,14 +3065,16 @@ testImplementations(api => {
       `);
 
       expect(result.supergraphSdl).toContainGraphQL(/* GraphQL */ `
-        input HelloInput @oneOf @join__type(graph: A)  {
+        input HelloInput @oneOf @join__type(graph: A) {
           world: String
           me: String
         }
       `);
 
       expect(result.publicSdl).toContainGraphQL(/* GraphQL */ `
-        input HelloInput ${api.injectIf('guild', '@oneOf')} {
+        input HelloInput
+        ${api.injectIf("guild", "@oneOf")}
+        {
           world: String
           me: String
         }
@@ -3010,10 +3090,10 @@ testImplementations(api => {
       `);
     });
 
-    test('two different specs were used to import a scalar of the same name', () => {
+    test("two different specs were used to import a scalar of the same name", () => {
       const result = composeServices([
         {
-          name: 'a',
+          name: "a",
           typeDefs: parse(/* GraphQL */ `
               extend schema
                 @link(url: "https://specs.apollo.dev/federation/${version}" import: ["@key"])
@@ -3028,7 +3108,7 @@ testImplementations(api => {
             `),
         },
         {
-          name: 'b',
+          name: "b",
           typeDefs: parse(/* GraphQL */ `
               extend schema
                 @link(url: "https://specs.apollo.dev/federation/${version}" import: ["@key"])
@@ -3086,10 +3166,10 @@ testImplementations(api => {
       `);
     });
 
-    test('import type', () => {
+    test("import type", () => {
       const result = composeServices([
         {
-          name: 'a',
+          name: "a",
           typeDefs: parse(/* GraphQL */ `
             extend schema
               @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@shareable"])
@@ -3103,7 +3183,7 @@ testImplementations(api => {
           `),
         },
         {
-          name: 'b',
+          name: "b",
           typeDefs: parse(/* GraphQL */ `
             extend schema
               @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@shareable"])
@@ -3130,10 +3210,10 @@ testImplementations(api => {
       `);
     });
 
-    test('every entity must be annotated with the @join__type directive', () => {
+    test("every entity must be annotated with the @join__type directive", () => {
       const result = composeServices([
         {
-          name: 'users',
+          name: "users",
           typeDefs: parse(/* GraphQL */ `
             extend schema @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@key"])
 
@@ -3151,7 +3231,7 @@ testImplementations(api => {
           `),
         },
         {
-          name: 'pandas',
+          name: "pandas",
           typeDefs: parse(/* GraphQL */ `
             extend schema @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@key"])
 
@@ -3170,7 +3250,9 @@ testImplementations(api => {
 
       assertCompositionSuccess(result);
 
-      expect(result.supergraphSdl).toContainGraphQL(`type Panda @join__type(graph: PANDAS)`);
+      expect(result.supergraphSdl).toContainGraphQL(
+        `type Panda @join__type(graph: PANDAS)`,
+      );
       expect(result.supergraphSdl).toContainGraphQL(
         `type User @join__type(graph: USERS, key: "email")`,
       );
@@ -3182,10 +3264,10 @@ testImplementations(api => {
       `);
     });
 
-    test('renaming directives', () => {
+    test("renaming directives", () => {
       const result = composeServices([
         {
-          name: 'users',
+          name: "users",
           typeDefs: parse(/* GraphQL */ `
             extend schema
               @link(
@@ -3207,7 +3289,7 @@ testImplementations(api => {
           `),
         },
         {
-          name: 'pandas',
+          name: "pandas",
           typeDefs: parse(/* GraphQL */ `
             extend schema @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@key"])
 
@@ -3241,10 +3323,10 @@ testImplementations(api => {
       `);
     });
 
-    test('namespaced directives', () => {
+    test("namespaced directives", () => {
       const result = composeServices([
         {
-          name: 'users',
+          name: "users",
           typeDefs: parse(/* GraphQL */ `
             extend schema @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@key"])
 
@@ -3266,7 +3348,7 @@ testImplementations(api => {
           `),
         },
         {
-          name: 'pandas',
+          name: "pandas",
           typeDefs: parse(/* GraphQL */ `
             extend schema @link(url: "https://specs.apollo.dev/federation/${version}", import: [])
 
@@ -3319,10 +3401,10 @@ testImplementations(api => {
       `);
     });
 
-    test('repeatable @key', () => {
+    test("repeatable @key", () => {
       const result = composeServices([
         {
-          name: 'users',
+          name: "users",
           typeDefs: parse(/* GraphQL */ `
             extend schema @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@key"])
 
@@ -3342,7 +3424,9 @@ testImplementations(api => {
       assertCompositionSuccess(result);
 
       expect(result.supergraphSdl).toContainGraphQL(/* GraphQL */ `
-        type User @join__type(graph: USERS, key: "email") @join__type(graph: USERS, key: "name") {
+        type User
+          @join__type(graph: USERS, key: "email")
+          @join__type(graph: USERS, key: "name") {
           email: ID!
           name: String
           totalProductsCreated: Int
@@ -3350,10 +3434,10 @@ testImplementations(api => {
       `);
     });
 
-    test('@interfaceObject', () => {
+    test("@interfaceObject", () => {
       const result = composeServices([
         {
-          name: 'a',
+          name: "a",
           typeDefs: parse(/* GraphQL */ `
             extend schema
               @link(
@@ -3377,7 +3461,7 @@ testImplementations(api => {
           `),
         },
         {
-          name: 'b',
+          name: "b",
           typeDefs: parse(/* GraphQL */ `
             extend schema
               @link(
@@ -3401,13 +3485,13 @@ testImplementations(api => {
         },
       ]);
 
-      if (satisfiesVersionRange('< v2.3', version)) {
+      if (satisfiesVersionRange("< v2.3", version)) {
         assertCompositionFailure(result);
         expect(result.errors).toContainEqual(
           expect.objectContaining({
             message: '[a] Cannot import unknown element "@interfaceObject".',
             extensions: expect.objectContaining({
-              code: 'INVALID_LINK_DIRECTIVE_USAGE',
+              code: "INVALID_LINK_DIRECTIVE_USAGE",
             }),
           }),
         );
@@ -3415,7 +3499,7 @@ testImplementations(api => {
           expect.objectContaining({
             message: '[b] Cannot import unknown element "@interfaceObject".',
             extensions: expect.objectContaining({
-              code: 'INVALID_LINK_DIRECTIVE_USAGE',
+              code: "INVALID_LINK_DIRECTIVE_USAGE",
             }),
           }),
         );
@@ -3447,10 +3531,10 @@ testImplementations(api => {
       `);
     });
 
-    test('@extends', () => {
+    test("@extends", () => {
       const result = composeServices([
         {
-          name: 'a',
+          name: "a",
           typeDefs: parse(/* GraphQL */ `
             extend schema @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@key"])
 
@@ -3465,7 +3549,7 @@ testImplementations(api => {
           `),
         },
         {
-          name: 'b',
+          name: "b",
           typeDefs: parse(/* GraphQL */ `
             extend schema
               @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@key", "@extends"])
@@ -3495,10 +3579,10 @@ testImplementations(api => {
       `);
     });
 
-    test('@override', () => {
+    test("@override", () => {
       let result = composeServices([
         {
-          name: 'a',
+          name: "a",
           typeDefs: parse(/* GraphQL */ `
             extend schema @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@key"])
 
@@ -3513,7 +3597,7 @@ testImplementations(api => {
           `),
         },
         {
-          name: 'b',
+          name: "b",
           typeDefs: parse(/* GraphQL */ `
             extend schema
               @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@key", "@override"])
@@ -3529,7 +3613,9 @@ testImplementations(api => {
       assertCompositionSuccess(result);
 
       expect(result.supergraphSdl).toContainGraphQL(/* GraphQL */ `
-        type Product @join__type(graph: A, key: "id") @join__type(graph: B, key: "id") {
+        type Product
+          @join__type(graph: A, key: "id")
+          @join__type(graph: B, key: "id") {
           id: ID!
           inStock: Boolean! @join__field(graph: B, override: "a")
         }
@@ -3537,7 +3623,7 @@ testImplementations(api => {
 
       result = api.composeServices([
         {
-          name: 'foo',
+          name: "foo",
           typeDefs: parse(/* GraphQL */ `
             extend schema
               @link(
@@ -3556,7 +3642,7 @@ testImplementations(api => {
           `),
         },
         {
-          name: 'bar',
+          name: "bar",
           typeDefs: parse(/* GraphQL */ `
             extend schema
               @link(
@@ -3571,7 +3657,7 @@ testImplementations(api => {
           `),
         },
         {
-          name: 'main',
+          name: "main",
           typeDefs: parse(/* GraphQL */ `
             extend schema
               @link(
@@ -3594,15 +3680,17 @@ testImplementations(api => {
           @join__type(graph: MAIN)
           @join__type(graph: BAR, key: "id") {
           id: ID! @join__field(graph: BAR) @join__field(graph: FOO)
-          name: String @join__field(graph: FOO) @join__field(graph: BAR, override: "main")
+          name: String
+            @join__field(graph: FOO)
+            @join__field(graph: BAR, override: "main")
         }
       `);
     });
 
-    test('remove @provides(fields:) when all fields are in common with @key(fields:) and @provides refers to a type extension', () => {
+    test("remove @provides(fields:) when all fields are in common with @key(fields:) and @provides refers to a type extension", () => {
       const result = composeServices([
         {
-          name: 'foo',
+          name: "foo",
           typeDefs: parse(/* GraphQL */ `
             extend type User @key(fields: "id") {
               id: String! @external
@@ -3616,7 +3704,7 @@ testImplementations(api => {
           `),
         },
         {
-          name: 'bar',
+          name: "bar",
           typeDefs: parse(/* GraphQL */ `
             extend type Group @key(fields: "id") {
               id: ID @external
@@ -3635,7 +3723,7 @@ testImplementations(api => {
           `),
         },
         {
-          name: 'baz',
+          name: "baz",
           typeDefs: parse(/* GraphQL */ `
             type Theme @key(fields: "id") {
               id: ID!
@@ -3652,7 +3740,9 @@ testImplementations(api => {
       assertCompositionSuccess(result);
 
       expect(result.supergraphSdl).toContainGraphQL(/* GraphQL */ `
-        type Group @join__type(graph: FOO, key: "id") @join__type(graph: BAR, key: "id") {
+        type Group
+          @join__type(graph: FOO, key: "id")
+          @join__type(graph: BAR, key: "id") {
           id: ID
           title: String @join__field(graph: FOO)
           users: [User] @join__field(graph: FOO)
@@ -3668,7 +3758,9 @@ testImplementations(api => {
       `);
 
       expect(result.supergraphSdl).toContainGraphQL(/* GraphQL */ `
-        type User @join__type(graph: FOO, key: "id") @join__type(graph: BAR, key: "id") {
+        type User
+          @join__type(graph: FOO, key: "id")
+          @join__type(graph: BAR, key: "id") {
           id: String!
           name: String @join__field(graph: BAR)
         }
@@ -3682,10 +3774,10 @@ testImplementations(api => {
       `);
     });
 
-    test('preserve @provides(fields:) when all fields are in common with @key(fields:) and @provides refers to type definition', () => {
+    test("preserve @provides(fields:) when all fields are in common with @key(fields:) and @provides refers to type definition", () => {
       const result = composeServices([
         {
-          name: 'foo',
+          name: "foo",
           typeDefs: parse(/* GraphQL */ `
             type User @key(fields: "id") {
               id: String! @external
@@ -3699,7 +3791,7 @@ testImplementations(api => {
           `),
         },
         {
-          name: 'bar',
+          name: "bar",
           typeDefs: parse(/* GraphQL */ `
             extend type Group @key(fields: "id") {
               id: ID @external
@@ -3718,7 +3810,7 @@ testImplementations(api => {
           `),
         },
         {
-          name: 'baz',
+          name: "baz",
           typeDefs: parse(/* GraphQL */ `
             type Theme @key(fields: "id") {
               id: ID!
@@ -3735,7 +3827,9 @@ testImplementations(api => {
       assertCompositionSuccess(result);
 
       expect(result.supergraphSdl).toContainGraphQL(/* GraphQL */ `
-        type Group @join__type(graph: FOO, key: "id") @join__type(graph: BAR, key: "id") {
+        type Group
+          @join__type(graph: FOO, key: "id")
+          @join__type(graph: BAR, key: "id") {
           id: ID
           title: String @join__field(graph: FOO)
           users: [User] @join__field(graph: FOO, provides: "id")
@@ -3751,8 +3845,12 @@ testImplementations(api => {
       `);
 
       expect(result.supergraphSdl).toContainGraphQL(/* GraphQL */ `
-        type User @join__type(graph: BAR, key: "id") @join__type(graph: FOO, key: "id") {
-          id: String! @join__field(graph: BAR) @join__field(graph: FOO, external: true)
+        type User
+          @join__type(graph: BAR, key: "id")
+          @join__type(graph: FOO, key: "id") {
+          id: String!
+            @join__field(graph: BAR)
+            @join__field(graph: FOO, external: true)
           name: String @join__field(graph: BAR)
         }
       `);
@@ -3765,10 +3863,10 @@ testImplementations(api => {
       `);
     });
 
-    test('@external + @provides', () => {
+    test("@external + @provides", () => {
       const result = composeServices([
         {
-          name: 'a',
+          name: "a",
           typeDefs: parse(/* GraphQL */ `
             extend schema
               @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@key", "@shareable"])
@@ -3785,7 +3883,7 @@ testImplementations(api => {
           `),
         },
         {
-          name: 'b',
+          name: "b",
           typeDefs: parse(/* GraphQL */ `
             extend schema
               @link(
@@ -3808,9 +3906,13 @@ testImplementations(api => {
       assertCompositionSuccess(result);
 
       expect(result.supergraphSdl).toContainGraphQL(/* GraphQL */ `
-        type Product @join__type(graph: A, key: "id") @join__type(graph: B, key: "id") {
+        type Product
+          @join__type(graph: A, key: "id")
+          @join__type(graph: B, key: "id") {
           id: ID!
-          name: String! @join__field(graph: A) @join__field(graph: B, external: true)
+          name: String!
+            @join__field(graph: A)
+            @join__field(graph: B, external: true)
           inStock: Int! @join__field(graph: A)
         }
       `);
@@ -3818,15 +3920,16 @@ testImplementations(api => {
       expect(result.supergraphSdl).toContainGraphQL(/* GraphQL */ `
         type Query @join__type(graph: A) @join__type(graph: B) {
           products: [Product] @join__field(graph: A)
-          outOfStockProducts: [Product!]! @join__field(graph: B, provides: "name")
+          outOfStockProducts: [Product!]!
+            @join__field(graph: B, provides: "name")
         }
       `);
     });
 
-    test('@external + @requires', () => {
+    test("@external + @requires", () => {
       const result = composeServices([
         {
-          name: 'a',
+          name: "a",
           typeDefs: parse(/* GraphQL */ `
             extend schema @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@key"])
 
@@ -3842,7 +3945,7 @@ testImplementations(api => {
           `),
         },
         {
-          name: 'b',
+          name: "b",
           typeDefs: parse(/* GraphQL */ `
             extend schema
               @link(
@@ -3864,19 +3967,23 @@ testImplementations(api => {
       // KNOW: which fields are external
       // KNOW: which fields are required
       expect(result.supergraphSdl).toContainGraphQL(/* GraphQL */ `
-        type Product @join__type(graph: A, key: "id") @join__type(graph: B, key: "id") {
+        type Product
+          @join__type(graph: A, key: "id")
+          @join__type(graph: B, key: "id") {
           id: ID!
           name: String! @join__field(graph: A)
-          inStock: Int! @join__field(graph: A) @join__field(graph: B, external: true)
+          inStock: Int!
+            @join__field(graph: A)
+            @join__field(graph: B, external: true)
           isAvailable: String! @join__field(graph: B, requires: "inStock")
         }
       `);
     });
 
-    test('@tag', () => {
+    test("@tag", () => {
       const result = composeServices([
         {
-          name: 'a',
+          name: "a",
           typeDefs: parse(/* GraphQL */ `
             extend schema @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@tag"])
 
@@ -3918,8 +4025,10 @@ testImplementations(api => {
       expect(result.supergraphSdl).toContainGraphQL(/* GraphQL */ `
         type Query @join__type(graph: A) {
           customer(id: String!): Customer @tag(name: "team-customers")
-          employee(id: String! @tag(name: "team-admin")): Employee @tag(name: "team-admin")
-          employees(filter: EmployeesFilter!): [Employee!] @tag(name: "team-admin")
+          employee(id: String! @tag(name: "team-admin")): Employee
+            @tag(name: "team-admin")
+          employees(filter: EmployeesFilter!): [Employee!]
+            @tag(name: "team-admin")
         }
       `);
 
@@ -3999,10 +4108,10 @@ testImplementations(api => {
     });
 
     // Skipping because this test is not valid for earlier versions
-    test('@tag on directive', () => {
+    test("@tag on directive", () => {
       const result = composeServices([
         {
-          name: 'a',
+          name: "a",
           typeDefs: parse(/* GraphQL */ `
             extend schema @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@tag", "@composeDirective"])
             @link(url: "https://myspecs.dev/access/v1.0", import: ["@access"])
@@ -4023,8 +4132,8 @@ testImplementations(api => {
         },
       ]);
 
-      if (satisfiesVersionRange('< v2.3', version)) {
-        if (version === 'v2.0') {
+      if (satisfiesVersionRange("< v2.3", version)) {
+        if (version === "v2.0") {
           assertCompositionFailure(result);
         } else {
           assertCompositionSuccess(result);
@@ -4036,7 +4145,9 @@ testImplementations(api => {
 
       expect(result.supergraphSdl).toContainGraphQL(/* GraphQL */ `
         type Query @join__type(graph: A) {
-          employee(id: String!): Employee @tag(name: "team-admin") @access(scope: "admin")
+          employee(id: String!): Employee
+            @tag(name: "team-admin")
+            @access(scope: "admin")
         }
       `);
 
@@ -4049,14 +4160,16 @@ testImplementations(api => {
       `);
 
       expect(result.supergraphSdl).toContainGraphQL(/* GraphQL */ `
-        directive @access(scope: String @tag(name: "team-admin")) on FIELD_DEFINITION
+        directive @access(
+          scope: String @tag(name: "team-admin")
+        ) on FIELD_DEFINITION
       `);
     });
 
-    test('entity annotated with @key directive must have @join__type with key argument', () => {
+    test("entity annotated with @key directive must have @join__type with key argument", () => {
       const result = composeServices([
         {
-          name: 'users',
+          name: "users",
           typeDefs: parse(/* GraphQL */ `
             extend schema @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@key"])
 
@@ -4074,7 +4187,7 @@ testImplementations(api => {
           `),
         },
         {
-          name: 'pandas',
+          name: "pandas",
           typeDefs: parse(/* GraphQL */ `
             extend schema @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@key"])
 
@@ -4093,7 +4206,9 @@ testImplementations(api => {
 
       assertCompositionSuccess(result);
 
-      expect(result.supergraphSdl).toContainGraphQL('type Panda @join__type(graph: PANDAS)');
+      expect(result.supergraphSdl).toContainGraphQL(
+        "type Panda @join__type(graph: PANDAS)",
+      );
       expect(result.supergraphSdl).toContainGraphQL(
         'type User @join__type(graph: USERS, key: "email")',
       );
@@ -4105,10 +4220,10 @@ testImplementations(api => {
       `);
     });
 
-    test('fields referenced by @key directive must NOT be annotated with @join__field', () => {
+    test("fields referenced by @key directive must NOT be annotated with @join__field", () => {
       const result = composeServices([
         {
-          name: 'reviews',
+          name: "reviews",
           typeDefs: parse(/* GraphQL */ `
             extend schema @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@key", "@external"])
 
@@ -4125,7 +4240,7 @@ testImplementations(api => {
           `),
         },
         {
-          name: 'products',
+          name: "products",
           typeDefs: parse(/* GraphQL */ `
             extend schema @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@key"])
 
@@ -4163,10 +4278,10 @@ testImplementations(api => {
       `);
     });
 
-    test('entity used by more than one service must be annotated with @join__type of these service', () => {
+    test("entity used by more than one service must be annotated with @join__type of these service", () => {
       const result = composeServices([
         {
-          name: 'reviews',
+          name: "reviews",
           typeDefs: parse(/* GraphQL */ `
             extend schema @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@key", "@external"])
 
@@ -4183,7 +4298,7 @@ testImplementations(api => {
           `),
         },
         {
-          name: 'products',
+          name: "products",
           typeDefs: parse(/* GraphQL */ `
             extend schema @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@key"])
 
@@ -4206,10 +4321,10 @@ testImplementations(api => {
       );
     });
 
-    test('entity directly used by more than one service must have all fields annotated with @join__field directive, where `graph` argument points to the owning service', () => {
+    test("entity directly used by more than one service must have all fields annotated with @join__field directive, where `graph` argument points to the owning service", () => {
       const result = composeServices([
         {
-          name: 'reviews',
+          name: "reviews",
           typeDefs: parse(/* GraphQL */ `
             extend schema @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@key", "@external"])
 
@@ -4226,7 +4341,7 @@ testImplementations(api => {
           `),
         },
         {
-          name: 'products',
+          name: "products",
           typeDefs: parse(/* GraphQL */ `
             extend schema @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@key"])
 
@@ -4261,10 +4376,10 @@ testImplementations(api => {
       `);
     });
 
-    test('a field of an entity with different return type (nullability) must be annotated with multiple @join__field directives, each with original return type', () => {
+    test("a field of an entity with different return type (nullability) must be annotated with multiple @join__field directives, each with original return type", () => {
       const result = composeServices([
         {
-          name: 'a',
+          name: "a",
           typeDefs: parse(/* GraphQL */ `
             extend schema
               @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@shareable"])
@@ -4275,7 +4390,7 @@ testImplementations(api => {
           `),
         },
         {
-          name: 'b',
+          name: "b",
           typeDefs: parse(/* GraphQL */ `
             extend schema
               @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@shareable"])
@@ -4295,16 +4410,18 @@ testImplementations(api => {
 
       expect(result.supergraphSdl).toContainGraphQL(/* GraphQL */ `
         type Position @join__type(graph: A) @join__type(graph: B) {
-          x: Int @join__field(graph: A, type: "Int!") @join__field(graph: B, type: "Int")
+          x: Int
+            @join__field(graph: A, type: "Int!")
+            @join__field(graph: B, type: "Int")
           y: Int!
         }
       `);
     });
 
-    test('a field of an entity with same type but external:true in one or more must be annotated with multiple @join__field directives', () => {
+    test("a field of an entity with same type but external:true in one or more must be annotated with multiple @join__field directives", () => {
       const result = composeServices([
         {
-          name: 'a',
+          name: "a",
           typeDefs: parse(/* GraphQL */ `
             extend schema
               @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@key"])
@@ -4321,7 +4438,7 @@ testImplementations(api => {
           `),
         },
         {
-          name: 'b',
+          name: "b",
           typeDefs: parse(/* GraphQL */ `
             extend schema
               @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@key", "@external"])
@@ -4338,19 +4455,23 @@ testImplementations(api => {
       assertCompositionSuccess(result);
 
       expect(result.supergraphSdl).toContainGraphQL(/* GraphQL */ `
-        type Product @join__type(graph: A, key: "id name") @join__type(graph: B, key: "id name") {
+        type Product
+          @join__type(graph: A, key: "id name")
+          @join__type(graph: B, key: "id name") {
           id: ID!
-          name: String! @join__field(graph: A) @join__field(graph: B, external: true)
+          name: String!
+            @join__field(graph: A)
+            @join__field(graph: B, external: true)
           discount: Int! @join__field(graph: A)
           reviews: [String] @join__field(graph: B)
         }
       `);
     });
 
-    test('enum indirectly used by more than one service must have all values annotated with @join__field directive, where `graph` argument points to the owning service', () => {
+    test("enum indirectly used by more than one service must have all values annotated with @join__field directive, where `graph` argument points to the owning service", () => {
       const result = composeServices([
         {
-          name: 'reviews',
+          name: "reviews",
           typeDefs: parse(/* GraphQL */ `
             extend schema @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@key", "@external"])
 
@@ -4367,7 +4488,7 @@ testImplementations(api => {
           `),
         },
         {
-          name: 'products',
+          name: "products",
           typeDefs: parse(/* GraphQL */ `
             extend schema @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@key"])
 
@@ -4416,10 +4537,10 @@ testImplementations(api => {
       `);
     });
 
-    test('query must be annotated with @join__type directive of every service', () => {
+    test("query must be annotated with @join__type directive of every service", () => {
       const result = composeServices([
         {
-          name: 'reviews',
+          name: "reviews",
           typeDefs: parse(/* GraphQL */ `
             extend schema @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@key"])
 
@@ -4431,7 +4552,7 @@ testImplementations(api => {
           `),
         },
         {
-          name: 'products',
+          name: "products",
           typeDefs: parse(/* GraphQL */ `
             extend schema @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@key"])
 
@@ -4455,14 +4576,14 @@ testImplementations(api => {
       assertCompositionSuccess(result);
 
       expect(result.supergraphSdl).toContainGraphQL(
-        'type Query @join__type(graph: PRODUCTS) @join__type(graph: REVIEWS)',
+        "type Query @join__type(graph: PRODUCTS) @join__type(graph: REVIEWS)",
       );
     });
 
-    test('all fields of query object must be annotated with @join__field pointing to the owning service', () => {
+    test("all fields of query object must be annotated with @join__field pointing to the owning service", () => {
       const result = composeServices([
         {
-          name: 'reviews',
+          name: "reviews",
           typeDefs: parse(/* GraphQL */ `
             extend schema @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@key", "@external", "@shareable"])
 
@@ -4484,7 +4605,7 @@ testImplementations(api => {
           `),
         },
         {
-          name: 'products',
+          name: "products",
           typeDefs: parse(/* GraphQL */ `
             extend schema @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@key", "@shareable"])
 
@@ -4515,10 +4636,10 @@ testImplementations(api => {
       `);
     });
 
-    test('[v1] all fields of query object must be annotated with @join__field pointing to the owning service', () => {
+    test("[v1] all fields of query object must be annotated with @join__field pointing to the owning service", () => {
       const result = composeServices([
         {
-          name: 'reviews',
+          name: "reviews",
           typeDefs: parse(/* GraphQL */ `
             extend type Query {
               review(id: ID!): Review
@@ -4538,7 +4659,7 @@ testImplementations(api => {
           `),
         },
         {
-          name: 'products',
+          name: "products",
           typeDefs: parse(/* GraphQL */ `
             type Product @key(fields: "id") {
               id: ID!
@@ -4568,10 +4689,10 @@ testImplementations(api => {
       `);
     });
 
-    test('@key(resolvable: false) should be passed to @join__type(resolvable: false)', () => {
+    test("@key(resolvable: false) should be passed to @join__type(resolvable: false)", () => {
       let result = composeServices([
         {
-          name: 'products',
+          name: "products",
           typeDefs: parse(/* GraphQL */ `
             extend schema @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@key"])
 
@@ -4590,17 +4711,18 @@ testImplementations(api => {
       assertCompositionSuccess(result);
 
       expect(result.supergraphSdl).toContainGraphQL(/* GraphQL */ `
-        type Product @join__type(graph: PRODUCTS, key: "id", resolvable: false) {
+        type Product
+          @join__type(graph: PRODUCTS, key: "id", resolvable: false) {
           id: ID!
           title: String
         }
       `);
     });
 
-    test('@join__implements on Interface type', () => {
+    test("@join__implements on Interface type", () => {
       const result = composeServices([
         {
-          name: 'products',
+          name: "products",
           typeDefs: parse(/* GraphQL */ `
             extend schema @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@key"])
 
@@ -4653,10 +4775,10 @@ testImplementations(api => {
       `);
     });
 
-    test('Fed v1: no @join__type(key:) on interface type', () => {
+    test("Fed v1: no @join__type(key:) on interface type", () => {
       const result = composeServices([
         {
-          name: 'a',
+          name: "a",
           typeDefs: parse(/* GraphQL */ `
             extend schema @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@key"])
 
@@ -4667,7 +4789,7 @@ testImplementations(api => {
           `),
         },
         {
-          name: 'b',
+          name: "b",
           typeDefs: parse(/* GraphQL */ `
             type User implements Node @key(fields: "id") {
               id: ID!
@@ -4694,11 +4816,11 @@ testImplementations(api => {
       `);
     });
 
-    describe('descriptions', () => {
-      test('on scalars', () => {
+    describe("descriptions", () => {
+      test("on scalars", () => {
         const result = composeServices([
           {
-            name: 'reviews',
+            name: "reviews",
             typeDefs: parse(/* GraphQL */ `
               extend type Query {
                 dateTime: DateTime
@@ -4711,7 +4833,7 @@ testImplementations(api => {
             `),
           },
           {
-            name: 'products',
+            name: "products",
             typeDefs: parse(/* GraphQL */ `
               extend schema @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@key"])
 
@@ -4745,10 +4867,10 @@ testImplementations(api => {
         `);
       });
 
-      test('on object types', () => {
+      test("on object types", () => {
         let result = composeServices([
           {
-            name: 'a',
+            name: "a",
             typeDefs: parse(/* GraphQL */ `
               """
               a
@@ -4759,7 +4881,7 @@ testImplementations(api => {
             `),
           },
           {
-            name: 'b',
+            name: "b",
             typeDefs: parse(/* GraphQL */ `
               """
               b
@@ -4785,7 +4907,7 @@ testImplementations(api => {
 
         result = composeServices([
           {
-            name: 'reviews',
+            name: "reviews",
             typeDefs: parse(/* GraphQL */ `
               extend schema @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@key", "@external"])
 
@@ -4833,7 +4955,7 @@ testImplementations(api => {
             `),
           },
           {
-            name: 'pricing',
+            name: "pricing",
             typeDefs: parse(/* GraphQL */ `
               extend schema @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@key", "@external", "@extends"])
 
@@ -4852,7 +4974,7 @@ testImplementations(api => {
             `),
           },
           {
-            name: 'products',
+            name: "products",
             typeDefs: parse(/* GraphQL */ `
               extend schema @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@key"])
 
@@ -4933,7 +5055,8 @@ testImplementations(api => {
             """
             products
             """
-            price(currency: String = "USD"): Price! @join__field(graph: PRODUCTS)
+            price(currency: String = "USD"): Price!
+              @join__field(graph: PRODUCTS)
             """
             reviews
             """
@@ -4993,10 +5116,10 @@ testImplementations(api => {
         `);
       });
 
-      test('on fields with @override (entity types)', () => {
+      test("on fields with @override (entity types)", () => {
         const result = composeServices([
           {
-            name: 'a',
+            name: "a",
             typeDefs: parse(/* GraphQL */ `
               extend schema
                 @link(
@@ -5016,7 +5139,7 @@ testImplementations(api => {
             `),
           },
           {
-            name: 'b',
+            name: "b",
             typeDefs: parse(/* GraphQL */ `
               extend schema
                 @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@key", "@override"])
@@ -5032,7 +5155,7 @@ testImplementations(api => {
             `),
           },
           {
-            name: 'c',
+            name: "c",
             typeDefs: parse(/* GraphQL */ `
               type User @key(fields: "id") {
                 id: ID!
@@ -5077,10 +5200,10 @@ testImplementations(api => {
         `);
       });
 
-      test('on fields with @override (not entity types)', () => {
+      test("on fields with @override (not entity types)", () => {
         const result = composeServices([
           {
-            name: 'a',
+            name: "a",
             typeDefs: parse(/* GraphQL */ `
               extend schema
                 @link(
@@ -5104,7 +5227,7 @@ testImplementations(api => {
             `),
           },
           {
-            name: 'b',
+            name: "b",
             typeDefs: parse(/* GraphQL */ `
               extend schema
                 @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@shareable", "@key"])
@@ -5140,10 +5263,10 @@ testImplementations(api => {
         `);
       });
 
-      test('on object type definition with @extends', () => {
+      test("on object type definition with @extends", () => {
         const result = composeServices([
           {
-            name: 'reviews',
+            name: "reviews",
             typeDefs: parse(/* GraphQL */ `
               extend schema @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@key", "@external", "@extends"])
 
@@ -5175,7 +5298,7 @@ testImplementations(api => {
             `),
           },
           {
-            name: 'products',
+            name: "products",
             typeDefs: parse(/* GraphQL */ `
               extend schema @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@key"])
 
@@ -5224,10 +5347,10 @@ testImplementations(api => {
         `);
       });
 
-      test('on object types with arguments', () => {
+      test("on object types with arguments", () => {
         const result = composeServices([
           {
-            name: 'reviews',
+            name: "reviews",
             typeDefs: parse(/* GraphQL */ `
               extend schema @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@key", "@external", "@shareable"])
 
@@ -5299,7 +5422,7 @@ testImplementations(api => {
             `),
           },
           {
-            name: 'pricing',
+            name: "pricing",
             typeDefs: parse(/* GraphQL */ `
               extend schema @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@key", "@external", "@extends", "@shareable"])
 
@@ -5337,7 +5460,7 @@ testImplementations(api => {
             `),
           },
           {
-            name: 'products',
+            name: "products",
             typeDefs: parse(/* GraphQL */ `
               extend schema @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@key", "@shareable"])
 
@@ -5496,7 +5619,7 @@ testImplementations(api => {
         `);
       });
 
-      test('on input object types', () => {
+      test("on input object types", () => {
         // @apollo/composition sorts services by name A->Z
         // and the first detected description wins.
         // That's why descriptions from `a` service are available on `UserInput`.
@@ -5504,7 +5627,7 @@ testImplementations(api => {
         // It's weird but let's follow their logic for consistency.
         const result = composeServices([
           {
-            name: 'b',
+            name: "b",
             typeDefs: parse(/* GraphQL */ `
                 extend schema
                   @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@shareable"])
@@ -5533,7 +5656,7 @@ testImplementations(api => {
               `),
           },
           {
-            name: 'a',
+            name: "a",
             typeDefs: parse(/* GraphQL */ `
                 extend schema
                   @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@shareable"])
@@ -5570,11 +5693,11 @@ testImplementations(api => {
         `);
       });
 
-      describe('on enum types', () => {
-        test('when used as the return type for at least one object or interface field', () => {
+      describe("on enum types", () => {
+        test("when used as the return type for at least one object or interface field", () => {
           const result = composeServices([
             {
-              name: 'a',
+              name: "a",
               typeDefs: parse(/* GraphQL */ `
                 extend schema
                   @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@shareable"])
@@ -5596,7 +5719,7 @@ testImplementations(api => {
               `),
             },
             {
-              name: 'b',
+              name: "b",
               typeDefs: parse(/* GraphQL */ `
                 extend schema
                   @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@shareable"])
@@ -5643,10 +5766,10 @@ testImplementations(api => {
           `);
         });
 
-        test('when used as the type for at least one field argument or input type field', () => {
+        test("when used as the type for at least one field argument or input type field", () => {
           const result = composeServices([
             {
-              name: 'a',
+              name: "a",
               typeDefs: parse(/* GraphQL */ `
                 extend schema
                   @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@shareable"])
@@ -5671,7 +5794,7 @@ testImplementations(api => {
               `),
             },
             {
-              name: 'b',
+              name: "b",
               typeDefs: parse(/* GraphQL */ `
                 extend schema
                   @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@shareable"])
@@ -5716,10 +5839,10 @@ testImplementations(api => {
           `);
         });
 
-        test('when used as the type for at least one field argument or input type field and as the return type for at least one object or interface field', () => {
+        test("when used as the type for at least one field argument or input type field and as the return type for at least one object or interface field", () => {
           const result = composeServices([
             {
-              name: 'b',
+              name: "b",
               typeDefs: parse(/* GraphQL */ `
                 extend schema
                   @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@shareable"])
@@ -5749,7 +5872,7 @@ testImplementations(api => {
               `),
             },
             {
-              name: 'a',
+              name: "a",
               typeDefs: parse(/* GraphQL */ `
                 extend schema
                   @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@shareable"])
@@ -5794,10 +5917,10 @@ testImplementations(api => {
         });
       });
 
-      test('on union types', () => {
+      test("on union types", () => {
         const result = composeServices([
           {
-            name: 'a',
+            name: "a",
             typeDefs: parse(/* GraphQL */ `
               extend schema
                 @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@key"])
@@ -5815,7 +5938,7 @@ testImplementations(api => {
             `),
           },
           {
-            name: 'c',
+            name: "c",
             typeDefs: parse(/* GraphQL */ `
               extend schema
                 @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@key"])
@@ -5836,7 +5959,7 @@ testImplementations(api => {
             `),
           },
           {
-            name: 'b',
+            name: "b",
             typeDefs: parse(/* GraphQL */ `
               extend schema
                 @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@key"])
@@ -5881,10 +6004,10 @@ testImplementations(api => {
         `);
       });
 
-      test('on interface types', () => {
+      test("on interface types", () => {
         const result = composeServices([
           {
-            name: 'c',
+            name: "c",
             typeDefs: parse(/* GraphQL */ `
               extend schema @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@key"])
 
@@ -5905,7 +6028,7 @@ testImplementations(api => {
             `),
           },
           {
-            name: 'a',
+            name: "a",
             typeDefs: parse(/* GraphQL */ `
               extend schema @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@key"])
 
@@ -5923,7 +6046,7 @@ testImplementations(api => {
             `),
           },
           {
-            name: 'b',
+            name: "b",
             typeDefs: parse(/* GraphQL */ `
               extend schema @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@key"])
 
@@ -5959,7 +6082,10 @@ testImplementations(api => {
           """
           b
           """
-          interface Details @join__type(graph: A) @join__type(graph: B) @join__type(graph: C) {
+          interface Details
+            @join__type(graph: A)
+            @join__type(graph: B)
+            @join__type(graph: C) {
             """
             a
             """
@@ -5977,11 +6103,11 @@ testImplementations(api => {
       });
     });
 
-    describe('@deprecated', () => {
-      test('on object types', () => {
+    describe("@deprecated", () => {
+      test("on object types", () => {
         const result = composeServices([
           {
-            name: 'a',
+            name: "a",
             typeDefs: parse(/* GraphQL */ `
               extend schema @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@key", "@external"])
 
@@ -6004,7 +6130,7 @@ testImplementations(api => {
             `),
           },
           {
-            name: 'b',
+            name: "b",
             typeDefs: parse(/* GraphQL */ `
               extend schema @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@key"])
 
@@ -6058,15 +6184,17 @@ testImplementations(api => {
         expect(result.supergraphSdl).toContainGraphQL(/* GraphQL */ `
           type Query @join__type(graph: B) @join__type(graph: A) {
             product(id: ID!): Product @join__field(graph: B) @deprecated
-            reviews(limit: Int @deprecated): [Review] @join__field(graph: A) @deprecated
+            reviews(limit: Int @deprecated): [Review]
+              @join__field(graph: A)
+              @deprecated
           }
         `);
       });
 
-      test('on input object types', () => {
+      test("on input object types", () => {
         const result = composeServices([
           {
-            name: 'b',
+            name: "b",
             typeDefs: parse(/* GraphQL */ `
                 extend schema
                   @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@shareable"])
@@ -6086,7 +6214,7 @@ testImplementations(api => {
               `),
           },
           {
-            name: 'a',
+            name: "a",
             typeDefs: parse(/* GraphQL */ `
                 extend schema
                   @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@shareable"])
@@ -6114,11 +6242,11 @@ testImplementations(api => {
         `);
       });
 
-      describe('on enum types', () => {
-        test('when used as the return type for at least one object or interface field', () => {
+      describe("on enum types", () => {
+        test("when used as the return type for at least one object or interface field", () => {
           const result = composeServices([
             {
-              name: 'a',
+              name: "a",
               typeDefs: parse(/* GraphQL */ `
                 extend schema
                   @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@shareable"])
@@ -6134,7 +6262,7 @@ testImplementations(api => {
               `),
             },
             {
-              name: 'b',
+              name: "b",
               typeDefs: parse(/* GraphQL */ `
                 extend schema
                   @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@shareable"])
@@ -6165,10 +6293,10 @@ testImplementations(api => {
           `);
         });
 
-        test('when used as the type for at least one field argument or input type field', () => {
+        test("when used as the type for at least one field argument or input type field", () => {
           const result = composeServices([
             {
-              name: 'a',
+              name: "a",
               typeDefs: parse(/* GraphQL */ `
                 extend schema
                   @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@shareable"])
@@ -6184,7 +6312,7 @@ testImplementations(api => {
               `),
             },
             {
-              name: 'b',
+              name: "b",
               typeDefs: parse(/* GraphQL */ `
                 extend schema
                   @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@shareable"])
@@ -6209,15 +6337,18 @@ testImplementations(api => {
 
           expect(result.supergraphSdl).toContainGraphQL(/* GraphQL */ `
             enum UserType @join__type(graph: A) @join__type(graph: B) {
-              REGULAR @join__enumValue(graph: A) @join__enumValue(graph: B) @deprecated(reason: "b")
+              REGULAR
+                @join__enumValue(graph: A)
+                @join__enumValue(graph: B)
+                @deprecated(reason: "b")
             }
           `);
         });
 
-        test('when used as the type for at least one field argument or input type field and as the return type for at least one object or interface field', () => {
+        test("when used as the type for at least one field argument or input type field and as the return type for at least one object or interface field", () => {
           const result = composeServices([
             {
-              name: 'b',
+              name: "b",
               typeDefs: parse(/* GraphQL */ `
                 extend schema
                   @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@shareable"])
@@ -6238,7 +6369,7 @@ testImplementations(api => {
               `),
             },
             {
-              name: 'a',
+              name: "a",
               typeDefs: parse(/* GraphQL */ `
                 extend schema
                   @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@shareable"])
@@ -6261,17 +6392,20 @@ testImplementations(api => {
           expect(result.supergraphSdl).toContainGraphQL(/* GraphQL */ `
             enum UserType @join__type(graph: A) @join__type(graph: B) {
               ADMIN @join__enumValue(graph: A) @join__enumValue(graph: B)
-              REGULAR @join__enumValue(graph: A) @join__enumValue(graph: B) @deprecated(reason: "a")
+              REGULAR
+                @join__enumValue(graph: A)
+                @join__enumValue(graph: B)
+                @deprecated(reason: "a")
             }
           `);
         });
       });
     });
 
-    test('enum join__Graph must contain all subgraphs with their URLs', () => {
+    test("enum join__Graph must contain all subgraphs with their URLs", () => {
       const result = composeServices([
         {
-          name: 'users',
+          name: "users",
           typeDefs: parse(/* GraphQL */ `
             extend schema @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@key"])
 
@@ -6281,10 +6415,10 @@ testImplementations(api => {
               totalProductsCreated: Int
             }
           `),
-          url: 'https://users.com',
+          url: "https://users.com",
         },
         {
-          name: 'pandas',
+          name: "pandas",
           typeDefs: parse(/* GraphQL */ `
             extend schema @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@key"])
 
@@ -6311,11 +6445,11 @@ testImplementations(api => {
       `);
     });
 
-    describe('federation directives and types', () => {
-      test('link and join spec', () => {
+    describe("federation directives and types", () => {
+      test("link and join spec", () => {
         const result = composeServices([
           {
-            name: 'a',
+            name: "a",
             typeDefs: parse(/* GraphQL */ `
             extend schema
               @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@shareable"])
@@ -6330,7 +6464,7 @@ testImplementations(api => {
           `),
           },
           {
-            name: 'b',
+            name: "b",
             typeDefs: parse(/* GraphQL */ `
             extend schema
               @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@shareable"])
@@ -6347,15 +6481,15 @@ testImplementations(api => {
         parse(linkSDL)
           .definitions.concat(parse(joinSDL(version)).definitions)
           // .filter(def => def.kind === Kind.DIRECTIVE_DEFINITION && def.name.value !== 'join__directive')
-          .forEach(def => {
+          .forEach((def) => {
             expect(result.supergraphSdl).toContainGraphQL(print(def));
           });
       });
 
-      test('[v1] link and join spec', () => {
+      test("[v1] link and join spec", () => {
         const result = composeServices([
           {
-            name: 'a',
+            name: "a",
             typeDefs: parse(/* GraphQL */ `
               type User {
                 name: String
@@ -6367,7 +6501,7 @@ testImplementations(api => {
             `),
           },
           {
-            name: 'b',
+            name: "b",
             typeDefs: parse(/* GraphQL */ `
               type Dog {
                 name: String
@@ -6383,19 +6517,19 @@ testImplementations(api => {
         assertCompositionSuccess(result);
 
         parse(linkSDL)
-          .definitions.concat(parse(joinSDL('v1.0')).definitions)
-          .forEach(def => {
+          .definitions.concat(parse(joinSDL("v1.0")).definitions)
+          .forEach((def) => {
             expect(result.supergraphSdl).toContainGraphQL(print(def));
           });
       });
     });
   });
 
-  describe('Federation v1 only', () => {
-    test('delete subgraph spec', () => {
+  describe("Federation v1 only", () => {
+    test("delete subgraph spec", () => {
       let result = composeServices([
         {
-          name: 'users',
+          name: "users",
           typeDefs: parse(/* GraphQL */ `
             type User {
               name: String!
@@ -6434,14 +6568,22 @@ testImplementations(api => {
         }
       `);
 
-      expect(result.supergraphSdl).not.toEqual(expect.stringContaining('type _Service'));
-      expect(result.supergraphSdl).not.toEqual(expect.stringContaining('scalar _Any'));
-      expect(result.supergraphSdl).not.toEqual(expect.stringContaining('scalar _FieldSet'));
-      expect(result.supergraphSdl).not.toEqual(expect.stringContaining('union _Entity'));
+      expect(result.supergraphSdl).not.toEqual(
+        expect.stringContaining("type _Service"),
+      );
+      expect(result.supergraphSdl).not.toEqual(
+        expect.stringContaining("scalar _Any"),
+      );
+      expect(result.supergraphSdl).not.toEqual(
+        expect.stringContaining("scalar _FieldSet"),
+      );
+      expect(result.supergraphSdl).not.toEqual(
+        expect.stringContaining("union _Entity"),
+      );
 
       result = composeServices([
         {
-          name: 'users',
+          name: "users",
           typeDefs: parse(/* GraphQL */ `
             type User {
               name: String!
@@ -6484,17 +6626,25 @@ testImplementations(api => {
         }
       `);
 
-      expect(result.supergraphSdl).not.toEqual(expect.stringContaining('type _Service'));
-      expect(result.supergraphSdl).not.toEqual(expect.stringContaining('scalar _Any'));
-      expect(result.supergraphSdl).not.toEqual(expect.stringContaining('scalar _FieldSet'));
-      expect(result.supergraphSdl).not.toEqual(expect.stringContaining('union _Entity'));
+      expect(result.supergraphSdl).not.toEqual(
+        expect.stringContaining("type _Service"),
+      );
+      expect(result.supergraphSdl).not.toEqual(
+        expect.stringContaining("scalar _Any"),
+      );
+      expect(result.supergraphSdl).not.toEqual(
+        expect.stringContaining("scalar _FieldSet"),
+      );
+      expect(result.supergraphSdl).not.toEqual(
+        expect.stringContaining("union _Entity"),
+      );
     });
 
-    describe('@tag', () => {
-      test('without definition', () => {
+    describe("@tag", () => {
+      test("without definition", () => {
         const result = composeServices([
           {
-            name: 'users',
+            name: "users",
             typeDefs: parse(/* GraphQL */ `
               type User @key(fields: "id") {
                 id: ID!
@@ -6528,7 +6678,7 @@ testImplementations(api => {
         `);
 
         expect(result.supergraphSdl).toContainGraphQL(tagDirective);
-        expect(result.publicSdl).not.toMatch('@tag');
+        expect(result.publicSdl).not.toMatch("@tag");
 
         expect(result.supergraphSdl).toContainGraphQL(/* GraphQL */ `
           schema
@@ -6540,10 +6690,10 @@ testImplementations(api => {
         `);
       });
 
-      test('with definition', () => {
+      test("with definition", () => {
         const result = composeServices([
           {
-            name: 'users',
+            name: "users",
             typeDefs: parse(/* GraphQL */ `
               directive @tag(name: String!) repeatable on FIELD_DEFINITION
 
@@ -6593,10 +6743,10 @@ testImplementations(api => {
     });
   });
 
-  test('external on an unused field in an extension type', () => {
+  test("external on an unused field in an extension type", () => {
     let result = api.composeServices([
       {
-        name: 'a',
+        name: "a",
         typeDefs: parse(/* GraphQL */ `
           type User @extends @key(fields: "id") {
             a: String
@@ -6610,7 +6760,7 @@ testImplementations(api => {
         `),
       },
       {
-        name: 'b',
+        name: "b",
         typeDefs: parse(/* GraphQL */ `
           type User @extends @key(fields: "id") {
             b: String @requires(fields: "uuid")
@@ -6624,7 +6774,7 @@ testImplementations(api => {
         `),
       },
       {
-        name: 'c',
+        name: "c",
         typeDefs: parse(/* GraphQL */ `
           type User @key(fields: "id") {
             c: String
@@ -6638,7 +6788,7 @@ testImplementations(api => {
         `),
       },
       {
-        name: 'extra',
+        name: "extra",
         typeDefs: parse(/* GraphQL */ `
           type Query {
             extra: String
@@ -6664,7 +6814,7 @@ testImplementations(api => {
 
     result = api.composeServices([
       {
-        name: 'a',
+        name: "a",
         typeDefs: parse(/* GraphQL */ `
           type User @extends @key(fields: "id") {
             a: String
@@ -6678,7 +6828,7 @@ testImplementations(api => {
         `),
       },
       {
-        name: 'b',
+        name: "b",
         typeDefs: parse(/* GraphQL */ `
           type User @extends @key(fields: "id") {
             b: String @requires(fields: "uuid")
@@ -6692,7 +6842,7 @@ testImplementations(api => {
         `),
       },
       {
-        name: 'c',
+        name: "c",
         typeDefs: parse(/* GraphQL */ `
           type User @key(fields: "id") {
             c: String
@@ -6723,10 +6873,10 @@ testImplementations(api => {
     `);
   });
 
-  test('Fed v1: external on a provided field in an extension type', () => {
+  test("Fed v1: external on a provided field in an extension type", () => {
     let result = api.composeServices([
       {
-        name: 'a',
+        name: "a",
         typeDefs: parse(/* GraphQL */ `
           type User @key(fields: "id") @key(fields: "uuid") {
             id: ID!
@@ -6740,7 +6890,7 @@ testImplementations(api => {
         `),
       },
       {
-        name: 'b',
+        name: "b",
         typeDefs: parse(/* GraphQL */ `
           extend type User @key(fields: "uuid") {
             uuid: String! @external
@@ -6753,7 +6903,7 @@ testImplementations(api => {
         `),
       },
       {
-        name: 'c',
+        name: "c",
         typeDefs: parse(/* GraphQL */ `
           type User @key(fields: "id") @key(fields: "uuid") {
             id: ID!
@@ -6763,7 +6913,7 @@ testImplementations(api => {
         `),
       },
       {
-        name: 'd',
+        name: "d",
         typeDefs: parse(/* GraphQL */ `
           extend type User @key(fields: "uuid") {
             uuid: String! @external
@@ -6788,7 +6938,10 @@ testImplementations(api => {
         @join__type(graph: C, key: "id")
         @join__type(graph: C, key: "uuid")
         @join__type(graph: D, key: "uuid") {
-        id: ID! @join__field(external: true, graph: D) @join__field(graph: A) @join__field(graph: C)
+        id: ID!
+          @join__field(external: true, graph: D)
+          @join__field(graph: A)
+          @join__field(graph: C)
         uuid: String!
         name: String! @join__field(graph: A)
         commentCount: Int! @join__field(graph: C)
@@ -6797,7 +6950,7 @@ testImplementations(api => {
 
     result = api.composeServices([
       {
-        name: 'a',
+        name: "a",
         typeDefs: parse(/* GraphQL */ `
           type User @key(fields: "id") @key(fields: "uuid") {
             id: ID!
@@ -6811,7 +6964,7 @@ testImplementations(api => {
         `),
       },
       {
-        name: 'b',
+        name: "b",
         typeDefs: parse(/* GraphQL */ `
           extend type User @key(fields: "uuid") {
             uuid: String! @external
@@ -6824,7 +6977,7 @@ testImplementations(api => {
         `),
       },
       {
-        name: 'c',
+        name: "c",
         typeDefs: parse(/* GraphQL */ `
           type User @key(fields: "id") @key(fields: "uuid") {
             id: ID!
@@ -6834,7 +6987,7 @@ testImplementations(api => {
         `),
       },
       {
-        name: 'd',
+        name: "d",
         typeDefs: parse(/* GraphQL */ `
           extend type User @key(fields: "uuid") {
             uuid: String! @external
@@ -6848,7 +7001,7 @@ testImplementations(api => {
         `),
       },
       {
-        name: 'extra',
+        name: "extra",
         typeDefs: parse(/* GraphQL */ `
           type Query {
             extra: String!
@@ -6867,7 +7020,10 @@ testImplementations(api => {
         @join__type(graph: C, key: "id")
         @join__type(graph: C, key: "uuid")
         @join__type(graph: D, key: "uuid") {
-        id: ID! @join__field(external: true, graph: D) @join__field(graph: A) @join__field(graph: C)
+        id: ID!
+          @join__field(external: true, graph: D)
+          @join__field(graph: A)
+          @join__field(graph: C)
         uuid: String!
         name: String! @join__field(graph: A)
         commentCount: Int! @join__field(graph: C)
@@ -6875,10 +7031,10 @@ testImplementations(api => {
     `);
   });
 
-  test('unused external on key-field of an entity type', () => {
+  test("unused external on key-field of an entity type", () => {
     let result = api.composeServices([
       {
-        name: 'a',
+        name: "a",
         typeDefs: parse(/* GraphQL */ `
           type Site @key(fields: "header") @key(fields: "footer") {
             header: String @external
@@ -6893,7 +7049,7 @@ testImplementations(api => {
         `),
       },
       {
-        name: 'b',
+        name: "b",
         typeDefs: parse(/* GraphQL */ `
           type Site @key(fields: "id") {
             id: ID!
@@ -6908,7 +7064,7 @@ testImplementations(api => {
         `),
       },
       {
-        name: 'c',
+        name: "c",
         typeDefs: parse(/* GraphQL */ `
           type Site @key(fields: "id") {
             id: ID!
@@ -6921,7 +7077,7 @@ testImplementations(api => {
         `),
       },
       {
-        name: 'extra',
+        name: "extra",
         typeDefs: parse(/* GraphQL */ `
           type Query {
             extra: String
@@ -6938,10 +7094,14 @@ testImplementations(api => {
         @join__type(graph: A, key: "footer")
         @join__type(graph: B, key: "id")
         @join__type(graph: C, key: "id") {
-        header: String @join__field(external: true, graph: A) @join__field(graph: B)
+        header: String
+          @join__field(external: true, graph: A)
+          @join__field(graph: B)
         headerTitle: String @join__field(graph: A)
         id: ID! @join__field(graph: B) @join__field(graph: C)
-        footer: String @join__field(external: true, graph: A) @join__field(graph: B)
+        footer: String
+          @join__field(external: true, graph: A)
+          @join__field(graph: B)
         footerTitle: String @join__field(graph: A)
         title: String @join__field(graph: B)
         tag: String @join__field(graph: C)
@@ -6950,7 +7110,7 @@ testImplementations(api => {
 
     result = result = api.composeServices([
       {
-        name: 'a',
+        name: "a",
         typeDefs: parse(/* GraphQL */ `
           type Site @key(fields: "header") @key(fields: "footer") {
             header: String @external
@@ -6965,7 +7125,7 @@ testImplementations(api => {
         `),
       },
       {
-        name: 'b',
+        name: "b",
         typeDefs: parse(/* GraphQL */ `
           type Site @key(fields: "id") {
             id: ID!
@@ -6980,7 +7140,7 @@ testImplementations(api => {
         `),
       },
       {
-        name: 'c',
+        name: "c",
         typeDefs: parse(/* GraphQL */ `
           type Site @key(fields: "id") {
             id: ID!
@@ -7002,10 +7162,14 @@ testImplementations(api => {
         @join__type(graph: A, key: "footer")
         @join__type(graph: B, key: "id")
         @join__type(graph: C, key: "id") {
-        header: String @join__field(external: true, graph: A) @join__field(graph: B)
+        header: String
+          @join__field(external: true, graph: A)
+          @join__field(graph: B)
         headerTitle: String @join__field(graph: A)
         id: ID! @join__field(graph: B) @join__field(graph: C)
-        footer: String @join__field(external: true, graph: A) @join__field(graph: B)
+        footer: String
+          @join__field(external: true, graph: A)
+          @join__field(graph: B)
         footerTitle: String @join__field(graph: A)
         title: String @join__field(graph: B)
         tag: String @join__field(graph: C)
@@ -7013,10 +7177,10 @@ testImplementations(api => {
     `);
   });
 
-  test('external on non-key field of an entity type', () => {
+  test("external on non-key field of an entity type", () => {
     let result = api.composeServices([
       {
-        name: 'foo',
+        name: "foo",
         typeDefs: parse(/* GraphQL */ `
           extend schema
             @link(
@@ -7046,10 +7210,13 @@ testImplementations(api => {
         `),
       },
       {
-        name: 'bar',
+        name: "bar",
         typeDefs: parse(/* GraphQL */ `
           extend schema
-            @link(url: "https://specs.apollo.dev/federation/v2.3", import: ["@key", "@shareable"])
+            @link(
+              url: "https://specs.apollo.dev/federation/v2.3"
+              import: ["@key", "@shareable"]
+            )
 
           type Note @key(fields: "id") @shareable {
             id: ID!
@@ -7078,16 +7245,22 @@ testImplementations(api => {
     assertCompositionSuccess(result);
 
     expect(result.supergraphSdl).toContainGraphQL(/* GraphQL */ `
-      type Note @join__type(graph: FOO, key: "id") @join__type(graph: BAR, key: "id") {
+      type Note
+        @join__type(graph: FOO, key: "id")
+        @join__type(graph: BAR, key: "id") {
         id: ID!
-        name: String @join__field(external: true, graph: FOO) @join__field(graph: BAR)
-        author: User @join__field(external: true, graph: FOO) @join__field(graph: BAR)
+        name: String
+          @join__field(external: true, graph: FOO)
+          @join__field(graph: BAR)
+        author: User
+          @join__field(external: true, graph: FOO)
+          @join__field(graph: BAR)
       }
     `);
 
     result = api.composeServices([
       {
-        name: 'foo',
+        name: "foo",
         typeDefs: parse(/* GraphQL */ `
           extend schema
             @link(
@@ -7117,10 +7290,13 @@ testImplementations(api => {
         `),
       },
       {
-        name: 'bar',
+        name: "bar",
         typeDefs: parse(/* GraphQL */ `
           extend schema
-            @link(url: "https://specs.apollo.dev/federation/v2.3", import: ["@key", "@shareable"])
+            @link(
+              url: "https://specs.apollo.dev/federation/v2.3"
+              import: ["@key", "@shareable"]
+            )
 
           type Note @key(fields: "id") @shareable {
             id: ID!
@@ -7145,7 +7321,7 @@ testImplementations(api => {
         `),
       },
       {
-        name: 'baz',
+        name: "baz",
         typeDefs: parse(/* GraphQL */ `
           extend schema
             @link(
@@ -7173,17 +7349,21 @@ testImplementations(api => {
         @join__type(graph: BAR, key: "id")
         @join__type(graph: BAZ, key: "id") {
         id: ID!
-        name: String @join__field(external: true, graph: FOO) @join__field(graph: BAR)
-        author: User @join__field(external: true, graph: FOO) @join__field(graph: BAR)
+        name: String
+          @join__field(external: true, graph: FOO)
+          @join__field(graph: BAR)
+        author: User
+          @join__field(external: true, graph: FOO)
+          @join__field(graph: BAR)
         tag: String @join__field(graph: BAZ)
       }
     `);
   });
 
-  test('print join__field external the field is required in a deeply nested selection set', () => {
+  test("print join__field external the field is required in a deeply nested selection set", () => {
     const result = api.composeServices([
       {
-        name: 'a',
+        name: "a",
         typeDefs: parse(/* GraphQL */ `
           type Query {
             a: String
@@ -7197,7 +7377,7 @@ testImplementations(api => {
         `),
       },
       {
-        name: 'b',
+        name: "b",
         typeDefs: parse(/* GraphQL */ `
           type Query {
             b: String
@@ -7218,21 +7398,26 @@ testImplementations(api => {
 
     expect(result.supergraphSdl).toContainGraphQL(/* GraphQL */ `
       type User @join__type(graph: A) @join__type(graph: B) {
-        name: String! @join__field(external: true, graph: B) @join__field(graph: A)
+        name: String!
+          @join__field(external: true, graph: B)
+          @join__field(graph: A)
         id: ID! @join__field(graph: A)
         age: Int! @join__field(graph: A)
       }
     `);
   });
 
-  test('Query field with @override that points to non-existing subgraph', () => {
+  test("Query field with @override that points to non-existing subgraph", () => {
     let result = api.composeServices([
       {
-        name: 'a',
+        name: "a",
         typeDefs: parse(/* GraphQL */ `
           extend schema
             @link(url: "https://specs.apollo.dev/link/v1.0")
-            @link(url: "https://specs.apollo.dev/federation/v2.3", import: ["@override"])
+            @link(
+              url: "https://specs.apollo.dev/federation/v2.3"
+              import: ["@override"]
+            )
 
           type Query {
             a: String @override(from: "non-existing")
@@ -7250,11 +7435,14 @@ testImplementations(api => {
 
     result = api.composeServices([
       {
-        name: 'a',
+        name: "a",
         typeDefs: parse(/* GraphQL */ `
           extend schema
             @link(url: "https://specs.apollo.dev/link/v1.0")
-            @link(url: "https://specs.apollo.dev/federation/v2.3", import: ["@override"])
+            @link(
+              url: "https://specs.apollo.dev/federation/v2.3"
+              import: ["@override"]
+            )
 
           type Query {
             a: String @override(from: "non-existing")
@@ -7262,11 +7450,14 @@ testImplementations(api => {
         `),
       },
       {
-        name: 'b',
+        name: "b",
         typeDefs: parse(/* GraphQL */ `
           extend schema
             @link(url: "https://specs.apollo.dev/link/v1.0")
-            @link(url: "https://specs.apollo.dev/federation/v2.3", import: ["@override"])
+            @link(
+              url: "https://specs.apollo.dev/federation/v2.3"
+              import: ["@override"]
+            )
 
           type Query {
             b: String
@@ -7284,10 +7475,10 @@ testImplementations(api => {
     `);
   });
 
-  test('drop unused external fields from Federation v1 subgraphs', () => {
+  test("drop unused external fields from Federation v1 subgraphs", () => {
     const result = api.composeServices([
       {
-        name: 'a',
+        name: "a",
         typeDefs: parse(/* GraphQL */ `
           type User @key(fields: "id") {
             id: ID!
@@ -7301,7 +7492,7 @@ testImplementations(api => {
         `),
       },
       {
-        name: 'b',
+        name: "b",
         typeDefs: parse(/* GraphQL */ `
           type User @key(fields: "id") {
             id: ID!
@@ -7320,7 +7511,9 @@ testImplementations(api => {
 
     // No User.name, it's dropped
     expect(result.supergraphSdl).toContainGraphQL(/* GraphQL */ `
-      type User @join__type(graph: A, key: "id") @join__type(graph: B, key: "id") {
+      type User
+        @join__type(graph: A, key: "id")
+        @join__type(graph: B, key: "id") {
         id: ID!
         age: Int! @join__field(external: true, graph: B) @join__field(graph: A)
         birthday: String @join__field(graph: B, requires: "age")
@@ -7328,13 +7521,16 @@ testImplementations(api => {
     `);
   });
 
-  test('join__field(usedOverridden: true) on a field that is a key field but not external', () => {
+  test("join__field(usedOverridden: true) on a field that is a key field but not external", () => {
     const result = api.composeServices([
       {
-        name: 'a',
+        name: "a",
         typeDefs: parse(/* GraphQL */ `
           extend schema
-            @link(url: "https://specs.apollo.dev/federation/v2.3", import: ["@key", "@override"])
+            @link(
+              url: "https://specs.apollo.dev/federation/v2.3"
+              import: ["@key", "@override"]
+            )
 
           type User @key(fields: "userId") {
             userId: ID! @override(from: "b")
@@ -7347,10 +7543,13 @@ testImplementations(api => {
         `),
       },
       {
-        name: 'b',
+        name: "b",
         typeDefs: parse(/* GraphQL */ `
           extend schema
-            @link(url: "https://specs.apollo.dev/federation/v2.3", import: ["@key", "@override"])
+            @link(
+              url: "https://specs.apollo.dev/federation/v2.3"
+              import: ["@key", "@override"]
+            )
 
           type User @key(fields: "userId") {
             userId: ID!
@@ -7367,7 +7566,9 @@ testImplementations(api => {
     assertCompositionSuccess(result);
 
     expect(result.supergraphSdl).toContainGraphQL(/* GraphQL */ `
-      type User @join__type(graph: A, key: "userId") @join__type(graph: B, key: "userId") {
+      type User
+        @join__type(graph: A, key: "userId")
+        @join__type(graph: B, key: "userId") {
         age: Int! @join__field(graph: A, override: "b")
         userId: ID!
           @join__field(graph: A, override: "b")
@@ -7376,17 +7577,20 @@ testImplementations(api => {
     `);
   });
 
-  test('deduplicates directives', () => {
+  test("deduplicates directives", () => {
     const result = api.composeServices([
       {
-        name: 'a',
+        name: "a",
         typeDefs: parse(/* GraphQL */ `
           extend schema
             @link(
               url: "https://specs.apollo.dev/federation/v2.3"
               import: ["@key", "@shareable", "@composeDirective"]
             )
-            @link(url: "https://myspecs.dev/lowercase/v1.0", import: ["@lowercase"])
+            @link(
+              url: "https://myspecs.dev/lowercase/v1.0"
+              import: ["@lowercase"]
+            )
             @composeDirective(name: "@lowercase")
 
           directive @lowercase on FIELD_DEFINITION | ENUM
@@ -7408,14 +7612,23 @@ testImplementations(api => {
         `),
       },
       {
-        name: 'b',
+        name: "b",
         typeDefs: parse(/* GraphQL */ `
           extend schema
             @link(
               url: "https://specs.apollo.dev/federation/v2.3"
-              import: ["@key", "@external", "@requires", "@shareable", "@composeDirective"]
+              import: [
+                "@key"
+                "@external"
+                "@requires"
+                "@shareable"
+                "@composeDirective"
+              ]
             )
-            @link(url: "https://myspecs.dev/lowercase/v1.0", import: ["@lowercase"])
+            @link(
+              url: "https://myspecs.dev/lowercase/v1.0"
+              import: ["@lowercase"]
+            )
             @composeDirective(name: "@lowercase")
 
           directive @lowercase on FIELD_DEFINITION | ENUM
@@ -7443,7 +7656,9 @@ testImplementations(api => {
 
     // No User.name, it's dropped
     expect(result.supergraphSdl).toContainGraphQL(/* GraphQL */ `
-      type User @join__type(graph: A, key: "id") @join__type(graph: B, key: "id") {
+      type User
+        @join__type(graph: A, key: "id")
+        @join__type(graph: B, key: "id") {
         id: ID! @lowercase
         age: Int! @join__field(external: true, graph: B) @join__field(graph: A)
         birthday: String @join__field(graph: B, requires: "age")

@@ -3,12 +3,16 @@
  * according to spec.
  */
 
-import type { DocumentNode } from 'graphql';
-import { FederatedLink } from './link.js';
+import type { DocumentNode } from "graphql";
+import { FederatedLink } from "./link.js";
 
-export const FEDERATION_V1 = Symbol('Federation_V1');
+export const FEDERATION_V1 = Symbol("Federation_V1");
 
-export type LinkVersion = string | { major: number; minor: number } | null | typeof FEDERATION_V1;
+export type LinkVersion =
+  | string
+  | { major: number; minor: number }
+  | null
+  | typeof FEDERATION_V1;
 
 /**
  * This function is for power users who want to develop their own Federation 2 `@link` feature(s).
@@ -68,7 +72,7 @@ export function extractLinkImplementations(typeDefs: DocumentNode): {
   matchesImplementation: (identity: string, version: LinkVersion) => boolean;
 } {
   const links = FederatedLink.fromTypedefs(typeDefs);
-  const linkByIdentity = Object.fromEntries(links.map(l => [l.identity, l]));
+  const linkByIdentity = Object.fromEntries(links.map((l) => [l.identity, l]));
   // Any schema with a `@link` directive present is considered federation 2
   // although according to federation docs, schemas require linking specifically
   // the federation 2.x spec. The reason for not being so picky is that supergraphs also
@@ -82,7 +86,7 @@ export function extractLinkImplementations(typeDefs: DocumentNode): {
     resolveImportName: (identity, name) => {
       const matchingLink = linkByIdentity[identity];
       if (!matchingLink) {
-        return name.startsWith('@') ? name.substring(1) : name;
+        return name.startsWith("@") ? name.substring(1) : name;
       }
       return matchingLink.resolveImportName(name);
     },
@@ -96,7 +100,7 @@ export function extractLinkImplementations(typeDefs: DocumentNode): {
       if (!matchingLink) {
         return false;
       }
-      if (typeof version === 'string') {
+      if (typeof version === "string") {
         return matchingLink.supports(version);
       }
       if (version === null) {

@@ -1,12 +1,16 @@
-import { expect, test } from 'vitest';
-import { assertCompositionSuccess, graphql, testVersions } from '../../shared/testkit.js';
+import { expect, test } from "vitest";
+import {
+  assertCompositionSuccess,
+  graphql,
+  testVersions,
+} from "../../shared/testkit.js";
 
 testVersions((api, version) => {
-  test('Fed v1: EXTENSION_WITH_NO_BASE', () => {
+  test("Fed v1: EXTENSION_WITH_NO_BASE", () => {
     expect(
       api.composeServices([
         {
-          name: 'products',
+          name: "products",
           typeDefs: graphql`
             type Product @extends @key(fields: "id") {
               id: ID!
@@ -19,7 +23,7 @@ testVersions((api, version) => {
           `,
         },
         {
-          name: 'reviews',
+          name: "reviews",
           typeDefs: graphql`
             type Query {
               reviews: [String]
@@ -35,7 +39,7 @@ testVersions((api, version) => {
               `[products] Type "Product" is an extension type, but there is no type definition for "Product" in any subgraph.`,
             ),
             extensions: expect.objectContaining({
-              code: 'EXTENSION_WITH_NO_BASE',
+              code: "EXTENSION_WITH_NO_BASE",
             }),
           }),
         ]),
@@ -45,7 +49,7 @@ testVersions((api, version) => {
     expect(
       api.composeServices([
         {
-          name: 'products',
+          name: "products",
           typeDefs: graphql`
             type Product @extends @key(fields: "id") {
               id: ID!
@@ -58,7 +62,7 @@ testVersions((api, version) => {
           `,
         },
         {
-          name: 'reviews',
+          name: "reviews",
           typeDefs: graphql`
             extend type Product @key(fields: "id") {
               id: ID!
@@ -79,7 +83,7 @@ testVersions((api, version) => {
               `[products] Type "Product" is an extension type, but there is no type definition for "Product" in any subgraph.`,
             ),
             extensions: expect.objectContaining({
-              code: 'EXTENSION_WITH_NO_BASE',
+              code: "EXTENSION_WITH_NO_BASE",
             }),
           }),
         ]),
@@ -89,7 +93,7 @@ testVersions((api, version) => {
     assertCompositionSuccess(
       api.composeServices([
         {
-          name: 'products',
+          name: "products",
           typeDefs: graphql`
             type Product @extends @key(fields: "id") {
               id: ID!
@@ -102,7 +106,7 @@ testVersions((api, version) => {
           `,
         },
         {
-          name: 'reviews',
+          name: "reviews",
           typeDefs: graphql`
             type Product @extends @key(fields: "id") {
               id: ID!
@@ -121,7 +125,7 @@ testVersions((api, version) => {
     assertCompositionSuccess(
       api.composeServices([
         {
-          name: 'products',
+          name: "products",
           typeDefs: graphql`
             type Product @key(fields: "id") {
               id: ID!
@@ -137,7 +141,7 @@ testVersions((api, version) => {
           `,
         },
         {
-          name: 'reviews',
+          name: "reviews",
           typeDefs: graphql`
             type Product @extends @key(fields: "id") {
               id: ID! @external
@@ -153,14 +157,14 @@ testVersions((api, version) => {
     );
   });
 
-  test.skipIf(api.library === 'guild')(
-    'Fed v1: EXTENSION_WITH_NO_BASE (fails in our implementation)',
+  test.skipIf(api.library === "guild")(
+    "Fed v1: EXTENSION_WITH_NO_BASE (fails in our implementation)",
     () => {
       // KAMIL: I have no idea why this supposed to succeed and what's going on here...
       assertCompositionSuccess(
         api.composeServices([
           {
-            name: 'products',
+            name: "products",
             typeDefs: graphql`
               type Product @extends @key(fields: "id") {
                 id: ID!
@@ -173,7 +177,7 @@ testVersions((api, version) => {
             `,
           },
           {
-            name: 'reviews',
+            name: "reviews",
             typeDefs: graphql`
               type Product @extends @key(fields: "id") {
                 id: ID!
@@ -187,7 +191,7 @@ testVersions((api, version) => {
             `,
           },
           {
-            name: 'foo',
+            name: "foo",
             typeDefs: graphql`
               extend type Product @key(fields: "id") {
                 id: ID!
@@ -205,11 +209,11 @@ testVersions((api, version) => {
     },
   );
 
-  test('EXTENSION_WITH_NO_BASE', () => {
+  test("EXTENSION_WITH_NO_BASE", () => {
     expect(
       api.composeServices([
         {
-          name: 'users',
+          name: "users",
           typeDefs: graphql`
             extend schema @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@key"])
             
@@ -236,7 +240,7 @@ testVersions((api, version) => {
               `[users] Type "Profile" is an extension type, but there is no type definition for "Profile" in any subgraph.`,
             ),
             extensions: expect.objectContaining({
-              code: 'EXTENSION_WITH_NO_BASE',
+              code: "EXTENSION_WITH_NO_BASE",
             }),
           }),
         ]),
@@ -246,7 +250,7 @@ testVersions((api, version) => {
     assertCompositionSuccess(
       api.composeServices([
         {
-          name: 'products',
+          name: "products",
           typeDefs: graphql`
               extend schema @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@key"])
               
@@ -264,7 +268,7 @@ testVersions((api, version) => {
             `,
         },
         {
-          name: 'reviews',
+          name: "reviews",
           typeDefs: graphql`
               extend schema @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@key", "@extends", "@external"])
               type Product @key(fields: "id") @extends {
@@ -279,7 +283,7 @@ testVersions((api, version) => {
     assertCompositionSuccess(
       api.composeServices([
         {
-          name: 'products',
+          name: "products",
           typeDefs: graphql`
               extend schema @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@key", "@extends"])
               
@@ -298,7 +302,7 @@ testVersions((api, version) => {
             `,
         },
         {
-          name: 'reviews',
+          name: "reviews",
           typeDefs: graphql`
             type Query {
               reviews: [String]
@@ -311,7 +315,7 @@ testVersions((api, version) => {
     assertCompositionSuccess(
       api.composeServices([
         {
-          name: 'products',
+          name: "products",
           typeDefs: graphql`
               extend schema @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@key", "@extends"])
               
@@ -326,7 +330,7 @@ testVersions((api, version) => {
             `,
         },
         {
-          name: 'reviews',
+          name: "reviews",
           typeDefs: graphql`
             extend schema @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@key", "@extends"])
             

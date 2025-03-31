@@ -9,8 +9,8 @@ import {
   specifiedScalarTypes,
   TypeDefinitionNode,
   TypeExtensionNode,
-} from 'graphql';
-import type { SubgraphValidationContext } from '../validation-context.js';
+} from "graphql";
+import type { SubgraphValidationContext } from "../validation-context.js";
 
 function isTypeDefinitionOrExtensionNode(
   node: ASTNode,
@@ -18,11 +18,15 @@ function isTypeDefinitionOrExtensionNode(
   return isTypeDefinitionNode(node) || isTypeExtensionNode(node);
 }
 
-export function KnownTypeNamesRule(context: SubgraphValidationContext): ASTVisitor {
+export function KnownTypeNamesRule(
+  context: SubgraphValidationContext,
+): ASTVisitor {
   const { definitions } = context.getDocument();
 
   const typeNames = new Set(
-    definitions.filter(isTypeDefinitionOrExtensionNode).map(def => def.name.value),
+    definitions
+      .filter(isTypeDefinitionOrExtensionNode)
+      .map((def) => def.name.value),
   );
 
   return {
@@ -39,7 +43,7 @@ export function KnownTypeNamesRule(context: SubgraphValidationContext): ASTVisit
           new GraphQLError(`Unknown type ${typeName}`, {
             nodes: node,
             extensions: {
-              code: 'INVALID_GRAPHQL',
+              code: "INVALID_GRAPHQL",
             },
           }),
         );
@@ -48,8 +52,13 @@ export function KnownTypeNamesRule(context: SubgraphValidationContext): ASTVisit
   };
 }
 
-const standardTypeNames = new Set<string>([...specifiedScalarTypes].map(type => type.name));
+const standardTypeNames = new Set<string>(
+  [...specifiedScalarTypes].map((type) => type.name),
+);
 
 function isSDLNode(value: ASTNode | ReadonlyArray<ASTNode>): boolean {
-  return 'kind' in value && (isTypeSystemDefinitionNode(value) || isTypeSystemExtensionNode(value));
+  return (
+    "kind" in value &&
+    (isTypeSystemDefinitionNode(value) || isTypeSystemExtensionNode(value))
+  );
 }

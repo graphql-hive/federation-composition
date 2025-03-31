@@ -25,8 +25,12 @@ type dramacc4 implements afterb8e @key(fields: "midst81a") {
   madly17c: hencef75! @external
   slopedf0: String @external
   traitaf5: unify0b1 @requires(fields: "murky1a1")
-  round1c3: dimlyc4b @requires(fields: "aside2ed slopedf0 never76f { paperedd often80a zowie015 }")
-  grout3e3: yahoof4f @requires(fields: "aside2ed budge2ec until16a { never4dd grout3e3 }")
+  round1c3: dimlyc4b
+    @requires(
+      fields: "aside2ed slopedf0 never76f { paperedd often80a zowie015 }"
+    )
+  grout3e3: yahoof4f
+    @requires(fields: "aside2ed budge2ec until16a { never4dd grout3e3 }")
   minus147: after19f! @requires(fields: "madly17c murky1a1")
 }
 

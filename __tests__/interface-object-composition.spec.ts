@@ -1,14 +1,14 @@
-import { parse } from 'graphql';
-import { describe, expect, test } from 'vitest';
-import { assertCompositionFailure, assertCompositionSuccess } from '../src';
-import { testImplementations } from './shared/testkit';
+import { parse } from "graphql";
+import { describe, expect, test } from "vitest";
+import { assertCompositionFailure, assertCompositionSuccess } from "../src";
+import { testImplementations } from "./shared/testkit";
 
-testImplementations(api => {
-  describe('interface object composition', () => {
-    test('if link directive is not present on all subgraphs, composition should fail', () => {
+testImplementations((api) => {
+  describe("interface object composition", () => {
+    test("if link directive is not present on all subgraphs, composition should fail", () => {
       const result = api.composeServices([
         {
-          name: 'a',
+          name: "a",
           typeDefs: parse(/* GraphQL */ `
             extend schema
               @link(
@@ -27,7 +27,7 @@ testImplementations(api => {
           `),
         },
         {
-          name: 'b',
+          name: "b",
           typeDefs: parse(/* GraphQL */ `
             type Query {
               otherField: String
@@ -46,19 +46,19 @@ testImplementations(api => {
       expect(result.errors).toContainEqual(
         expect.objectContaining({
           message: `[b] Unknown directive "@interfaceObject". If you meant the "@interfaceObject" federation 2 directive, note that this schema is a federation 1 schema. To be a federation 2 schema, it needs to @link to the federation ${
-            api.library === 'apollo' ? 'specifcation' : 'specification'
+            api.library === "apollo" ? "specifcation" : "specification"
           } v2.`,
           extensions: expect.objectContaining({
-            code: 'INVALID_GRAPHQL',
+            code: "INVALID_GRAPHQL",
           }),
         }),
       );
     });
 
-    test('link directive should have url pointing to federation > 2.3 to enable @interfaceObject on all subgraphs', () => {
+    test("link directive should have url pointing to federation > 2.3 to enable @interfaceObject on all subgraphs", () => {
       const result = api.composeServices([
         {
-          name: 'a',
+          name: "a",
           typeDefs: parse(/* GraphQL */ `
             extend schema
               @link(
@@ -82,7 +82,7 @@ testImplementations(api => {
           `),
         },
         {
-          name: 'b',
+          name: "b",
           typeDefs: parse(/* GraphQL */ `
             extend schema
               @link(
@@ -108,10 +108,10 @@ testImplementations(api => {
       `);
     });
 
-    test('@external + @requires + @interfaceObject', () => {
+    test("@external + @requires + @interfaceObject", () => {
       const result = api.composeServices([
         {
-          name: 'a',
+          name: "a",
           typeDefs: parse(/* GraphQL */ `
             extend schema
               @link(
@@ -135,7 +135,7 @@ testImplementations(api => {
           `),
         },
         {
-          name: 'b',
+          name: "b",
           typeDefs: parse(/* GraphQL */ `
             extend schema
               @link(
@@ -150,15 +150,23 @@ testImplementations(api => {
           `),
         },
         {
-          name: 'c',
+          name: "c",
           typeDefs: parse(/* GraphQL */ `
             extend schema
               @link(
                 url: "https://specs.apollo.dev/federation/v2.3"
-                import: ["@key", "@interfaceObject", "@shareable", "@requires", "@external"]
+                import: [
+                  "@key"
+                  "@interfaceObject"
+                  "@shareable"
+                  "@requires"
+                  "@external"
+                ]
               )
 
-            type MyInterface @key(fields: "id", resolvable: false) @interfaceObject {
+            type MyInterface
+              @key(fields: "id", resolvable: false)
+              @interfaceObject {
               id: ID!
               newField: String @external
               field: String @shareable @requires(fields: "newField")
@@ -173,20 +181,33 @@ testImplementations(api => {
         interface MyInterface
           @join__type(graph: A, key: "id")
           @join__type(graph: B, key: "id", isInterfaceObject: true)
-          @join__type(graph: C, key: "id", isInterfaceObject: true, resolvable: false) {
+          @join__type(
+            graph: C
+            key: "id"
+            isInterfaceObject: true
+            resolvable: false
+          ) {
           id: ID!
-          field: String @join__field(graph: A) @join__field(graph: C, requires: "newField")
-          newField: String @join__field(external: true, graph: C) @join__field(graph: B)
+          field: String
+            @join__field(graph: A)
+            @join__field(graph: C, requires: "newField")
+          newField: String
+            @join__field(external: true, graph: C)
+            @join__field(graph: B)
         }
       `);
     });
 
-    test('link directive does not have to import @interfaceObject in all subgraphs', () => {
+    test("link directive does not have to import @interfaceObject in all subgraphs", () => {
       const result = api.composeServices([
         {
-          name: 'a',
+          name: "a",
           typeDefs: parse(/* GraphQL */ `
-            extend schema @link(url: "https://specs.apollo.dev/federation/v2.3", import: ["@key"])
+            extend schema
+              @link(
+                url: "https://specs.apollo.dev/federation/v2.3"
+                import: ["@key"]
+              )
 
             type Query {
               hello: MyInterface
@@ -204,7 +225,7 @@ testImplementations(api => {
           `),
         },
         {
-          name: 'b',
+          name: "b",
           typeDefs: parse(/* GraphQL */ `
             extend schema
               @link(
@@ -228,7 +249,7 @@ testImplementations(api => {
     test(`target interface must have @key directive on subgraph where it's defined`, () => {
       const result = api.composeServices([
         {
-          name: 'a',
+          name: "a",
           typeDefs: parse(/* GraphQL */ `
             extend schema
               @link(
@@ -252,7 +273,7 @@ testImplementations(api => {
           `),
         },
         {
-          name: 'b',
+          name: "b",
           typeDefs: parse(/* GraphQL */ `
             extend schema
               @link(
@@ -282,7 +303,7 @@ testImplementations(api => {
     test(`subgraph where interface is defined must have all entity types which implement that interface defined `, () => {
       const result = api.composeServices([
         {
-          name: 'a',
+          name: "a",
           typeDefs: parse(/* GraphQL */ `
             extend schema
               @link(
@@ -301,7 +322,7 @@ testImplementations(api => {
           `),
         },
         {
-          name: 'b',
+          name: "b",
           typeDefs: parse(/* GraphQL */ `
             extend schema
               @link(
@@ -329,9 +350,10 @@ testImplementations(api => {
 
       expect(result.errors).toContainEqual(
         expect.objectContaining({
-          message: '[b] Cannot implement non-interface type MyInterface (of type ObjectType)',
+          message:
+            "[b] Cannot implement non-interface type MyInterface (of type ObjectType)",
           extensions: expect.objectContaining({
-            code: 'INVALID_GRAPHQL',
+            code: "INVALID_GRAPHQL",
           }),
         }),
       );
@@ -342,7 +364,7 @@ testImplementations(api => {
         test(`interface type is not present on any subgraph. Should fail`, () => {
           const result = api.composeServices([
             {
-              name: 'a',
+              name: "a",
               typeDefs: parse(/* GraphQL */ `
                 extend schema
                   @link(
@@ -356,7 +378,7 @@ testImplementations(api => {
               `),
             },
             {
-              name: 'b',
+              name: "b",
               typeDefs: parse(/* GraphQL */ `
                 extend schema
                   @link(
@@ -380,11 +402,11 @@ testImplementations(api => {
           expect(result.errors).toContainEqual(
             expect.objectContaining({
               message:
-                api.library === 'apollo'
+                api.library === "apollo"
                   ? `Type "MyInterface" is declared with @interfaceObject in all the subgraphs in which is is defined (it is defined in subgraph "b" but should be defined as an interface in at least one subgraph)`
                   : 'Type "MyInterface" is declared with @interfaceObject in all the subgraphs in which is is defined',
               extensions: expect.objectContaining({
-                code: 'INTERFACE_OBJECT_USAGE_ERROR',
+                code: "INTERFACE_OBJECT_USAGE_ERROR",
               }),
             }),
           );
@@ -393,7 +415,7 @@ testImplementations(api => {
         test(`interface type is present on other subgraph but doesn't have @key directive. Should fail`, () => {
           const result = api.composeServices([
             {
-              name: 'a',
+              name: "a",
               typeDefs: parse(/* GraphQL */ `
                 extend schema
                   @link(
@@ -417,7 +439,7 @@ testImplementations(api => {
               `),
             },
             {
-              name: 'b',
+              name: "b",
               typeDefs: parse(/* GraphQL */ `
                 extend schema
                   @link(
@@ -442,7 +464,7 @@ testImplementations(api => {
               message:
                 '[b] The @interfaceObject directive can only be applied to entity types but type "MyInterface" has no @key in this subgraph.',
               extensions: expect.objectContaining({
-                code: 'INTERFACE_OBJECT_USAGE_ERROR',
+                code: "INTERFACE_OBJECT_USAGE_ERROR",
               }),
             }),
           );
@@ -451,7 +473,7 @@ testImplementations(api => {
         test(`interface type is present on other subgraph with @key directive. Should succeed and add fields from interfaceObject`, () => {
           const result = api.composeServices([
             {
-              name: 'a',
+              name: "a",
               typeDefs: parse(/* GraphQL */ `
                 extend schema
                   @link(
@@ -468,14 +490,15 @@ testImplementations(api => {
                   field: String
                 }
 
-                type IimplementMyInterface implements MyInterface @key(fields: "id") {
+                type IimplementMyInterface implements MyInterface
+                  @key(fields: "id") {
                   id: ID!
                   field: String
                 }
               `),
             },
             {
-              name: 'b',
+              name: "b",
               typeDefs: parse(/* GraphQL */ `
                 extend schema
                   @link(
@@ -516,10 +539,10 @@ testImplementations(api => {
           `);
         });
 
-        test('interface type is present on other subgraph with @key directive. Should succeed and add fields from a child of an interfaceObject', () => {
+        test("interface type is present on other subgraph with @key directive. Should succeed and add fields from a child of an interfaceObject", () => {
           const result = api.composeServices([
             {
-              name: 'a',
+              name: "a",
               typeDefs: parse(/* GraphQL */ `
                 extend schema
                   @link(
@@ -539,7 +562,7 @@ testImplementations(api => {
               `),
             },
             {
-              name: 'b',
+              name: "b",
               typeDefs: parse(/* GraphQL */ `
                 extend schema
                   @link(
@@ -571,7 +594,7 @@ testImplementations(api => {
         test(`several subgraphs contribute fields to the same interface through interfaceObject. Should succeed`, () => {
           const result = api.composeServices([
             {
-              name: 'a',
+              name: "a",
               typeDefs: parse(/* GraphQL */ `
                 extend schema
                   @link(
@@ -588,14 +611,15 @@ testImplementations(api => {
                   field: String
                 }
 
-                type IimplementMyInterface implements MyInterface @key(fields: "id") {
+                type IimplementMyInterface implements MyInterface
+                  @key(fields: "id") {
                   id: ID!
                   field: String
                 }
               `),
             },
             {
-              name: 'b',
+              name: "b",
               typeDefs: parse(/* GraphQL */ `
                 extend schema
                   @link(
@@ -613,7 +637,7 @@ testImplementations(api => {
               `),
             },
             {
-              name: 'c',
+              name: "c",
               typeDefs: parse(/* GraphQL */ `
                 extend schema
                   @link(

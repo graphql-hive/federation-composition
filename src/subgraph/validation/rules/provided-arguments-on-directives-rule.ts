@@ -1,15 +1,25 @@
-import { ASTVisitor, GraphQLError, Kind, specifiedScalarTypes, TypeNode, ValueNode } from 'graphql';
-import { print } from '../../../graphql/printer.js';
-import { namedTypeFromTypeNode } from '../../helpers.js';
-import type { SimpleValidationContext } from '../validation-context.js';
+import {
+  ASTVisitor,
+  GraphQLError,
+  Kind,
+  specifiedScalarTypes,
+  TypeNode,
+  ValueNode,
+} from "graphql";
+import { print } from "../../../graphql/printer.js";
+import { namedTypeFromTypeNode } from "../../helpers.js";
+import type { SimpleValidationContext } from "../validation-context.js";
 
-export function ProvidedArgumentsOnDirectivesRule(context: SimpleValidationContext): ASTVisitor {
+export function ProvidedArgumentsOnDirectivesRule(
+  context: SimpleValidationContext,
+): ASTVisitor {
   return {
     Directive: {
       // Validate on leave to allow for deeper errors to appear first.
       leave(directiveNode, _k, _p, _pp, ancestors) {
         const directiveName = directiveNode.name.value;
-        const directiveDefinition = context.getKnownDirectiveDefinition(directiveName);
+        const directiveDefinition =
+          context.getKnownDirectiveDefinition(directiveName);
 
         if (!directiveDefinition) {
           return; // Let KnownDirectivesRule handle this
@@ -21,11 +31,14 @@ export function ProvidedArgumentsOnDirectivesRule(context: SimpleValidationConte
 
           for (const arg of args) {
             const argDefinition = directiveDefinition.arguments.find(
-              a => a.name.value === arg.name.value,
+              (a) => a.name.value === arg.name.value,
             );
 
             if (argDefinition && arg.value) {
-              if (argDefinition.type.kind === Kind.NON_NULL_TYPE && arg.value.kind === Kind.NULL) {
+              if (
+                argDefinition.type.kind === Kind.NON_NULL_TYPE &&
+                arg.value.kind === Kind.NULL
+              ) {
                 // Let RequiredArgumentsOnDirectivesRule handle this
                 continue;
               }
@@ -37,9 +50,9 @@ export function ProvidedArgumentsOnDirectivesRule(context: SimpleValidationConte
                 continue; // Let KnownTypesRule handle this
               }
 
-              if (printedType !== 'Any' && printedType !== printedValue) {
+              if (printedType !== "Any" && printedType !== printedValue) {
                 // received empty list
-                if (printedValue === '[]') {
+                if (printedValue === "[]") {
                   // if the argument's type is a list, but the list item type is not non-null, then it's valid
                   if (
                     argDefinition.type.kind === Kind.LIST_TYPE &&
@@ -53,7 +66,7 @@ export function ProvidedArgumentsOnDirectivesRule(context: SimpleValidationConte
                 const typeName = namedType.name.value;
 
                 // Float accepts Int, but not the other way around
-                if (printedValue === 'Int' && typeName === 'Float') {
+                if (printedValue === "Int" && typeName === "Float") {
                   continue;
                 }
 
@@ -65,7 +78,7 @@ export function ProvidedArgumentsOnDirectivesRule(context: SimpleValidationConte
                     {
                       nodes: arg,
                       extensions: {
-                        code: 'INVALID_GRAPHQL',
+                        code: "INVALID_GRAPHQL",
                       },
                     },
                   ),
@@ -83,34 +96,39 @@ function printValueNode(valueNode: ValueNode): string {
   switch (valueNode.kind) {
     case Kind.LIST:
       if (!valueNode.values.length) {
-        return '[]';
+        return "[]";
       }
       return printValueNode(valueNode.values[0]);
     case Kind.ENUM:
-      return 'Enum';
+      return "Enum";
     case Kind.NULL:
-      return 'Null';
+      return "Null";
     case Kind.INT:
-      return 'Int';
+      return "Int";
     case Kind.FLOAT:
-      return 'Float';
+      return "Float";
     case Kind.STRING:
-      return 'String';
+      return "String";
     case Kind.BOOLEAN:
-      return 'Boolean';
+      return "Boolean";
     case Kind.OBJECT:
-      return 'Object';
+      return "Object";
   }
 
   throw new Error(`Unknown value node kind: ${valueNode}`);
 }
 
-function printTypeNode(typeNode: TypeNode, context: SimpleValidationContext): string | null {
+function printTypeNode(
+  typeNode: TypeNode,
+  context: SimpleValidationContext,
+): string | null {
   if (typeNode.kind === Kind.NAMED_TYPE) {
     const def = context.getKnownTypeDefinition(typeNode.name.value);
 
     if (!def) {
-      const specifiedScalar = specifiedScalarTypes.find(s => s.name === typeNode.name.value);
+      const specifiedScalar = specifiedScalarTypes.find(
+        (s) => s.name === typeNode.name.value,
+      );
 
       if (specifiedScalar) {
         return specifiedScalar.name;
@@ -123,10 +141,10 @@ function printTypeNode(typeNode: TypeNode, context: SimpleValidationContext): st
       case Kind.SCALAR_TYPE_DEFINITION:
       case Kind.SCALAR_TYPE_EXTENSION:
         // Accept any value for scalars, we don't know what they are
-        return 'Any';
+        return "Any";
       case Kind.ENUM_TYPE_DEFINITION:
       case Kind.ENUM_TYPE_EXTENSION:
-        return 'Enum';
+        return "Enum";
       case Kind.INPUT_OBJECT_TYPE_DEFINITION:
       case Kind.INPUT_OBJECT_TYPE_EXTENSION:
       case Kind.OBJECT_TYPE_DEFINITION:
@@ -135,7 +153,7 @@ function printTypeNode(typeNode: TypeNode, context: SimpleValidationContext): st
       case Kind.INTERFACE_TYPE_EXTENSION:
       case Kind.UNION_TYPE_DEFINITION:
       case Kind.UNION_TYPE_EXTENSION:
-        return 'Object';
+        return "Object";
     }
   }
 

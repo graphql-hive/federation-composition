@@ -4,7 +4,7 @@ import {
   OperationTypeNode,
   SchemaDefinitionNode,
   SchemaExtensionNode,
-} from 'graphql';
+} from "graphql";
 
 export function UniqueOperationTypesRule(context: {
   reportError: (error: GraphQLError) => void;
@@ -16,7 +16,9 @@ export function UniqueOperationTypesRule(context: {
     SchemaExtension: checkOperationTypes,
   };
 
-  function checkOperationTypes(node: SchemaDefinitionNode | SchemaExtensionNode) {
+  function checkOperationTypes(
+    node: SchemaDefinitionNode | SchemaExtensionNode,
+  ) {
     const operationTypesNodes = node.operationTypes || [];
 
     for (const operationType of operationTypesNodes) {
@@ -25,11 +27,14 @@ export function UniqueOperationTypesRule(context: {
 
       if (alreadyDefinedOperationType) {
         context.reportError(
-          new GraphQLError(`There can be only one ${operation} type in schema.`, {
-            extensions: {
-              code: 'INVALID_GRAPHQL',
+          new GraphQLError(
+            `There can be only one ${operation} type in schema.`,
+            {
+              extensions: {
+                code: "INVALID_GRAPHQL",
+              },
             },
-          }),
+          ),
         );
       } else {
         definedOperationTypes.add(operation);

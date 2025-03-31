@@ -1,17 +1,17 @@
-import { FieldNode, InlineFragmentNode, Kind, SelectionSetNode } from 'graphql';
-import { parseFields } from '../../../../subgraph/helpers.js';
-import { stripTypeModifiers } from '../../../../utils/state.js';
-import { SupergraphState } from '../../../state.js';
+import { FieldNode, InlineFragmentNode, Kind, SelectionSetNode } from "graphql";
+import { parseFields } from "../../../../subgraph/helpers.js";
+import { stripTypeModifiers } from "../../../../utils/state.js";
+import { SupergraphState } from "../../../state.js";
 
 export type Field = {
-  kind: 'field';
+  kind: "field";
   typeName: string;
   fieldName: string;
   selectionSet: null | Array<SelectionNode>;
 };
 
 export type Fragment = {
-  kind: 'fragment';
+  kind: "fragment";
   typeName: string;
   selectionSet: Array<SelectionNode>;
 };
@@ -65,8 +65,8 @@ export class Selection {
       }
 
       if (
-        selectionNode.kind === 'field' &&
-        otherSelectionNode.kind === 'field' &&
+        selectionNode.kind === "field" &&
+        otherSelectionNode.kind === "field" &&
         selectionNode.fieldName !== otherSelectionNode.fieldName
       ) {
         return false;
@@ -75,8 +75,12 @@ export class Selection {
       const areEqual =
         // Compare selectionSet if both are arrays
         // Otherwise, compare nullability of selectionSet
-        Array.isArray(selectionNode.selectionSet) && Array.isArray(otherSelectionNode.selectionSet)
-          ? this._selectionSetEqual(selectionNode.selectionSet, otherSelectionNode.selectionSet)
+        Array.isArray(selectionNode.selectionSet) &&
+        Array.isArray(otherSelectionNode.selectionSet)
+          ? this._selectionSetEqual(
+              selectionNode.selectionSet,
+              otherSelectionNode.selectionSet,
+            )
           : selectionNode.selectionSet === otherSelectionNode.selectionSet;
 
       // Avoid unnecessary iterations if we already know that fields are not equal
@@ -88,16 +92,24 @@ export class Selection {
     return true;
   }
 
-  private _contains(typeName: string, fieldName: string, selectionSet: SelectionNode[]): boolean {
+  private _contains(
+    typeName: string,
+    fieldName: string,
+    selectionSet: SelectionNode[],
+  ): boolean {
     return selectionSet.some(
-      s =>
-        (s.kind === 'field' && s.typeName === typeName && s.fieldName === fieldName) ||
-        (s.selectionSet ? this._contains(typeName, fieldName, s.selectionSet) : false),
+      (s) =>
+        (s.kind === "field" &&
+          s.typeName === typeName &&
+          s.fieldName === fieldName) ||
+        (s.selectionSet
+          ? this._contains(typeName, fieldName, s.selectionSet)
+          : false),
     );
   }
 
   toString() {
-    return this.source.replace(/\s+/g, ' ');
+    return this.source.replace(/\s+/g, " ");
   }
 }
 
@@ -118,13 +130,17 @@ export class SelectionResolver {
       this.supergraphState.interfaceTypes.get(typeName);
 
     if (!typeState) {
-      throw new Error(`Expected an object/interface type when resolving keyFields of ${typeName}`);
+      throw new Error(
+        `Expected an object/interface type when resolving keyFields of ${typeName}`,
+      );
     }
 
     const selectionSetNode = parseFields(keyFields);
 
     if (!selectionSetNode) {
-      throw new Error(`Expected a selection set when resolving keyFields of ${typeName}`);
+      throw new Error(
+        `Expected a selection set when resolving keyFields of ${typeName}`,
+      );
     }
 
     const fields = new Selection(
@@ -141,8 +157,12 @@ export class SelectionResolver {
     return `${typeName}/${keyFields}`;
   }
 
-  private resolveFieldNode(typeName: string, fieldNode: FieldNode, selectionSet: SelectionNode[]) {
-    if (fieldNode.name.value === '__typename') {
+  private resolveFieldNode(
+    typeName: string,
+    fieldNode: FieldNode,
+    selectionSet: SelectionNode[],
+  ) {
+    if (fieldNode.name.value === "__typename") {
       return;
     }
 
@@ -161,18 +181,23 @@ export class SelectionResolver {
     }
 
     if (fieldNode.selectionSet) {
-      const outputType = stripTypeModifiers(typeState.fields.get(fieldNode.name.value)!.type);
+      const outputType = stripTypeModifiers(
+        typeState.fields.get(fieldNode.name.value)!.type,
+      );
 
       selectionSet.push({
-        kind: 'field',
+        kind: "field",
         fieldName: fieldNode.name.value,
         typeName,
-        selectionSet: this.resolveSelectionSetNode(outputType, fieldNode.selectionSet),
+        selectionSet: this.resolveSelectionSetNode(
+          outputType,
+          fieldNode.selectionSet,
+        ),
       });
     } else {
       // it's a leaf
       selectionSet.push({
-        kind: 'field',
+        kind: "field",
         typeName,
         fieldName: fieldNode.name.value,
         selectionSet: null,
@@ -185,7 +210,9 @@ export class SelectionResolver {
     selectionSet: SelectionNode[],
   ) {
     if (!fragmentNode.typeCondition?.name.value) {
-      throw new Error(`Inline fragment without type condition is not supported.`);
+      throw new Error(
+        `Inline fragment without type condition is not supported.`,
+      );
     }
 
     const typeName = fragmentNode.typeCondition.name.value;
@@ -199,9 +226,12 @@ export class SelectionResolver {
     }
 
     selectionSet.push({
-      kind: 'fragment',
+      kind: "fragment",
       typeName,
-      selectionSet: this.resolveSelectionSetNode(typeName, fragmentNode.selectionSet),
+      selectionSet: this.resolveSelectionSetNode(
+        typeName,
+        fragmentNode.selectionSet,
+      ),
     });
   }
 
@@ -226,15 +256,17 @@ export class SelectionResolver {
   private sort(selectionSet: SelectionNode[]): SelectionNode[] {
     return selectionSet.sort((a, b) => {
       if (a.kind === b.kind) {
-        return a.kind === 'field' && b.kind === 'field'
+        return a.kind === "field" && b.kind === "field"
           ? // sort fields by typeName.fieldName
-            `${a.typeName}.${a.fieldName}`.localeCompare(`${b.typeName}.${b.fieldName}`)
+            `${a.typeName}.${a.fieldName}`.localeCompare(
+              `${b.typeName}.${b.fieldName}`,
+            )
           : // sort fragments by typeName
             a.typeName.localeCompare(b.typeName);
       }
 
       // field -> fragment
-      return a.kind === 'field' ? -1 : 1;
+      return a.kind === "field" ? -1 : 1;
     });
   }
 }

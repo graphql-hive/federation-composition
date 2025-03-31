@@ -1,20 +1,20 @@
-import { ASTVisitor, GraphQLError, Kind, SelectionSetNode } from 'graphql';
-import { print } from '../../../../graphql/printer.js';
+import { ASTVisitor, GraphQLError, Kind, SelectionSetNode } from "graphql";
+import { print } from "../../../../graphql/printer.js";
 import {
   getFieldsArgument,
   parseFields,
   validateDirectiveAgainstOriginal,
   visitFields,
-} from '../../../helpers.js';
-import type { SubgraphValidationContext } from '../../validation-context.js';
+} from "../../../helpers.js";
+import type { SubgraphValidationContext } from "../../validation-context.js";
 
 export function RequiresRules(context: SubgraphValidationContext): ASTVisitor {
   return {
     DirectiveDefinition(node) {
-      validateDirectiveAgainstOriginal(node, 'requires', context);
+      validateDirectiveAgainstOriginal(node, "requires", context);
     },
     Directive(directiveNode) {
-      if (!context.isAvailableFederationDirective('requires', directiveNode)) {
+      if (!context.isAvailableFederationDirective("requires", directiveNode)) {
         return;
       }
 
@@ -39,7 +39,7 @@ export function RequiresRules(context: SubgraphValidationContext): ASTVisitor {
             `Cannot use @requires on field "${fieldCoordinate}" of parent type "${annotatedType.name.value}": @requires is not yet supported within interfaces`,
             {
               nodes: directiveNode,
-              extensions: { code: 'REQUIRES_UNSUPPORTED_ON_INTERFACE' },
+              extensions: { code: "REQUIRES_UNSUPPORTED_ON_INTERFACE" },
             },
           ),
         );
@@ -54,14 +54,17 @@ export function RequiresRules(context: SubgraphValidationContext): ASTVisitor {
 
       const printedFieldsValue = print(fieldsArg.value);
 
-      if (fieldsArg.value.kind !== Kind.STRING && fieldsArg.value.kind !== Kind.ENUM) {
+      if (
+        fieldsArg.value.kind !== Kind.STRING &&
+        fieldsArg.value.kind !== Kind.ENUM
+      ) {
         context.reportError(
           new GraphQLError(
             `On field "${fieldCoordinate}", for @requires(fields: ${printedFieldsValue}): Invalid value for argument "fields": must be a string.`,
             {
               nodes: directiveNode,
               extensions: {
-                code: 'REQUIRES_INVALID_FIELDS_TYPE',
+                code: "REQUIRES_INVALID_FIELDS_TYPE",
               },
             },
           ),
@@ -81,7 +84,7 @@ export function RequiresRules(context: SubgraphValidationContext): ASTVisitor {
               {
                 nodes: directiveNode,
                 extensions: {
-                  code: 'REQUIRES_INVALID_FIELDS',
+                  code: "REQUIRES_INVALID_FIELDS",
                 },
               },
             ),
@@ -125,7 +128,7 @@ export function RequiresRules(context: SubgraphValidationContext): ASTVisitor {
             info.typeDefinition.kind === Kind.OBJECT_TYPE_DEFINITION ||
             info.typeDefinition.kind === Kind.OBJECT_TYPE_EXTENSION
           ) {
-            if (info.fieldName !== '__typename') {
+            if (info.fieldName !== "__typename") {
               context.stateBuilder.objectType.field.markedAsRequired(
                 info.typeDefinition.name.value,
                 info.fieldName,
@@ -138,7 +141,10 @@ export function RequiresRules(context: SubgraphValidationContext): ASTVisitor {
           context.reportError(
             new GraphQLError(
               `On field "${fieldCoordinate}", for @requires(fields: ${printedFieldsValue}): Cannot query field "${info.fieldName}" on type "${info.typeDefinition.name.value}" (if the field is defined in another subgraph, you need to add it to this subgraph with @external).`,
-              { nodes: directiveNode, extensions: { code: 'REQUIRES_INVALID_FIELDS' } },
+              {
+                nodes: directiveNode,
+                extensions: { code: "REQUIRES_INVALID_FIELDS" },
+              },
             ),
           );
         },
@@ -150,7 +156,7 @@ export function RequiresRules(context: SubgraphValidationContext): ASTVisitor {
                 `On field "${fieldCoordinate}", for @requires(fields: ${printedFieldsValue}): cannot have directive applications in the @requires(fields:) argument but found @${info.directiveName}.`,
                 {
                   nodes: directiveNode,
-                  extensions: { code: 'REQUIRES_DIRECTIVE_IN_FIELDS_ARG' },
+                  extensions: { code: "REQUIRES_DIRECTIVE_IN_FIELDS_ARG" },
                 },
               ),
             );
@@ -160,21 +166,21 @@ export function RequiresRules(context: SubgraphValidationContext): ASTVisitor {
                 `On field "${fieldCoordinate}", for @requires(fields: ${printedFieldsValue}): Unknown directive "@${info.directiveName}" in selection`,
                 {
                   nodes: directiveNode,
-                  extensions: { code: 'REQUIRES_INVALID_FIELDS' },
+                  extensions: { code: "REQUIRES_INVALID_FIELDS" },
                 },
               ),
             );
           }
         },
         interceptNonExternalField(info) {
-          if (context.satisfiesVersionRange('> v1.0')) {
+          if (context.satisfiesVersionRange("> v1.0")) {
             isValid = false;
             context.reportError(
               new GraphQLError(
                 `On field "${fieldCoordinate}", for @requires(fields: ${printedFieldsValue}): field "${info.typeDefinition.name.value}.${info.fieldName}" should not be part of a @requires since it is already provided by this subgraph (it is not marked @external)`,
                 {
                   extensions: {
-                    code: 'REQUIRES_FIELDS_MISSING_EXTERNAL',
+                    code: "REQUIRES_FIELDS_MISSING_EXTERNAL",
                   },
                 },
               ),

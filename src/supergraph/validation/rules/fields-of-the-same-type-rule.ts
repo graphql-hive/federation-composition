@@ -1,15 +1,15 @@
-import { GraphQLError } from 'graphql';
-import { TypeKind } from '../../../subgraph/state.js';
-import { SupergraphVisitorMap } from '../../composition/visitor.js';
-import { SupergraphValidationContext } from '../validation-context.js';
+import { GraphQLError } from "graphql";
+import { TypeKind } from "../../../subgraph/state.js";
+import { SupergraphVisitorMap } from "../../composition/visitor.js";
+import { SupergraphValidationContext } from "../validation-context.js";
 
 function stripNonNull(type: string) {
-  return type.replace(/!$/, '');
+  return type.replace(/!$/, "");
 }
 
 function stripList(type: string) {
-  const startsAt = type.indexOf('[');
-  const endsAt = type.lastIndexOf(']');
+  const startsAt = type.indexOf("[");
+  const endsAt = type.lastIndexOf("]");
 
   return type.slice(startsAt + 1, endsAt);
 }
@@ -42,22 +42,25 @@ function normalizeOutputTypeStrings({
   let localTypeNormalized = localType;
 
   // If the super type is nullable, we remove the non-null modifier from the local type
-  if (!superTypeNormalized.endsWith('!')) {
+  if (!superTypeNormalized.endsWith("!")) {
     localTypeNormalized = stripNonNull(localTypeNormalized);
   }
 
   // If the super type is a list and local type as well, we remove the list modifier
-  if (superTypeNormalized.startsWith('[') && localTypeNormalized.startsWith('[')) {
+  if (
+    superTypeNormalized.startsWith("[") &&
+    localTypeNormalized.startsWith("[")
+  ) {
     const innerSuper = stripList(superTypeNormalized);
     let innerLocal = stripList(localTypeNormalized);
 
     // If the inner type of super type is nullable, we remove the non-null modifier from the inner type of the local type
-    if (!innerSuper.endsWith('!')) {
+    if (!innerSuper.endsWith("!")) {
       innerLocal = stripNonNull(innerLocal);
     }
 
-    const superSign = superTypeNormalized.endsWith('!') ? '!' : '';
-    const localSign = localTypeNormalized.endsWith('!') ? '!' : '';
+    const superSign = superTypeNormalized.endsWith("!") ? "!" : "";
+    const localSign = localTypeNormalized.endsWith("!") ? "!" : "";
     superTypeNormalized = `[${innerSuper}]${superSign}`;
     localTypeNormalized = `[${innerLocal}]${localSign}`;
   }
@@ -77,8 +80,13 @@ export function FieldsOfTheSameTypeRule(
       const typeNameToPossibleTypeNames = new Map<string, Set<string>>();
 
       fieldState.byGraph.forEach((field, graphName) => {
-        const typeName = field.type.replaceAll('!', '').replaceAll('[', '').replaceAll(']', '');
-        const typeState = context.subgraphStates.get(graphName)?.types.get(typeName);
+        const typeName = field.type
+          .replaceAll("!", "")
+          .replaceAll("[", "")
+          .replaceAll("]", "");
+        const typeState = context.subgraphStates
+          .get(graphName)
+          ?.types.get(typeName);
 
         if (typeState?.kind === TypeKind.UNION) {
           if (!typeNameToPossibleTypeNames.has(typeName)) {
@@ -86,7 +94,7 @@ export function FieldsOfTheSameTypeRule(
           }
           const list = typeNameToPossibleTypeNames.get(typeName)!;
 
-          typeState.members.forEach(member => {
+          typeState.members.forEach((member) => {
             list.add(member);
           });
         } else if (typeState?.kind === TypeKind.INTERFACE) {
@@ -95,7 +103,7 @@ export function FieldsOfTheSameTypeRule(
           }
           const list = typeNameToPossibleTypeNames.get(typeName)!;
 
-          typeState.implementedBy.forEach(member => {
+          typeState.implementedBy.forEach((member) => {
             list.add(member);
           });
         }
@@ -128,21 +136,23 @@ export function FieldsOfTheSameTypeRule(
             }
           });
 
-          const outputTypeNames = Array.from(typeToGraphs.keys()).map(t =>
-            t.replaceAll('!', '').replaceAll('[', '').replaceAll(']', ''),
+          const outputTypeNames = Array.from(typeToGraphs.keys()).map((t) =>
+            t.replaceAll("!", "").replaceAll("[", "").replaceAll("]", ""),
           );
 
-          if (outputTypeNames.every(t => possibleTypeNames.includes(t))) {
+          if (outputTypeNames.every((t) => possibleTypeNames.includes(t))) {
             return;
           }
         }
 
-        const groups = Array.from(typeToGraphs.entries()).map(([outputType, graphs]) => {
-          const plural = graphs.length > 1 ? 's' : '';
-          return `type "${outputType}" in subgraph${plural} "${graphs
-            .map(context.graphIdToName)
-            .join('", "')}"`;
-        });
+        const groups = Array.from(typeToGraphs.entries()).map(
+          ([outputType, graphs]) => {
+            const plural = graphs.length > 1 ? "s" : "";
+            return `type "${outputType}" in subgraph${plural} "${graphs
+              .map(context.graphIdToName)
+              .join('", "')}"`;
+          },
+        );
         const [first, second, ...rest] = groups;
 
         context.reportError(
@@ -150,11 +160,11 @@ export function FieldsOfTheSameTypeRule(
             `Type of field "${objectTypeState.name}.${
               fieldState.name
             }" is incompatible across subgraphs: it has ${first} but ${second}${
-              rest.length ? ` and ${rest.join(' and ')}` : ''
+              rest.length ? ` and ${rest.join(" and ")}` : ""
             }`,
             {
               extensions: {
-                code: 'FIELD_TYPE_MISMATCH',
+                code: "FIELD_TYPE_MISMATCH",
               },
             },
           ),
@@ -168,10 +178,10 @@ export function FieldsOfTheSameTypeRule(
         // We normalize the type to remove the non-null modifier
         // Yeah yeah yeah, we could use an object to define if it's a list or non-null or name etc
         // But this way is faster to iterate.
-        const isNonNullable = field.type.endsWith('!');
-        const isNonNullableInSupergraph = fieldState.type.endsWith('!');
+        const isNonNullable = field.type.endsWith("!");
+        const isNonNullableInSupergraph = fieldState.type.endsWith("!");
         const isMatchingNonNullablePart =
-          fieldState.type.replace(/!$/, '') === field.type.replace(/!$/, '');
+          fieldState.type.replace(/!$/, "") === field.type.replace(/!$/, "");
         let normalizedOutputType: string;
 
         // Turn User! into User (if super type is nullable)
@@ -183,7 +193,7 @@ export function FieldsOfTheSameTypeRule(
           normalizedOutputType = isNonNullableInSupergraph
             ? isNonNullable
               ? field.type
-              : field.type + '!'
+              : field.type + "!"
             : field.type;
         } else {
           normalizedOutputType = field.type;
@@ -198,23 +208,25 @@ export function FieldsOfTheSameTypeRule(
       });
 
       if (typeToGraphs.size > 1) {
-        const groups = Array.from(typeToGraphs.entries()).map(([outputType, graphs]) => {
-          const plural = graphs.length > 1 ? 's' : '';
-          return `type "${outputType}" in subgraph${plural} "${graphs
-            .map(context.graphIdToName)
-            .join('", "')}"`;
-        });
+        const groups = Array.from(typeToGraphs.entries()).map(
+          ([outputType, graphs]) => {
+            const plural = graphs.length > 1 ? "s" : "";
+            return `type "${outputType}" in subgraph${plural} "${graphs
+              .map(context.graphIdToName)
+              .join('", "')}"`;
+          },
+        );
         const [first, second, ...rest] = groups;
         context.reportError(
           new GraphQLError(
             `Type of field "${inputObjectTypeState.name}.${
               fieldState.name
             }" is incompatible across subgraphs: it has ${first} but ${second}${
-              rest.length ? ` and ${rest.join(' and ')}` : ''
+              rest.length ? ` and ${rest.join(" and ")}` : ""
             }`,
             {
               extensions: {
-                code: 'FIELD_TYPE_MISMATCH',
+                code: "FIELD_TYPE_MISMATCH",
               },
             },
           ),

@@ -20,7 +20,9 @@ type which577 @key(fields: "midst81a") @extends {
   midst81a: ID! @external
 }
 
-type punch8ce @key(fields: "noisy502 { midst81a } troll394 { midst81a }") @extends {
+type punch8ce
+  @key(fields: "noisy502 { midst81a } troll394 { midst81a }")
+  @extends {
   troll394: round2e8! @external
   noisy502: which577! @external
   yahoo34f: ID @external

@@ -1,39 +1,50 @@
-import { ASTVisitor, GraphQLError, Kind } from 'graphql';
-import { isDirectiveDefinitionNode, validateDirectiveAgainstOriginal } from '../../../helpers.js';
-import type { SubgraphValidationContext } from '../../validation-context.js';
+import { ASTVisitor, GraphQLError, Kind } from "graphql";
+import {
+  isDirectiveDefinitionNode,
+  validateDirectiveAgainstOriginal,
+} from "../../../helpers.js";
+import type { SubgraphValidationContext } from "../../validation-context.js";
 
-export function ComposeDirectiveRules(context: SubgraphValidationContext): ASTVisitor {
+export function ComposeDirectiveRules(
+  context: SubgraphValidationContext,
+): ASTVisitor {
   return {
     DirectiveDefinition(node) {
-      validateDirectiveAgainstOriginal(node, 'composeDirective', context);
+      validateDirectiveAgainstOriginal(node, "composeDirective", context);
     },
     Directive(node) {
-      if (!context.isAvailableFederationDirective('composeDirective', node)) {
+      if (!context.isAvailableFederationDirective("composeDirective", node)) {
         return;
       }
 
-      if (!context.satisfiesVersionRange('>= v2.1')) {
+      if (!context.satisfiesVersionRange(">= v2.1")) {
         return;
       }
 
-      const nameArg = node.arguments?.find(arg => arg.name.value === 'name');
+      const nameArg = node.arguments?.find((arg) => arg.name.value === "name");
 
       if (!nameArg || nameArg.value.kind !== Kind.STRING) {
         return;
       }
 
-      const name = nameArg.value.value.replace(/^@/, '');
+      const name = nameArg.value.value.replace(/^@/, "");
 
-      const definedDirectives = context.getDocument().definitions.filter(isDirectiveDefinitionNode);
-      const matchingDirective = definedDirectives.find(directive => directive.name.value === name);
+      const definedDirectives = context
+        .getDocument()
+        .definitions.filter(isDirectiveDefinitionNode);
+      const matchingDirective = definedDirectives.find(
+        (directive) => directive.name.value === name,
+      );
 
       if (matchingDirective) {
         // check if it has a linked spec
-        const hasSpec = context.stateBuilder.state.links.some(link =>
+        const hasSpec = context.stateBuilder.state.links.some((link) =>
           link.imports.some(
-            im =>
-              im.kind === 'directive' &&
-              (im.alias ? im.alias.replace(/^@/, '') === name : im.name.replace(/^@/, '') === name),
+            (im) =>
+              im.kind === "directive" &&
+              (im.alias
+                ? im.alias.replace(/^@/, "") === name
+                : im.name.replace(/^@/, "") === name),
           ),
         );
 
@@ -43,7 +54,7 @@ export function ComposeDirectiveRules(context: SubgraphValidationContext): ASTVi
               `Directive "@${name}" in subgraph "${context.getSubgraphName()}" cannot be composed because it is not a member of a core feature`,
               {
                 extensions: {
-                  code: 'DIRECTIVE_COMPOSITION_ERROR',
+                  code: "DIRECTIVE_COMPOSITION_ERROR",
                   subgraphName: context.getSubgraphName(),
                 },
               },
@@ -52,8 +63,12 @@ export function ComposeDirectiveRules(context: SubgraphValidationContext): ASTVi
           return;
         }
 
-        context.stateBuilder.directive.setComposed(matchingDirective.name.value);
-        context.stateBuilder.composedDirectives.add(matchingDirective.name.value);
+        context.stateBuilder.directive.setComposed(
+          matchingDirective.name.value,
+        );
+        context.stateBuilder.composedDirectives.add(
+          matchingDirective.name.value,
+        );
       } else {
         context.reportError(
           new GraphQLError(
@@ -61,7 +76,7 @@ export function ComposeDirectiveRules(context: SubgraphValidationContext): ASTVi
             {
               nodes: node,
               extensions: {
-                code: 'DIRECTIVE_COMPOSITION_ERROR',
+                code: "DIRECTIVE_COMPOSITION_ERROR",
                 subgraphName: context.getSubgraphName(),
               },
             },

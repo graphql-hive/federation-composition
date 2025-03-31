@@ -7,7 +7,7 @@ import {
   Kind,
   OperationTypeNode,
   specifiedDirectives,
-} from 'graphql';
+} from "graphql";
 
 export function KnownDirectivesRule(context: {
   reportError: (error: GraphQLError) => void;
@@ -18,7 +18,10 @@ export function KnownDirectivesRule(context: {
   const astDefinitions = context.getDocument().definitions;
   for (const def of astDefinitions) {
     if (def.kind === Kind.DIRECTIVE_DEFINITION) {
-      locationsMap.set(def.name.value, new Set(def.locations.map(name => name.value)));
+      locationsMap.set(
+        def.name.value,
+        new Set(def.locations.map((name) => name.value)),
+      );
     }
   }
 
@@ -27,7 +30,7 @@ export function KnownDirectivesRule(context: {
     if (!locationsMap.has(specifiedDirective.name)) {
       locationsMap.set(
         specifiedDirective.name,
-        new Set(specifiedDirective.locations.map(loc => String(loc))),
+        new Set(specifiedDirective.locations.map((loc) => String(loc))),
       );
     }
   }
@@ -42,7 +45,7 @@ export function KnownDirectivesRule(context: {
           new GraphQLError(`Unknown directive "@${name}".`, {
             nodes: node,
             extensions: {
-              code: 'INVALID_GRAPHQL',
+              code: "INVALID_GRAPHQL",
             },
           }),
         );
@@ -52,12 +55,15 @@ export function KnownDirectivesRule(context: {
       const candidateLocation = getDirectiveLocationForASTPath(ancestors);
       if (candidateLocation && !locations.has(candidateLocation)) {
         context.reportError(
-          new GraphQLError(`Directive "@${name}" may not be used on ${candidateLocation}.`, {
-            nodes: node,
-            extensions: {
-              code: 'INVALID_GRAPHQL',
+          new GraphQLError(
+            `Directive "@${name}" may not be used on ${candidateLocation}.`,
+            {
+              nodes: node,
+              extensions: {
+                code: "INVALID_GRAPHQL",
+              },
             },
-          }),
+          ),
         );
       }
     },
@@ -69,8 +75,8 @@ function getDirectiveLocationForASTPath(
 ): DirectiveLocation | undefined {
   const appliedTo = ancestors[ancestors.length - 1];
 
-  if (!('kind' in appliedTo)) {
-    throw new Error('Expected a node');
+  if (!("kind" in appliedTo)) {
+    throw new Error("Expected a node");
   }
 
   switch (appliedTo.kind) {
@@ -114,8 +120,8 @@ function getDirectiveLocationForASTPath(
     case Kind.INPUT_VALUE_DEFINITION: {
       const parentNode = ancestors[ancestors.length - 3];
 
-      if (!('kind' in parentNode)) {
-        throw new Error('Expected a node');
+      if (!("kind" in parentNode)) {
+        throw new Error("Expected a node");
       }
 
       return parentNode.kind === Kind.INPUT_OBJECT_TYPE_DEFINITION
@@ -125,7 +131,9 @@ function getDirectiveLocationForASTPath(
   }
 }
 
-function getDirectiveLocationForOperation(operation: OperationTypeNode): DirectiveLocation {
+function getDirectiveLocationForOperation(
+  operation: OperationTypeNode,
+): DirectiveLocation {
   switch (operation) {
     case OperationTypeNode.QUERY:
       return DirectiveLocation.QUERY;

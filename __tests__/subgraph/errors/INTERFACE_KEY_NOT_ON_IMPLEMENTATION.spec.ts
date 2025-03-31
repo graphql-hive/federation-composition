@@ -1,12 +1,16 @@
-import { expect, test } from 'vitest';
-import { graphql, satisfiesVersionRange, testVersions } from '../../shared/testkit.js';
+import { expect, test } from "vitest";
+import {
+  graphql,
+  satisfiesVersionRange,
+  testVersions,
+} from "../../shared/testkit.js";
 
 testVersions((api, version) => {
-  test('INTERFACE_KEY_NOT_ON_IMPLEMENTATION', () => {
+  test("INTERFACE_KEY_NOT_ON_IMPLEMENTATION", () => {
     expect(
       api.composeServices([
         {
-          name: 'users',
+          name: "users",
           typeDefs: graphql`
             extend schema @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@key"])
 
@@ -31,13 +35,13 @@ testVersions((api, version) => {
     ).toEqual(
       expect.objectContaining({
         errors: expect.arrayContaining([
-          satisfiesVersionRange('>= v2.3', version)
+          satisfiesVersionRange(">= v2.3", version)
             ? expect.objectContaining({
                 message: expect.stringContaining(
                   `[users] Key @key(fields: "id") on interface type "User" is missing on implementation type "RegisteredUser".`,
                 ),
                 extensions: expect.objectContaining({
-                  code: 'INTERFACE_KEY_NOT_ON_IMPLEMENTATION',
+                  code: "INTERFACE_KEY_NOT_ON_IMPLEMENTATION",
                 }),
               })
             : expect.objectContaining({
@@ -45,7 +49,7 @@ testVersions((api, version) => {
                   `[users] Cannot use @key on interface "User": @key is not yet supported on interfaces`,
                 ),
                 extensions: expect.objectContaining({
-                  code: 'KEY_UNSUPPORTED_ON_INTERFACE',
+                  code: "KEY_UNSUPPORTED_ON_INTERFACE",
                 }),
               }),
         ]),

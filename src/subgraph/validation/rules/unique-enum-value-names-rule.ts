@@ -1,4 +1,9 @@
-import { ASTVisitor, EnumTypeDefinitionNode, EnumTypeExtensionNode, GraphQLError } from 'graphql';
+import {
+  ASTVisitor,
+  EnumTypeDefinitionNode,
+  EnumTypeExtensionNode,
+  GraphQLError,
+} from "graphql";
 
 export function UniqueEnumValueNamesRule(context: {
   reportError: (error: GraphQLError) => void;
@@ -10,7 +15,9 @@ export function UniqueEnumValueNamesRule(context: {
     EnumTypeExtension: checkValueUniqueness,
   };
 
-  function checkValueUniqueness(node: EnumTypeDefinitionNode | EnumTypeExtensionNode) {
+  function checkValueUniqueness(
+    node: EnumTypeDefinitionNode | EnumTypeExtensionNode,
+  ) {
     const typeName = node.name.value;
 
     if (!knownValueNames.has(typeName)) {
@@ -25,11 +32,14 @@ export function UniqueEnumValueNamesRule(context: {
 
       if (valueNames.has(valueName)) {
         context.reportError(
-          new GraphQLError(`Enum value "${typeName}.${valueName}" can only be defined once.`, {
-            extensions: {
-              code: 'INVALID_GRAPHQL',
+          new GraphQLError(
+            `Enum value "${typeName}.${valueName}" can only be defined once.`,
+            {
+              extensions: {
+                code: "INVALID_GRAPHQL",
+              },
             },
-          }),
+          ),
         );
       } else {
         valueNames.add(valueName);

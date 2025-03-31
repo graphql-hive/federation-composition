@@ -1,13 +1,13 @@
-import { OperationTypeNode } from 'graphql';
-import type { Logger } from '../../../../utils/logger.js';
-import { isAbstractEdge, isFieldEdge, type Edge } from './edge.js';
-import { LazyErrors, SatisfiabilityError } from './errors.js';
-import { PathFinder } from './finder.js';
-import type { Graph } from './graph.js';
-import { OverrideLabels, type Lazy } from './helpers.js';
-import type { MoveValidator } from './move-validator.js';
-import type { Node } from './node.js';
-import { OperationPath, type Step } from './operation-path.js';
+import { OperationTypeNode } from "graphql";
+import type { Logger } from "../../../../utils/logger.js";
+import { isAbstractEdge, isFieldEdge, type Edge } from "./edge.js";
+import { LazyErrors, SatisfiabilityError } from "./errors.js";
+import { PathFinder } from "./finder.js";
+import type { Graph } from "./graph.js";
+import { OverrideLabels, type Lazy } from "./helpers.js";
+import type { MoveValidator } from "./move-validator.js";
+import type { Node } from "./node.js";
+import { OperationPath, type Step } from "./operation-path.js";
 
 export class WalkTracker {
   private errors = new LazyErrors<SatisfiabilityError>();
@@ -21,12 +21,22 @@ export class WalkTracker {
   move(edge: Edge) {
     if (isFieldEdge(edge) || isAbstractEdge(edge)) {
       if (isFieldEdge(edge) && edge.move.override?.label) {
-        return new WalkTracker(this.superPath.clone().move(edge), [], this.labelValues.clone().set(edge.move.override.label, edge.move.override.value));
+        return new WalkTracker(
+          this.superPath.clone().move(edge),
+          [],
+          this.labelValues
+            .clone()
+            .set(edge.move.override.label, edge.move.override.value),
+        );
       }
-      return new WalkTracker(this.superPath.clone().move(edge), [], this.labelValues.clone());
+      return new WalkTracker(
+        this.superPath.clone().move(edge),
+        [],
+        this.labelValues.clone(),
+      );
     }
 
-    throw new Error('Expected edge to be FieldMove or AbstractMove');
+    throw new Error("Expected edge to be FieldMove or AbstractMove");
   }
 
   addPath(path: OperationPath) {
@@ -45,7 +55,10 @@ export class WalkTracker {
   givesEmptyResult() {
     const lastEdge = this.superPath.edge();
     return (
-      this.paths.length === 0 && this.errors.isEmpty() && !!lastEdge && isAbstractEdge(lastEdge)
+      this.paths.length === 0 &&
+      this.errors.isEmpty() &&
+      !!lastEdge &&
+      isAbstractEdge(lastEdge)
     );
   }
 
@@ -54,10 +67,14 @@ export class WalkTracker {
   }
 
   listErrors() {
-    return this.errors.toArray()
-      .filter((error, i, all) => all.findIndex(e => e.toString() === error.toString()) === i)
-      .filter(error => {
-        if (error.kind !== 'KEY') {
+    return this.errors
+      .toArray()
+      .filter(
+        (error, i, all) =>
+          all.findIndex((e) => e.toString() === error.toString()) === i,
+      )
+      .filter((error) => {
+        if (error.kind !== "KEY") {
           return true;
         }
 
@@ -87,22 +104,26 @@ export class Walker {
     private supergraph: Graph,
     private mergedGraph: Graph,
   ) {
-    this.logger = logger.create('Walker');
-    this.pathFinder = new PathFinder(this.logger, this.mergedGraph, this.moveChecker);
+    this.logger = logger.create("Walker");
+    this.pathFinder = new PathFinder(
+      this.logger,
+      this.mergedGraph,
+      this.moveChecker,
+    );
   }
 
   // Instead of walking the graph in all directions, this method will only walk the graph in the given steps.
   walkTrail(operationType: OperationTypeNode, steps: Step[]) {
     if (steps.length === 0) {
-      throw new Error('Expected at least one step');
+      throw new Error("Expected at least one step");
     }
 
     const rootNode = this.supergraph.nodeOf(
       operationType === OperationTypeNode.QUERY
-        ? 'Query'
+        ? "Query"
         : operationType === OperationTypeNode.MUTATION
-          ? 'Mutation'
-          : 'Subscription',
+          ? "Mutation"
+          : "Subscription",
       false,
     );
 
@@ -112,16 +133,18 @@ export class Walker {
 
     let state = new WalkTracker(
       new OperationPath(rootNode),
-      this.mergedGraph.nodesOf(rootNode.typeName, false).map(n => new OperationPath(n)),
+      this.mergedGraph
+        .nodesOf(rootNode.typeName, false)
+        .map((n) => new OperationPath(n)),
       new OverrideLabels(),
     );
 
     for (const step of steps) {
       const stepId =
-        'fieldName' in step && step.fieldName
+        "fieldName" in step && step.fieldName
           ? `${step.typeName}.${step.fieldName}`
           : step.typeName;
-      const isFieldStep = 'fieldName' in step;
+      const isFieldStep = "fieldName" in step;
       const isEdgeIgnored = (edge: Edge) => {
         if (isFieldStep) {
           return !isFieldEdge(edge) || edge.move.fieldName !== step.fieldName;
@@ -139,7 +162,7 @@ export class Walker {
         state.superPath.tail() ?? state.superPath.rootNode(),
         (nextState, superEdge) => {
           if (called++ > 1) {
-            throw new Error('Expected nextStep to be called only once');
+            throw new Error("Expected nextStep to be called only once");
           }
 
           state = nextState;
@@ -151,20 +174,29 @@ export class Walker {
               }
             }
             this.logger.groupEnd(
-              () => 'Advanced to ' + superEdge + ' with ' + nextState.paths.length + ' paths',
+              () =>
+                "Advanced to " +
+                superEdge +
+                " with " +
+                nextState.paths.length +
+                " paths",
             );
           } else if (nextState.givesEmptyResult()) {
             emptyObjectResult = true;
-            this.logger.groupEnd(() => 'Federation will resolve an empty object for ' + superEdge);
+            this.logger.groupEnd(
+              () => "Federation will resolve an empty object for " + superEdge,
+            );
           } else {
             unreachable = true;
-            this.logger.log(() => 'Dead end', '🚨 ');
+            this.logger.log(() => "Dead end", "🚨 ");
             if (this.logger.isEnabled) {
               for (const path of state.paths) {
                 this.logger.log(() => path.toString());
               }
             }
-            this.logger.groupEnd(() => 'Unreachable path ' + nextState.superPath.toString());
+            this.logger.groupEnd(
+              () => "Unreachable path " + nextState.superPath.toString(),
+            );
           }
         },
         isEdgeIgnored,
@@ -182,8 +214,8 @@ export class Walker {
     return state;
   }
 
-  walk(method: 'bfs' | 'dfs' = 'bfs') {
-    if (method === 'dfs') {
+  walk(method: "bfs" | "dfs" = "bfs") {
+    if (method === "dfs") {
       return this.dfs();
     }
 
@@ -198,7 +230,7 @@ export class Walker {
   ) {
     const graphsLeadingToNode = Array.from(
       new Set(
-        state.paths.map(p => {
+        state.paths.map((p) => {
           const edge = p.edge();
           const tail = p.tail() ?? p.rootNode();
           const tailGraphName = tail.graphName;
@@ -222,7 +254,7 @@ export class Walker {
     );
 
     if (superTail.isGraphComboVisited(graphsLeadingToNode, state.labelValues)) {
-      this.logger.log(() => 'Node already visited: ' + superTail);
+      this.logger.log(() => "Node already visited: " + superTail);
       return;
     }
 
@@ -235,22 +267,32 @@ export class Walker {
         continue;
       }
       this.logger.group(
-        () => 'Attempt to advance to ' + superEdge + ' (' + state.paths.length + ' paths)',
+        () =>
+          "Attempt to advance to " +
+          superEdge +
+          " (" +
+          state.paths.length +
+          " paths)",
       );
 
       if (state.isEdgeVisited(superEdge)) {
-        this.logger.groupEnd(() => 'Edge already visited: ' + superEdge);
+        this.logger.groupEnd(() => "Edge already visited: " + superEdge);
         continue;
       }
 
       if (!(isFieldEdge(superEdge) || isAbstractEdge(superEdge))) {
-        throw new Error('Expected edge to have a FieldMove or AbstractMove');
+        throw new Error("Expected edge to have a FieldMove or AbstractMove");
       }
 
       if (isFieldEdge(superEdge) && superEdge.move.override?.label) {
         const labelValue = state.labelValues.get(superEdge.move.override.label);
-        if (typeof labelValue === 'boolean' && labelValue !== superEdge.move.override.value) {
-          this.logger.groupEnd(() => 'Different label value. Skipping ' + superEdge);
+        if (
+          typeof labelValue === "boolean" &&
+          labelValue !== superEdge.move.override.value
+        ) {
+          this.logger.groupEnd(
+            () => "Different label value. Skipping " + superEdge,
+          );
           continue;
         }
       }
@@ -263,7 +305,7 @@ export class Walker {
         : `... on ${superEdge.tail.typeName}`;
 
       for (const path of state.paths) {
-        this.logger.group(() => 'Advance path: ' + path.toString());
+        this.logger.group(() => "Advance path: " + path.toString());
 
         const directPathsResult = this.pathFinder.findDirectPaths(
           path,
@@ -275,7 +317,7 @@ export class Walker {
 
         // Special case when it's an abstract type and there are no direct paths
         if (directPathsResult.success && directPathsResult.paths.length === 0) {
-          this.logger.groupEnd(() => 'Abstract type');
+          this.logger.groupEnd(() => "Abstract type");
           continue;
         }
 
@@ -286,7 +328,9 @@ export class Walker {
         }
 
         if (directPathsResult.success && superEdge.tail.isLeaf) {
-          this.logger.groupEnd(() => 'Reached leaf node, no need to find indirect paths');
+          this.logger.groupEnd(
+            () => "Reached leaf node, no need to find indirect paths",
+          );
           continue;
         }
 
@@ -307,8 +351,8 @@ export class Walker {
         }
         this.logger.groupEnd(() =>
           directPathsResult.success || indirectPathsResult.success
-            ? 'Can advance to ' + id
-            : 'Cannot advance to ' + id,
+            ? "Can advance to " + id
+            : "Cannot advance to " + id,
         );
       }
 
@@ -322,8 +366,8 @@ export class Walker {
   private dfs() {
     const unreachable: WalkTracker[] = [];
 
-    const rootNodes = ['Query', 'Mutation', 'Subscription']
-      .map(name => this.supergraph.nodeOf(name, false))
+    const rootNodes = ["Query", "Mutation", "Subscription"]
+      .map((name) => this.supergraph.nodeOf(name, false))
       .filter((node): node is Node => !!node);
 
     const overrideLabels = new OverrideLabels();
@@ -333,7 +377,9 @@ export class Walker {
         rootNode,
         new WalkTracker(
           new OperationPath(rootNode),
-          this.mergedGraph.nodesOf(rootNode.typeName, false).map(n => new OperationPath(n)),
+          this.mergedGraph
+            .nodesOf(rootNode.typeName, false)
+            .map((n) => new OperationPath(n)),
           overrideLabels,
         ),
         unreachable,
@@ -343,7 +389,11 @@ export class Walker {
     return unreachable;
   }
 
-  private _dfs(superTail: Node, state: WalkTracker, unreachable: WalkTracker[]) {
+  private _dfs(
+    superTail: Node,
+    state: WalkTracker,
+    unreachable: WalkTracker[],
+  ) {
     if (superTail.isLeaf) {
       return;
     }
@@ -356,20 +406,29 @@ export class Walker {
           }
         }
         this.logger.groupEnd(
-          () => 'Advanced to ' + superEdge + ' with ' + nextState.paths.length + ' paths',
+          () =>
+            "Advanced to " +
+            superEdge +
+            " with " +
+            nextState.paths.length +
+            " paths",
         );
         this._dfs(superEdge.tail, nextState, unreachable);
       } else if (nextState.givesEmptyResult()) {
-        this.logger.groupEnd(() => 'Federation will resolve an empty object for ' + superEdge);
+        this.logger.groupEnd(
+          () => "Federation will resolve an empty object for " + superEdge,
+        );
       } else {
         unreachable.push(nextState);
-        this.logger.log(() => 'Dead end', '🚨 ');
+        this.logger.log(() => "Dead end", "🚨 ");
         if (this.logger.isEnabled) {
           for (const path of state.paths) {
             this.logger.log(() => path.toString());
           }
         }
-        this.logger.groupEnd(() => 'Unreachable path ' + nextState.superPath.toString());
+        this.logger.groupEnd(
+          () => "Unreachable path " + nextState.superPath.toString(),
+        );
       }
     });
   }
@@ -379,7 +438,7 @@ export class Walker {
     const unreachable: WalkTracker[] = [];
     const queue: WalkTracker[] = [];
 
-    for (const name of ['Query', 'Mutation', 'Subscription']) {
+    for (const name of ["Query", "Mutation", "Subscription"]) {
       const rootNode = this.supergraph.nodeOf(name, false);
 
       if (!rootNode) {
@@ -389,7 +448,9 @@ export class Walker {
       queue.push(
         new WalkTracker(
           new OperationPath(rootNode),
-          this.mergedGraph.nodesOf(rootNode.typeName, false).map(n => new OperationPath(n)),
+          this.mergedGraph
+            .nodesOf(rootNode.typeName, false)
+            .map((n) => new OperationPath(n)),
           overrideLabels,
         ),
       );
@@ -399,7 +460,7 @@ export class Walker {
       const state = queue.pop();
 
       if (!state) {
-        throw new Error('Unexpected end of queue');
+        throw new Error("Unexpected end of queue");
       }
 
       const superTail = state.superPath.tail() ?? state.superPath.rootNode();
@@ -416,20 +477,29 @@ export class Walker {
             }
           }
           this.logger.groupEnd(
-            () => 'Advanced to ' + superEdge + ' with ' + nextState.paths.length + ' paths',
+            () =>
+              "Advanced to " +
+              superEdge +
+              " with " +
+              nextState.paths.length +
+              " paths",
           );
           queue.push(nextState);
         } else if (nextState.givesEmptyResult()) {
-          this.logger.groupEnd(() => 'Federation will resolve an empty object for ' + superEdge);
+          this.logger.groupEnd(
+            () => "Federation will resolve an empty object for " + superEdge,
+          );
         } else {
           unreachable.push(nextState);
-          this.logger.log(() => 'Dead end', '🚨 ');
+          this.logger.log(() => "Dead end", "🚨 ");
           if (this.logger.isEnabled) {
             for (const path of state.paths) {
               this.logger.log(() => path.toString());
             }
           }
-          this.logger.groupEnd(() => 'Unreachable path ' + nextState.superPath.toString());
+          this.logger.groupEnd(
+            () => "Unreachable path " + nextState.superPath.toString(),
+          );
         }
       });
     }
@@ -438,7 +508,10 @@ export class Walker {
   }
 }
 
-function setShortestPath(shortestPathPerTail: Map<Node, OperationPath>, paths: OperationPath[]) {
+function setShortestPath(
+  shortestPathPerTail: Map<Node, OperationPath>,
+  paths: OperationPath[],
+) {
   for (const path of paths) {
     const tail = path.tail() ?? path.rootNode();
     const shortestByTail = shortestPathPerTail.get(tail);

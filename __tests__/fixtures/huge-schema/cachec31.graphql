@@ -47,7 +47,12 @@ extend type Query {
 }
 
 extend type Query {
-  fooeyd5f(drool984: String!, grout3e3: String, aside2ed: String!, abaft80b: String!): ranged72
+  fooeyd5f(
+    drool984: String!
+    grout3e3: String
+    aside2ed: String!
+    abaft80b: String!
+  ): ranged72
 }
 
 extend type Query {
@@ -55,11 +60,21 @@ extend type Query {
 }
 
 extend type Query {
-  kiosk902(scary40c: ID!, yahoo616: tweak7c2, zowie06b: which105, afterc14: [equald08]): [smell938]
+  kiosk902(
+    scary40c: ID!
+    yahoo616: tweak7c2
+    zowie06b: which105
+    afterc14: [equald08]
+  ): [smell938]
 }
 
 extend type Query {
-  below10a(drool984: String, grout3e3: String, scary40c: ID, zowie06b: round0f0): rousee57
+  below10a(
+    drool984: String
+    grout3e3: String
+    scary40c: ID
+    zowie06b: round0f0
+  ): rousee57
 }
 
 type fooeye36 {
@@ -168,7 +183,11 @@ type freak945 @key(fields: "scary40c") {
   whosefa8: until081
   shyly3d3: vital1a9
   child868: Boolean
-  kiosk902(yahoo616: tweak7c2, zowie06b: which105, afterc14: [equald08]): [smell938]
+  kiosk902(
+    yahoo616: tweak7c2
+    zowie06b: which105
+    afterc14: [equald08]
+  ): [smell938]
   belowc87: fooeycab
   below10a(grout3e3: String, drool984: String, zowie06b: nutty5cf): rousee57
   badly12d: String
@@ -465,7 +484,12 @@ input round0f0 {
 
 type rousee57 {
   never76f: which632
-  quaffaf8(entry412: fixed6a8!, creakefb: zowie115, midsta2d: Int, truly3e8: Int): [yowzaad4!]!
+  quaffaf8(
+    entry412: fixed6a8!
+    creakefb: zowie115
+    midsta2d: Int
+    truly3e8: Int
+  ): [yowzaad4!]!
 }
 
 type yowzaad4 {

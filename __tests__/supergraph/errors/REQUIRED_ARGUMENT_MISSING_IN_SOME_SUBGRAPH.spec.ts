@@ -1,12 +1,12 @@
-import { expect, test } from 'vitest';
-import { graphql, testVersions } from '../../shared/testkit.js';
+import { expect, test } from "vitest";
+import { graphql, testVersions } from "../../shared/testkit.js";
 
 testVersions((api, version) => {
-  test('REQUIRED_ARGUMENT_MISSING_IN_SOME_SUBGRAPH', () => {
+  test("REQUIRED_ARGUMENT_MISSING_IN_SOME_SUBGRAPH", () => {
     expect(
       api.composeServices([
         {
-          name: 'users',
+          name: "users",
           typeDefs: graphql`
             extend schema @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@key"])
             
@@ -20,7 +20,7 @@ testVersions((api, version) => {
           `,
         },
         {
-          name: 'feed',
+          name: "feed",
           typeDefs: graphql`
             extend schema @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@key", "@external"])
 
@@ -42,7 +42,7 @@ testVersions((api, version) => {
               `Argument "Query.user(id:)" is required in some subgraphs but does not appear in all subgraphs: it is required in subgraph "users" but does not appear in subgraph "feed"`,
             ),
             extensions: expect.objectContaining({
-              code: 'REQUIRED_ARGUMENT_MISSING_IN_SOME_SUBGRAPH',
+              code: "REQUIRED_ARGUMENT_MISSING_IN_SOME_SUBGRAPH",
             }),
           }),
         ]),

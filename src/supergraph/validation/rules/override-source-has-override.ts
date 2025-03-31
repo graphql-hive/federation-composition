@@ -1,6 +1,6 @@
-import { GraphQLError } from 'graphql';
-import { SupergraphVisitorMap } from '../../composition/visitor.js';
-import { SupergraphValidationContext } from '../validation-context.js';
+import { GraphQLError } from "graphql";
+import { SupergraphVisitorMap } from "../../composition/visitor.js";
+import { SupergraphValidationContext } from "../validation-context.js";
 
 export function OverrideSourceHasOverrideRule(
   context: SupergraphValidationContext,
@@ -11,7 +11,9 @@ export function OverrideSourceHasOverrideRule(
         return;
       }
 
-      const graphsWithOverride = Array.from(fieldState.byGraph).filter(onlyWithOverride);
+      const graphsWithOverride = Array.from(fieldState.byGraph).filter(
+        onlyWithOverride,
+      );
 
       if (graphsWithOverride.length === 1) {
         return;
@@ -36,7 +38,7 @@ export function OverrideSourceHasOverrideRule(
                 )}". Only one @override directive is allowed per field.`,
                 {
                   extensions: {
-                    code: 'OVERRIDE_SOURCE_HAS_OVERRIDE',
+                    code: "OVERRIDE_SOURCE_HAS_OVERRIDE",
                   },
                 },
               ),
@@ -45,7 +47,9 @@ export function OverrideSourceHasOverrideRule(
           }
 
           visitedGraphs.add(overrideValue);
-          const graphFromOverride = overrideValue ? fieldState.byGraph.get(overrideValue) : null;
+          const graphFromOverride = overrideValue
+            ? fieldState.byGraph.get(overrideValue)
+            : null;
 
           if (!graphFromOverride) {
             break;

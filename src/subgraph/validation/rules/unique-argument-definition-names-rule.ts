@@ -4,7 +4,7 @@ import {
   GraphQLError,
   InputValueDefinitionNode,
   NameNode,
-} from 'graphql';
+} from "graphql";
 
 export function UniqueArgumentDefinitionNamesRule(context: {
   reportError: (error: GraphQLError) => void;
@@ -51,7 +51,7 @@ export function UniqueArgumentDefinitionNamesRule(context: {
             `Argument "${parentName}(${argDef.name.value}:)" can only be defined once.`,
             {
               extensions: {
-                code: 'INVALID_GRAPHQL',
+                code: "INVALID_GRAPHQL",
               },
             },
           ),

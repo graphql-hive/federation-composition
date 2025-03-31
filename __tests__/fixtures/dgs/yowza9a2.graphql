@@ -88,14 +88,22 @@ type plate86e @key(fields: "adornea4 creek166 ready859") {
     messy877: madlyd8f
     fooeyc5f: Int
   ): curvecc9
-  bruite6b(whose5d3: tastyc47, fooeyc5f: Int, forgeced: madly963!, fullyb31: String!): curvecc9!
+  bruite6b(
+    whose5d3: tastyc47
+    fooeyc5f: Int
+    forgeced: madly963!
+    fullyb31: String!
+  ): curvecc9!
   repay45b: dimlyf57
   oftenec4(organ346: String!, until22e: String!): click2e7
   creek166: String
   ready859: chinoaa2
 }
 
-type yowza033 @key(fields: "adornea4 until4b4 fooey29e trail84e ready859 sincead5 midstc23") {
+type yowza033
+  @key(
+    fields: "adornea4 until4b4 fooey29e trail84e ready859 sincead5 midstc23"
+  ) {
   adornea4: smalld4d!
   fooey29e: String!
   midstc23: [chinoaa2!]
@@ -361,7 +369,9 @@ type hence581 @key(fields: "seize765 trail84e") {
   trail84e: String!
 }
 
-type since9c5 @key(fields: "seize765 trail84e") @key(fields: "seize765 trail84e whose18d") {
+type since9c5
+  @key(fields: "seize765 trail84e")
+  @key(fields: "seize765 trail84e whose18d") {
   seize765: String!
   whose18d: smallcd5!
   given37d: Boolean!
@@ -389,7 +399,12 @@ type Query {
     fooeyc5f: Float
   ): untilba2!
   whose8f8(whose5d3: tastyc47, fullyb31: String): plate86e!
-  shyly130(sally487: String, creek166: String!, messy877: madlyd8f, trulyc40: unban11a!): curvecc9!
+  shyly130(
+    sally487: String
+    creek166: String!
+    messy877: madlyd8f
+    trulyc40: unban11a!
+  ): curvecc9!
   where3c7(often162: String!, organ346: String!, until22e: String!): madly4e3!
   dwarf084(
     organ346: String
@@ -406,7 +421,9 @@ type Query {
   dailycb0(creek166: String!): madly4e3!
 }
 
-type yowzab51 @key(fields: "adornea4") @key(fields: "adornea4 ready859 sincead5") {
+type yowzab51
+  @key(fields: "adornea4")
+  @key(fields: "adornea4 ready859 sincead5") {
   vital7d7: smalld4d!
   adornea4: smalld4d!
   supere4a: yowza033!

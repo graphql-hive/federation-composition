@@ -3,9 +3,19 @@ scalar rough80b
 scalar dimlyf7b
 
 type Query {
-  burly56a(fooey052: Int, madly2ba: String, never2e5: Int, while53c: String): fooey11b
+  burly56a(
+    fooey052: Int
+    madly2ba: String
+    never2e5: Int
+    while53c: String
+  ): fooey11b
   sadly156(worth668: yahoo974!): yowza387
-  shunt2f8(fooey052: Int, madly2ba: String, never2e5: Int, while53c: String): tableb0a
+  shunt2f8(
+    fooey052: Int
+    madly2ba: String
+    never2e5: Int
+    while53c: String
+  ): tableb0a
 }
 
 type fooey11b implements yowza431 {

@@ -1,7 +1,7 @@
-import { GraphQLError } from 'graphql';
-import type { SupergraphVisitorMap } from '../../composition/visitor.js';
-import type { SupergraphState } from '../../state.js';
-import type { SupergraphValidationContext } from '../validation-context.js';
+import { GraphQLError } from "graphql";
+import type { SupergraphVisitorMap } from "../../composition/visitor.js";
+import type { SupergraphState } from "../../state.js";
+import type { SupergraphValidationContext } from "../validation-context.js";
 
 export function ReferencedInaccessibleRule(
   context: SupergraphValidationContext,
@@ -9,10 +9,11 @@ export function ReferencedInaccessibleRule(
 ): SupergraphVisitorMap {
   return {
     ObjectTypeField(objectState, fieldState) {
-      const outputTypeName = fieldState.type.replace(/[\[\]\!]+/g, '');
+      const outputTypeName = fieldState.type.replace(/[\[\]\!]+/g, "");
       const referencesInaccessible =
         findOutputType(supergraph, outputTypeName)?.inaccessible === true;
-      const isInaccessible = fieldState.inaccessible === true || objectState.inaccessible === true;
+      const isInaccessible =
+        fieldState.inaccessible === true || objectState.inaccessible === true;
 
       if (referencesInaccessible && !isInaccessible) {
         context.reportError(
@@ -20,7 +21,7 @@ export function ReferencedInaccessibleRule(
             `Type "${outputTypeName}" is @inaccessible but is referenced by "${objectState.name}.${fieldState.name}", which is in the API schema.`,
             {
               extensions: {
-                code: 'REFERENCED_INACCESSIBLE',
+                code: "REFERENCED_INACCESSIBLE",
               },
             },
           ),
@@ -28,7 +29,7 @@ export function ReferencedInaccessibleRule(
       }
     },
     ObjectTypeFieldArg(objectState, fieldState, argState) {
-      const outputTypeName = argState.type.replace(/[\[\]\!]+/g, '');
+      const outputTypeName = argState.type.replace(/[\[\]\!]+/g, "");
       const referencesInaccessible =
         findInputType(supergraph, outputTypeName)?.inaccessible === true;
       const isInaccessible =
@@ -42,7 +43,7 @@ export function ReferencedInaccessibleRule(
             `Type "${outputTypeName}" is @inaccessible but is referenced by "${objectState.name}.${fieldState.name}(${argState.name}:)", which is in the API schema.`,
             {
               extensions: {
-                code: 'REFERENCED_INACCESSIBLE',
+                code: "REFERENCED_INACCESSIBLE",
               },
             },
           ),
@@ -62,5 +63,8 @@ function findOutputType(supergraph: SupergraphState, typeName: string) {
 }
 
 function findInputType(supergraph: SupergraphState, typeName: string) {
-  return supergraph.enumTypes.get(typeName) || supergraph.inputObjectTypes.get(typeName);
+  return (
+    supergraph.enumTypes.get(typeName) ||
+    supergraph.inputObjectTypes.get(typeName)
+  );
 }

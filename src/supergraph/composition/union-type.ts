@@ -1,15 +1,15 @@
-import type { DirectiveNode } from 'graphql';
-import { FederationVersion } from '../../specifications/federation.js';
-import { Description, UnionType } from '../../subgraph/state.js';
-import { createUnionTypeNode } from './ast.js';
-import { convertToConst, type MapByGraph, type TypeBuilder } from './common.js';
+import type { DirectiveNode } from "graphql";
+import { FederationVersion } from "../../specifications/federation.js";
+import { Description, UnionType } from "../../subgraph/state.js";
+import { createUnionTypeNode } from "./ast.js";
+import { convertToConst, type MapByGraph, type TypeBuilder } from "./common.js";
 
 export function unionTypeBuilder(): TypeBuilder<UnionType, UnionTypeState> {
   return {
     visitSubgraphState(graph, state, typeName, type) {
       const unionTypeState = getOrCreateUnionType(state, typeName);
 
-      type.tags.forEach(tag => unionTypeState.tags.add(tag));
+      type.tags.forEach((tag) => unionTypeState.tags.add(tag));
 
       if (type.inaccessible) {
         unionTypeState.inaccessible = true;
@@ -24,7 +24,7 @@ export function unionTypeBuilder(): TypeBuilder<UnionType, UnionTypeState> {
         unionTypeState.description = type.description;
       }
 
-      type.ast.directives.forEach(directive => {
+      type.ast.directives.forEach((directive) => {
         unionTypeState.ast.directives.push(directive);
       });
 
@@ -45,13 +45,16 @@ export function unionTypeBuilder(): TypeBuilder<UnionType, UnionTypeState> {
         inaccessible: unionType.inaccessible,
         description: unionType.description,
         join: {
-          type: Array.from(unionType.byGraph.keys()).map(graphName => ({
+          type: Array.from(unionType.byGraph.keys()).map((graphName) => ({
             graph: graphName.toUpperCase(),
           })),
           unionMember: Array.from(unionType.byGraph.entries())
             .map(([graphName, meta]) => {
               const graph = graphName.toUpperCase();
-              return Array.from(meta.members).map(member => ({ graph, member }));
+              return Array.from(meta.members).map((member) => ({
+                graph,
+                member,
+              }));
             })
             .flat(1),
         },
@@ -64,7 +67,7 @@ export function unionTypeBuilder(): TypeBuilder<UnionType, UnionTypeState> {
 }
 
 export type UnionTypeState = {
-  kind: 'union';
+  kind: "union";
   name: string;
   tags: Set<string>;
   hasDefinition: boolean;
@@ -82,7 +85,10 @@ type UnionTypeInGraph = {
   version: FederationVersion;
 };
 
-function getOrCreateUnionType(state: Map<string, UnionTypeState>, typeName: string) {
+function getOrCreateUnionType(
+  state: Map<string, UnionTypeState>,
+  typeName: string,
+) {
   const existing = state.get(typeName);
 
   if (existing) {
@@ -90,7 +96,7 @@ function getOrCreateUnionType(state: Map<string, UnionTypeState>, typeName: stri
   }
 
   const def: UnionTypeState = {
-    kind: 'union',
+    kind: "union",
     name: typeName,
     members: new Set(),
     tags: new Set(),

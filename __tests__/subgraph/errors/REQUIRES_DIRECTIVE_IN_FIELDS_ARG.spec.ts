@@ -1,12 +1,12 @@
-import { expect, test } from 'vitest';
-import { graphql, testVersions } from '../../shared/testkit.js';
+import { expect, test } from "vitest";
+import { graphql, testVersions } from "../../shared/testkit.js";
 
 testVersions((api, version) => {
-  test('REQUIRES_DIRECTIVE_IN_FIELDS_ARG', () => {
+  test("REQUIRES_DIRECTIVE_IN_FIELDS_ARG", () => {
     expect(
       api.composeServices([
         {
-          name: 'users',
+          name: "users",
           typeDefs: graphql`
             extend schema
               @link(
@@ -38,17 +38,18 @@ testVersions((api, version) => {
     ).toEqual(
       expect.objectContaining({
         errors: expect.arrayContaining([
-          version === 'v2.0'
+          version === "v2.0"
             ? expect.objectContaining({
-                message: '[users] Cannot import unknown element "@composeDirective".',
+                message:
+                  '[users] Cannot import unknown element "@composeDirective".',
                 extensions: expect.objectContaining({
-                  code: 'INVALID_LINK_DIRECTIVE_USAGE',
+                  code: "INVALID_LINK_DIRECTIVE_USAGE",
                 }),
               })
             : expect.objectContaining({
                 message: `[users] On field "User.profile", for @requires(fields: "name @lowercase"): cannot have directive applications in the @requires(fields:) argument but found @lowercase.`,
                 extensions: expect.objectContaining({
-                  code: 'REQUIRES_DIRECTIVE_IN_FIELDS_ARG',
+                  code: "REQUIRES_DIRECTIVE_IN_FIELDS_ARG",
                 }),
               }),
         ]),

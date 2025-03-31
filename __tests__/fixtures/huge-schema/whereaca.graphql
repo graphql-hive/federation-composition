@@ -30,5 +30,7 @@ type baggy033 @key(fields: "badly7b3") @extends {
   wetlyeca: untilb36! @external
   rabbi80f: hence9b2! @external
   shyly3a8(zowie3fb: Boolean!): dimly214
-    @requires(fields: "wetlyeca { while871 pastaa2e } rabbi80f { afterec9 { chiefcf5 } }")
+    @requires(
+      fields: "wetlyeca { while871 pastaa2e } rabbi80f { afterec9 { chiefcf5 } }"
+    )
 }

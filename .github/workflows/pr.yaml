@@ -13,7 +13,7 @@ jobs:
         uses: actions/setup-node@cdca7365b2dadb8aad0a33bc7601856ffabcc48e # v4
         with:
           node-version: 21
-          cache: 'pnpm'
+          cache: "pnpm"
       - name: install dependencies
         run: pnpm install --frozen-lockfile
       - name: typecheck
@@ -33,7 +33,7 @@ jobs:
         uses: actions/setup-node@cdca7365b2dadb8aad0a33bc7601856ffabcc48e # v4
         with:
           node-version: 20
-          cache: 'pnpm'
+          cache: "pnpm"
       - name: install dependencies
         run: pnpm install --frozen-lockfile
       - name: bench

@@ -8,7 +8,7 @@ export function andList(
   commaBeforeConjunction = true,
   wrapper?: string,
 ): string {
-  return formatList('and', items, commaBeforeConjunction, wrapper);
+  return formatList("and", items, commaBeforeConjunction, wrapper);
 }
 
 function formatList(
@@ -18,7 +18,7 @@ function formatList(
   wrapper?: string,
 ): string {
   if (items.length === 0) {
-    return '';
+    return "";
   }
 
   switch (items.length) {
@@ -26,14 +26,24 @@ function formatList(
       return withWrapper(items[0], wrapper);
     case 2:
       return (
-        withWrapper(items[0], wrapper) + ' ' + conjunction + ' ' + withWrapper(items[1], wrapper)
+        withWrapper(items[0], wrapper) +
+        " " +
+        conjunction +
+        " " +
+        withWrapper(items[1], wrapper)
       );
   }
 
-  const allButLast = items.slice(0, -1).map(item => withWrapper(item, wrapper));
+  const allButLast = items
+    .slice(0, -1)
+    .map((item) => withWrapper(item, wrapper));
   const lastItem = withWrapper(items.at(-1)!, wrapper);
   return (
-    allButLast.join(', ') + (commaBeforeConjunction ? ', ' : ' ') + conjunction + ' ' + lastItem
+    allButLast.join(", ") +
+    (commaBeforeConjunction ? ", " : " ") +
+    conjunction +
+    " " +
+    lastItem
   );
 }
 

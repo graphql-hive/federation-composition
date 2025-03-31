@@ -1,23 +1,23 @@
-import { constantCase } from 'constant-case';
-import { DocumentNode, GraphQLError } from 'graphql';
-import { moveSchemaAndDirectiveDefinitionsToTop } from './graphql/helpers.js';
+import { constantCase } from "constant-case";
+import { DocumentNode, GraphQLError } from "graphql";
+import { moveSchemaAndDirectiveDefinitionsToTop } from "./graphql/helpers.js";
 import {
   detectFederationVersion,
   FederationVersion,
   isFederationVersion,
-} from './specifications/federation.js';
+} from "./specifications/federation.js";
 import {
   cleanSubgraphStateFromFederationSpec,
   cleanSubgraphStateFromLinkSpec,
   createSubgraphStateBuilder,
   SubgraphStateBuilder,
-} from './subgraph/state.js';
+} from "./subgraph/state.js";
 import {
   validateSubgraph as internal_validateSubgraph,
   validateSubgraphCore,
-} from './subgraph/validation/validate-subgraph.js';
-import { createSupergraphStateBuilder } from './supergraph/state.js';
-import { validateSupergraph } from './supergraph/validation/validate-supergraph.js';
+} from "./subgraph/validation/validate-subgraph.js";
+import { createSupergraphStateBuilder } from "./supergraph/state.js";
+import { validateSupergraph } from "./supergraph/validation/validate-supergraph.js";
 
 const numberAtStartRegex = /^\d/;
 function startsWithNumber(value: string) {
@@ -25,7 +25,11 @@ function startsWithNumber(value: string) {
 }
 
 function buildGraphList(
-  subgraphs: ReadonlyArray<{ name: string; typeDefs: DocumentNode; url?: string }>,
+  subgraphs: ReadonlyArray<{
+    name: string;
+    typeDefs: DocumentNode;
+    url?: string;
+  }>,
 ) {
   const errors: GraphQLError[] = [];
 
@@ -55,27 +59,27 @@ function buildGraphList(
 
     // We do kind of a workaround here to make sure constantCase does not ignore special characters
     // We replace all non-alphanumeric characters with `_` and then we strip everything that is not `_` or alphanumeric
-    let proposedId = constantCase(name.replace(/[^A-Z0-9]/gi, '_'), {
+    let proposedId = constantCase(name.replace(/[^A-Z0-9]/gi, "_"), {
       stripRegexp: /[^A-Z0-9_]+/gi,
     });
 
     if (nameStartsWithNumber) {
-      proposedId = '_' + proposedId + '_';
+      proposedId = "_" + proposedId + "_";
     }
 
     // Check if ID was already created
     let count = idCounter.get(proposedId);
-    if (typeof count === 'number') {
+    if (typeof count === "number") {
       // It was created only once so far
       if (count === 1) {
         // Let's add a `_1` suffix
-        graphs.find(g => g.id === proposedId)!.id += '_1';
+        graphs.find((g) => g.id === proposedId)!.id += "_1";
       }
 
       // Push a new graph with `_N` suffix
       graphs.push({
         name,
-        id: proposedId + '_' + (count + 1),
+        id: proposedId + "_" + (count + 1),
         url,
         typeDefs: moveSchemaAndDirectiveDefinitionsToTop(typeDefs),
       });
@@ -113,7 +117,11 @@ function buildGraphList(
   } as const;
 }
 
-export function validateSubgraph(subgraph: { name: string; url?: string; typeDefs: DocumentNode }) {
+export function validateSubgraph(subgraph: {
+  name: string;
+  url?: string;
+  typeDefs: DocumentNode;
+}) {
   const subgraphs = [subgraph];
   const graphList = buildGraphList(subgraphs);
 
@@ -121,9 +129,11 @@ export function validateSubgraph(subgraph: { name: string; url?: string; typeDef
     return graphList.errors;
   }
 
-  const corePerSubgraph = graphList.graphs.map(subgraph => validateSubgraphCore(subgraph));
+  const corePerSubgraph = graphList.graphs.map((subgraph) =>
+    validateSubgraphCore(subgraph),
+  );
   // Validate the basics of basics before checking subgraphs.
-  const coreErrors = corePerSubgraph.map(core => core.errors ?? []).flat(1);
+  const coreErrors = corePerSubgraph.map((core) => core.errors ?? []).flat(1);
 
   // If core-level errors are detected, we skip validation of subgraphs.
   // We do it because if a core is invalid the subgraph is going to be invalid anyway.
@@ -133,7 +143,9 @@ export function validateSubgraph(subgraph: { name: string; url?: string; typeDef
   }
 
   const detectedFederationSpec = new Map(
-    graphList.graphs.map(graph => [graph.id, detectFederationVersion(graph.typeDefs)] as const),
+    graphList.graphs.map(
+      (graph) => [graph.id, detectFederationVersion(graph.typeDefs)] as const,
+    ),
   );
 
   const subgraphStateBuilders = new Map<string, SubgraphStateBuilder>(
@@ -149,7 +161,7 @@ export function validateSubgraph(subgraph: { name: string; url?: string; typeDef
   );
   // Validate each subgraph
   const subgraphErrors = graphList.graphs
-    .map(graph =>
+    .map((graph) =>
       internal_validateSubgraph(
         graph,
         subgraphStateBuilders.get(graph.id)!,
@@ -162,7 +174,11 @@ export function validateSubgraph(subgraph: { name: string; url?: string; typeDef
 }
 
 export function validate(
-  subgraphs: ReadonlyArray<{ name: string; url?: string; typeDefs: DocumentNode }>,
+  subgraphs: ReadonlyArray<{
+    name: string;
+    url?: string;
+    typeDefs: DocumentNode;
+  }>,
   __internal?: {
     disableValidationRules?: string[];
   },
@@ -176,9 +192,11 @@ export function validate(
     } as const;
   }
 
-  const corePerSubgraph = graphList.graphs.map(subgraph => validateSubgraphCore(subgraph));
+  const corePerSubgraph = graphList.graphs.map((subgraph) =>
+    validateSubgraphCore(subgraph),
+  );
   // Validate the basics of basics before checking subgraphs.
-  const coreErrors = corePerSubgraph.map(core => core.errors ?? []).flat(1);
+  const coreErrors = corePerSubgraph.map((core) => core.errors ?? []).flat(1);
 
   // If core-level errors are detected, we skip validation of subgraphs.
   // We do it because if a core is invalid the subgraph is going to be invalid anyway.
@@ -191,7 +209,9 @@ export function validate(
   }
 
   const detectedFederationSpec = new Map(
-    graphList.graphs.map(graph => [graph.id, detectFederationVersion(graph.typeDefs)] as const),
+    graphList.graphs.map(
+      (graph) => [graph.id, detectFederationVersion(graph.typeDefs)] as const,
+    ),
   );
 
   const subgraphStateBuilders = new Map<string, SubgraphStateBuilder>(
@@ -207,7 +227,7 @@ export function validate(
   );
   // Validate each subgraph
   const subgraphErrors = graphList.graphs
-    .map(graph =>
+    .map((graph) =>
       internal_validateSubgraph(
         graph,
         subgraphStateBuilders.get(graph.id)!,
@@ -233,7 +253,9 @@ export function validate(
     new Map(
       Array.from(subgraphStateBuilders.entries()).map(([id, builder]) => [
         id,
-        cleanSubgraphStateFromFederationSpec(cleanSubgraphStateFromLinkSpec(builder.state)),
+        cleanSubgraphStateFromFederationSpec(
+          cleanSubgraphStateFromLinkSpec(builder.state),
+        ),
       ]),
     ),
     state,
@@ -251,7 +273,7 @@ export function validate(
 
   const nodes = state.build();
 
-  let maxFederationVersion: FederationVersion = 'v1.0';
+  let maxFederationVersion: FederationVersion = "v1.0";
 
   for (let [_, { version }] of detectedFederationSpec) {
     if (isVersionHigher(version, maxFederationVersion)) {
@@ -272,8 +294,8 @@ function isVersionHigher<
   $Ver1 extends `v${number}.${number}`,
   $Ver2 extends `v${number}.${number}`,
 >(sourceVersion: $Ver1, targetVersion: $Ver2): boolean {
-  const sourceVersionParts = Number(sourceVersion.replace('v', ''));
-  const targetVersionParts = Number(targetVersion.replace('v', ''));
+  const sourceVersionParts = Number(sourceVersion.replace("v", ""));
+  const targetVersionParts = Number(targetVersion.replace("v", ""));
 
   return sourceVersionParts > targetVersionParts;
 }

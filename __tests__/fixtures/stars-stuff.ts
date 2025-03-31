@@ -1,8 +1,8 @@
-import { graphql } from '../shared/utils.js';
+import { graphql } from "../shared/utils.js";
 
 export const createStarsStuff = () => ({
   inventory: {
-    name: 'inventory',
+    name: "inventory",
     typeDefs: graphql`
       extend schema
         @link(
@@ -13,7 +13,8 @@ export const createStarsStuff = () => ({
       type Product implements ProductItf @key(fields: "id") {
         id: ID!
         dimensions: ProductDimension @external
-        delivery(zip: String): DeliveryEstimates @requires(fields: "dimensions { size weight }")
+        delivery(zip: String): DeliveryEstimates
+          @requires(fields: "dimensions { size weight }")
       }
 
       type ProductDimension @shareable {
@@ -40,7 +41,7 @@ export const createStarsStuff = () => ({
     `,
   },
   reviews: {
-    name: 'reviews',
+    name: "reviews",
     typeDefs: graphql`
       schema
         @link(
@@ -75,7 +76,7 @@ export const createStarsStuff = () => ({
     `,
   },
   pandas: {
-    name: 'pandas',
+    name: "pandas",
     typeDefs: graphql`
       directive @tag(name: String!) repeatable on FIELD_DEFINITION
 
@@ -91,12 +92,18 @@ export const createStarsStuff = () => ({
     `,
   },
   products: {
-    name: 'products',
+    name: "products",
     typeDefs: graphql`
       extend schema
         @link(
           url: "https://specs.apollo.dev/federation/v2.1"
-          import: ["@key", "@shareable", "@tag", "@inaccessible", "@composeDirective"]
+          import: [
+            "@key"
+            "@shareable"
+            "@tag"
+            "@inaccessible"
+            "@composeDirective"
+          ]
         )
         @link(
           url: "https://myspecs.dev/myDirective/v1.0"
@@ -163,7 +170,7 @@ export const createStarsStuff = () => ({
     `,
   },
   users: {
-    name: 'users',
+    name: "users",
     typeDefs: graphql`
       directive @tag(name: String!) repeatable on FIELD_DEFINITION | OBJECT
 

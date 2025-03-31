@@ -1,12 +1,12 @@
-import { expect, test } from 'vitest';
-import { graphql, testVersions } from '../../shared/testkit.js';
+import { expect, test } from "vitest";
+import { graphql, testVersions } from "../../shared/testkit.js";
 
 testVersions((api, version) => {
-  test('REFERENCED_INACCESSIBLE', () => {
+  test("REFERENCED_INACCESSIBLE", () => {
     expect(
       api.composeServices([
         {
-          name: 'users',
+          name: "users",
           typeDefs: graphql`
             extend schema
               @link(
@@ -41,7 +41,7 @@ testVersions((api, version) => {
               `Type "User" is @inaccessible but is referenced by "Query.users", which is in the API schema.`,
             ),
             extensions: expect.objectContaining({
-              code: 'REFERENCED_INACCESSIBLE',
+              code: "REFERENCED_INACCESSIBLE",
             }),
           }),
           expect.objectContaining({
@@ -49,7 +49,7 @@ testVersions((api, version) => {
               `Type "Filter" is @inaccessible but is referenced by "Query.users(filter:)", which is in the API schema.`,
             ),
             extensions: expect.objectContaining({
-              code: 'REFERENCED_INACCESSIBLE',
+              code: "REFERENCED_INACCESSIBLE",
             }),
           }),
           expect.objectContaining({
@@ -57,7 +57,7 @@ testVersions((api, version) => {
               `Type "Access" is @inaccessible but is referenced by "Query.users(access:)", which is in the API schema.`,
             ),
             extensions: expect.objectContaining({
-              code: 'REFERENCED_INACCESSIBLE',
+              code: "REFERENCED_INACCESSIBLE",
             }),
           }),
         ]),
@@ -67,7 +67,7 @@ testVersions((api, version) => {
     expect(
       api.composeServices([
         {
-          name: 'users',
+          name: "users",
           typeDefs: graphql`
             extend schema
               @link(
@@ -96,7 +96,7 @@ testVersions((api, version) => {
           `,
         },
         {
-          name: 'products',
+          name: "products",
           typeDefs: graphql`
             extend schema
               @link(
@@ -123,7 +123,7 @@ testVersions((api, version) => {
               `Type "Address" is @inaccessible but is referenced by "Profile.address", which is in the API schema.`,
             ),
             extensions: expect.objectContaining({
-              code: 'REFERENCED_INACCESSIBLE',
+              code: "REFERENCED_INACCESSIBLE",
             }),
           }),
         ]),

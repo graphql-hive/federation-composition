@@ -1,6 +1,6 @@
-import { GraphQLError } from 'graphql';
-import { SupergraphVisitorMap } from '../../composition/visitor.js';
-import { SupergraphValidationContext } from '../validation-context.js';
+import { GraphQLError } from "graphql";
+import { SupergraphVisitorMap } from "../../composition/visitor.js";
+import { SupergraphValidationContext } from "../validation-context.js";
 
 export function InterfaceObjectUsageErrorRule(
   context: SupergraphValidationContext,
@@ -22,7 +22,7 @@ export function InterfaceObjectUsageErrorRule(
           `Type "${interfaceState.name}" is declared with @interfaceObject in all the subgraphs in which is is defined`,
           {
             extensions: {
-              code: 'INTERFACE_OBJECT_USAGE_ERROR',
+              code: "INTERFACE_OBJECT_USAGE_ERROR",
             },
           },
         ),

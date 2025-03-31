@@ -1,8 +1,8 @@
-import { GraphQLError } from 'graphql';
-import { andList } from '../../../utils/format.js';
-import type { SupergraphVisitorMap } from '../../composition/visitor.js';
-import { SupergraphState } from '../../state.js';
-import type { SupergraphValidationContext } from '../validation-context.js';
+import { GraphQLError } from "graphql";
+import { andList } from "../../../utils/format.js";
+import type { SupergraphVisitorMap } from "../../composition/visitor.js";
+import { SupergraphState } from "../../state.js";
+import type { SupergraphValidationContext } from "../validation-context.js";
 
 export function InvalidFieldSharingRule(
   context: SupergraphValidationContext,
@@ -13,8 +13,9 @@ export function InvalidFieldSharingRule(
       // check if it's Subscription
       if (
         Array.from(objectTypeState.byGraph.keys()).some(
-          graph =>
-            context.subgraphStates.get(graph)?.schema.subscriptionType === objectTypeState.name,
+          (graph) =>
+            context.subgraphStates.get(graph)?.schema.subscriptionType ===
+            objectTypeState.name,
         )
       ) {
         if (fieldState.byGraph.size > 1) {
@@ -23,7 +24,7 @@ export function InvalidFieldSharingRule(
               `Fields on root level subscription object cannot be marked as shareable`,
               {
                 extensions: {
-                  code: 'INVALID_FIELD_SHARING',
+                  code: "INVALID_FIELD_SHARING",
                 },
               },
             ),
@@ -34,7 +35,9 @@ export function InvalidFieldSharingRule(
 
       if (
         fieldState.usedAsKey &&
-        Array.from(fieldState.byGraph.values()).every(field => field.usedAsKey)
+        Array.from(fieldState.byGraph.values()).every(
+          (field) => field.usedAsKey,
+        )
       ) {
         // If the field is used as a key in all graphs, we don't have to check if it's resolvable by multiple subgraphs.
         return;
@@ -62,7 +65,8 @@ export function InvalidFieldSharingRule(
           }
         }
 
-        const fedV1FieldInExtension = field.version === 'v1.0' && field.extension;
+        const fedV1FieldInExtension =
+          field.version === "v1.0" && field.extension;
 
         if (
           fieldIsShareable ||
@@ -77,20 +81,29 @@ export function InvalidFieldSharingRule(
         resolvableIn.push(graphId);
       }
 
-      const interfaceObjectFieldIn: [string /* Graph ID */, string /* Interface name */][] = [];
+      const interfaceObjectFieldIn: [
+        string /* Graph ID */,
+        string /* Interface name */,
+      ][] = [];
 
       if (nonSharableIn.length > 0) {
         // Check if there are any @interfaceObject types that implement the field
         for (const interfaceName of objectTypeState.interfaces) {
-          const interfaceState = supergraphState.interfaceTypes.get(interfaceName);
+          const interfaceState =
+            supergraphState.interfaceTypes.get(interfaceName);
 
           if (!interfaceState || !interfaceState.hasInterfaceObject) {
             continue;
           }
 
-          const interfaceObjectFieldState = interfaceState.fields.get(fieldState.name);
+          const interfaceObjectFieldState = interfaceState.fields.get(
+            fieldState.name,
+          );
 
-          if (!interfaceObjectFieldState || interfaceObjectFieldState.usedAsKey) {
+          if (
+            !interfaceObjectFieldState ||
+            interfaceObjectFieldState.usedAsKey
+          ) {
             continue;
           }
 
@@ -134,15 +147,19 @@ export function InvalidFieldSharingRule(
       }
 
       if (nonSharableIn.length >= 1 && resolvableIn.length > 1) {
-        const isNonSharableInAll = resolvableIn.every(graphId => nonSharableIn.includes(graphId));
+        const isNonSharableInAll = resolvableIn.every((graphId) =>
+          nonSharableIn.includes(graphId),
+        );
 
         const message = `Non-shareable field "${objectTypeState.name}.${
           fieldState.name
         }" is resolved from multiple subgraphs: it is resolved from subgraphs ${andList(
-          resolvableIn.map(graphId => {
+          resolvableIn.map((graphId) => {
             const name = context.graphIdToName(graphId);
 
-            const interfaceObjectField = interfaceObjectFieldIn.find(([g, _]) => g === graphId);
+            const interfaceObjectField = interfaceObjectFieldIn.find(
+              ([g, _]) => g === graphId,
+            );
 
             if (!interfaceObjectField) {
               return `"${name}"`;
@@ -153,8 +170,8 @@ export function InvalidFieldSharingRule(
           false,
         )} and defined as non-shareable in ${
           isNonSharableInAll
-            ? 'all of them'
-            : `subgraph${nonSharableIn.length > 1 ? 's' : ''} ${andList(
+            ? "all of them"
+            : `subgraph${nonSharableIn.length > 1 ? "s" : ""} ${andList(
                 nonSharableIn.map(context.graphIdToName),
                 true,
                 '"',
@@ -164,7 +181,7 @@ export function InvalidFieldSharingRule(
         context.reportError(
           new GraphQLError(message, {
             extensions: {
-              code: 'INVALID_FIELD_SHARING',
+              code: "INVALID_FIELD_SHARING",
             },
           }),
         );
@@ -218,7 +235,9 @@ export function InvalidFieldSharingRule(
       }
 
       if (nonSharableIn.length >= 1 && resolvableIn.length > 1) {
-        const isNonSharableInAll = resolvableIn.every(graphId => nonSharableIn.includes(graphId));
+        const isNonSharableInAll = resolvableIn.every((graphId) =>
+          nonSharableIn.includes(graphId),
+        );
 
         const message = `Non-shareable field "${interfaceTypeState.name}.${
           fieldState.name
@@ -228,8 +247,8 @@ export function InvalidFieldSharingRule(
           '"',
         )} and defined as non-shareable in ${
           isNonSharableInAll
-            ? 'all of them'
-            : `subgraph${nonSharableIn.length > 1 ? 's' : ''} ${andList(
+            ? "all of them"
+            : `subgraph${nonSharableIn.length > 1 ? "s" : ""} ${andList(
                 nonSharableIn.map(context.graphIdToName),
                 true,
                 '"',
@@ -239,7 +258,7 @@ export function InvalidFieldSharingRule(
         context.reportError(
           new GraphQLError(message, {
             extensions: {
-              code: 'INVALID_FIELD_SHARING',
+              code: "INVALID_FIELD_SHARING",
             },
           }),
         );

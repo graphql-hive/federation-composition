@@ -1,12 +1,12 @@
-import { expect, test } from 'vitest';
-import { graphql, testVersions } from '../../shared/testkit.js';
+import { expect, test } from "vitest";
+import { graphql, testVersions } from "../../shared/testkit.js";
 
 testVersions((api, version) => {
-  test('ENUM_VALUE_MISMATCH', () => {
+  test("ENUM_VALUE_MISMATCH", () => {
     expect(
       api.composeServices([
         {
-          name: 'users',
+          name: "users",
           typeDefs: graphql`
             extend schema @link(url: "https://specs.apollo.dev/federation/${version}" import: ["@key"])
             
@@ -25,7 +25,7 @@ testVersions((api, version) => {
           `,
         },
         {
-          name: 'feed',
+          name: "feed",
           typeDefs: graphql`
             extend schema @link(url: "https://specs.apollo.dev/federation/${version}" import: ["@key"])
             
@@ -52,7 +52,7 @@ testVersions((api, version) => {
               `Enum type "UserType" is used as both input type (for example, as type of "Query.usersByType(type:)") and output type (for example, as type of "User.type"), but value "ANONYMOUS" is not defined in all the subgraphs defining "UserType": "ANONYMOUS" is defined in subgraph "feed" but not in subgraph "users"`,
             ),
             extensions: expect.objectContaining({
-              code: 'ENUM_VALUE_MISMATCH',
+              code: "ENUM_VALUE_MISMATCH",
             }),
           }),
           expect.objectContaining({
@@ -60,7 +60,7 @@ testVersions((api, version) => {
               `Enum type "UserType" is used as both input type (for example, as type of "Query.usersByType(type:)") and output type (for example, as type of "User.type"), but value "REGULAR" is not defined in all the subgraphs defining "UserType": "REGULAR" is defined in subgraph "users" but not in subgraph "feed"`,
             ),
             extensions: expect.objectContaining({
-              code: 'ENUM_VALUE_MISMATCH',
+              code: "ENUM_VALUE_MISMATCH",
             }),
           }),
         ]),
@@ -70,7 +70,7 @@ testVersions((api, version) => {
     expect(
       api.composeServices([
         {
-          name: 'users',
+          name: "users",
           typeDefs: graphql`
             extend schema @link(url: "https://specs.apollo.dev/federation/${version}" import: ["@key", "@shareable"])
             
@@ -89,7 +89,7 @@ testVersions((api, version) => {
           `,
         },
         {
-          name: 'feed',
+          name: "feed",
           typeDefs: graphql`
             extend schema @link(url: "https://specs.apollo.dev/federation/${version}" import: ["@key", "@inaccessible", "@shareable"])
             

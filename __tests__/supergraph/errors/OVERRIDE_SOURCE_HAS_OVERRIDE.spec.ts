@@ -1,12 +1,16 @@
-import { expect, test } from 'vitest';
-import { assertCompositionSuccess, graphql, testVersions } from '../../shared/testkit.js';
+import { expect, test } from "vitest";
+import {
+  assertCompositionSuccess,
+  graphql,
+  testVersions,
+} from "../../shared/testkit.js";
 
 testVersions((api, version) => {
-  test('OVERRIDE_SOURCE_HAS_OVERRIDE', () => {
+  test("OVERRIDE_SOURCE_HAS_OVERRIDE", () => {
     expect(
       api.composeServices([
         {
-          name: 'billing',
+          name: "billing",
           typeDefs: graphql`
                 extend schema
                   @link(
@@ -23,7 +27,7 @@ testVersions((api, version) => {
               `,
         },
         {
-          name: 'payments',
+          name: "payments",
           typeDefs: graphql`
                 extend schema
                   @link(
@@ -40,7 +44,7 @@ testVersions((api, version) => {
               `,
         },
         {
-          name: 'invoices',
+          name: "invoices",
           typeDefs: graphql`
                 extend schema
                   @link(
@@ -65,7 +69,7 @@ testVersions((api, version) => {
               `Field "Bill.amount" on subgraph "billing" is also marked with directive @override in subgraph "payments". Only one @override directive is allowed per field.`,
             ),
             extensions: expect.objectContaining({
-              code: 'OVERRIDE_SOURCE_HAS_OVERRIDE',
+              code: "OVERRIDE_SOURCE_HAS_OVERRIDE",
             }),
           }),
           expect.objectContaining({
@@ -73,7 +77,7 @@ testVersions((api, version) => {
               `Field "Bill.amount" on subgraph "invoices" is also marked with directive @override in subgraph "billing". Only one @override directive is allowed per field.`,
             ),
             extensions: expect.objectContaining({
-              code: 'OVERRIDE_SOURCE_HAS_OVERRIDE',
+              code: "OVERRIDE_SOURCE_HAS_OVERRIDE",
             }),
           }),
           expect.objectContaining({
@@ -81,7 +85,7 @@ testVersions((api, version) => {
               `Field "Bill.amount" on subgraph "payments" is also marked with directive @override in subgraph "billing". Only one @override directive is allowed per field.`,
             ),
             extensions: expect.objectContaining({
-              code: 'OVERRIDE_SOURCE_HAS_OVERRIDE',
+              code: "OVERRIDE_SOURCE_HAS_OVERRIDE",
             }),
           }),
         ]),
@@ -90,7 +94,7 @@ testVersions((api, version) => {
     assertCompositionSuccess(
       api.composeServices([
         {
-          name: 'bar',
+          name: "bar",
           typeDefs: graphql`
         extend schema
           @link(
@@ -104,7 +108,7 @@ testVersions((api, version) => {
       `,
         },
         {
-          name: 'foo',
+          name: "foo",
           typeDefs: graphql`
         extend schema
           @link(
@@ -118,7 +122,7 @@ testVersions((api, version) => {
       `,
         },
         {
-          name: 'main',
+          name: "main",
           typeDefs: graphql`
         extend schema
           @link(

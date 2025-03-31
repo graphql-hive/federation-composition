@@ -1,7 +1,7 @@
-import { ASTVisitor, FieldDefinitionNode, GraphQLError, Kind } from 'graphql';
-import { print } from '../../../../graphql/printer.js';
-import { validateDirectiveAgainstOriginal } from '../../../helpers.js';
-import type { SubgraphValidationContext } from '../../validation-context.js';
+import { ASTVisitor, FieldDefinitionNode, GraphQLError, Kind } from "graphql";
+import { print } from "../../../../graphql/printer.js";
+import { validateDirectiveAgainstOriginal } from "../../../helpers.js";
+import type { SubgraphValidationContext } from "../../validation-context.js";
 
 // Supergraph context:
 // - mark a field or type as external (with the subgraph's name)
@@ -9,10 +9,10 @@ import type { SubgraphValidationContext } from '../../validation-context.js';
 export function ExternalRules(context: SubgraphValidationContext): ASTVisitor {
   return {
     DirectiveDefinition(node) {
-      validateDirectiveAgainstOriginal(node, 'external', context);
+      validateDirectiveAgainstOriginal(node, "external", context);
     },
     Directive(node) {
-      if (!context.isAvailableFederationDirective('external', node)) {
+      if (!context.isAvailableFederationDirective("external", node)) {
         return;
       }
 
@@ -41,7 +41,7 @@ export function ExternalRules(context: SubgraphValidationContext): ASTVisitor {
         const fields = typeDef.fields;
         if (fields) {
           // In Federation v1, we do not mark all fields as @external
-          if (context.satisfiesVersionRange('>= v2.0')) {
+          if (context.satisfiesVersionRange(">= v2.0")) {
             fieldDefinitions.push(...fields);
           }
         }
@@ -50,12 +50,15 @@ export function ExternalRules(context: SubgraphValidationContext): ASTVisitor {
       for (const field of fieldDefinitions) {
         context.markAsExternal(`${typeDef.name.value}.${field.name.value}`);
         const conflictingDirectives = field.directives?.filter(
-          directive =>
-            context.isAvailableFederationDirective('tag', directive) ||
-            context.isAvailableFederationDirective('inaccessible', directive),
+          (directive) =>
+            context.isAvailableFederationDirective("tag", directive) ||
+            context.isAvailableFederationDirective("inaccessible", directive),
         );
 
-        if (conflictingDirectives?.length && context.satisfiesVersionRange('>= v2.0')) {
+        if (
+          conflictingDirectives?.length &&
+          context.satisfiesVersionRange(">= v2.0")
+        ) {
           for (const directive of conflictingDirectives) {
             context.reportError(
               new GraphQLError(
@@ -64,13 +67,18 @@ export function ExternalRules(context: SubgraphValidationContext): ASTVisitor {
                 }.${field.name.value}"`,
                 {
                   nodes: node,
-                  extensions: { code: 'MERGED_DIRECTIVE_APPLICATION_ON_EXTERNAL' },
+                  extensions: {
+                    code: "MERGED_DIRECTIVE_APPLICATION_ON_EXTERNAL",
+                  },
                 },
               ),
             );
           }
         } else {
-          context.stateBuilder.objectType.field.setExternal(typeDef.name.value, field.name.value);
+          context.stateBuilder.objectType.field.setExternal(
+            typeDef.name.value,
+            field.name.value,
+          );
         }
       }
     },

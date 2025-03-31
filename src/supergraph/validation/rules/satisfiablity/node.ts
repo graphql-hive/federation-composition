@@ -1,9 +1,9 @@
-import type { EnumTypeState } from '../../../composition/enum-type.js';
-import type { InterfaceTypeState } from '../../../composition/interface-type.js';
-import type { ObjectTypeState } from '../../../composition/object-type.js';
-import type { ScalarTypeState } from '../../../composition/scalar-type.js';
-import type { UnionTypeState } from '../../../composition/union-type.js';
-import { lazy, OverrideLabels } from './helpers.js';
+import type { EnumTypeState } from "../../../composition/enum-type.js";
+import type { InterfaceTypeState } from "../../../composition/interface-type.js";
+import type { ObjectTypeState } from "../../../composition/object-type.js";
+import type { ScalarTypeState } from "../../../composition/scalar-type.js";
+import type { UnionTypeState } from "../../../composition/union-type.js";
+import { lazy, OverrideLabels } from "./helpers.js";
 
 export class Node {
   private _toString = lazy(() => `${this.typeName}/${this.graphName}`);
@@ -28,13 +28,15 @@ export class Node {
     public graphName: string,
   ) {
     if (this.typeState === undefined) {
-      throw new Error(`Expected typeState to be defined for ${typeName} in subgraph ${graphName}`);
+      throw new Error(
+        `Expected typeState to be defined for ${typeName} in subgraph ${graphName}`,
+      );
     }
 
     if (
       this.typeState === null ||
-      this.typeState.kind === 'scalar' ||
-      this.typeState.kind === 'enum'
+      this.typeState.kind === "scalar" ||
+      this.typeState.kind === "enum"
     ) {
       this.isLeaf = true;
     }
@@ -102,9 +104,12 @@ export class Node {
   /**
    * Checks if a combination of graph names and @provides that lead to the Node, was already checked.
    */
-  isGraphComboVisited(graphNameProvidesCombos: string[], labelValues: OverrideLabels) {
-    return this.visitedGraphCombos.some(visitedGraphs =>
-      visitedGraphs.every(g => graphNameProvidesCombos.includes(g)),
+  isGraphComboVisited(
+    graphNameProvidesCombos: string[],
+    labelValues: OverrideLabels,
+  ) {
+    return this.visitedGraphCombos.some((visitedGraphs) =>
+      visitedGraphs.every((g) => graphNameProvidesCombos.includes(g)),
     );
   }
 

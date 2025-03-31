@@ -1,13 +1,17 @@
-import { describe, expect, test } from 'vitest';
-import { assertCompositionFailure, graphql, testVersions } from '../../shared/testkit.js';
+import { describe, expect, test } from "vitest";
+import {
+  assertCompositionFailure,
+  graphql,
+  testVersions,
+} from "../../shared/testkit.js";
 
 testVersions((api, version) => {
-  describe('PROVIDES_INVALID_FIELDS', () => {
-    test('Cannot query field', () => {
+  describe("PROVIDES_INVALID_FIELDS", () => {
+    test("Cannot query field", () => {
       expect(
         api.composeServices([
           {
-            name: 'users',
+            name: "users",
             typeDefs: graphql`
               extend schema
               @link(
@@ -25,7 +29,7 @@ testVersions((api, version) => {
             `,
           },
           {
-            name: 'feed',
+            name: "feed",
             typeDefs: graphql`
             extend schema
               @link(
@@ -56,7 +60,7 @@ testVersions((api, version) => {
                 `[feed] On field "Post.author", for @provides(fields: "userId"): Cannot query field "userId" on type "User" (if the field is defined in another subgraph, you need to add it to this subgraph with @external).`,
               ),
               extensions: expect.objectContaining({
-                code: 'PROVIDES_INVALID_FIELDS',
+                code: "PROVIDES_INVALID_FIELDS",
               }),
             }),
           ]),
@@ -65,7 +69,7 @@ testVersions((api, version) => {
     });
   });
 
-  test('empty selection set', () => {
+  test("empty selection set", () => {
     const result = api.composeServices([
       {
         typeDefs: graphql`
@@ -88,7 +92,7 @@ testVersions((api, version) => {
             name: String
           }
         `,
-        name: 'roles',
+        name: "roles",
       },
       {
         typeDefs: graphql`
@@ -102,7 +106,7 @@ testVersions((api, version) => {
             name: String
           }
         `,
-        name: 'teams',
+        name: "teams",
       },
       {
         typeDefs: graphql`
@@ -119,7 +123,7 @@ testVersions((api, version) => {
             id: String! @external
           }
         `,
-        name: 'organization',
+        name: "organization",
       },
     ]);
 
@@ -130,7 +134,7 @@ testVersions((api, version) => {
         message:
           '[roles] On field "Query.team", for @provides(fields: "users"): Invalid empty selection set for field "Team.users" of non-leaf type [User!]',
         extensions: expect.objectContaining({
-          code: 'PROVIDES_INVALID_FIELDS',
+          code: "PROVIDES_INVALID_FIELDS",
         }),
       }),
     );
@@ -140,7 +144,7 @@ testVersions((api, version) => {
         message:
           '[organization] On field "Query.organization", for @provides(fields: "teams"): Invalid empty selection set for field "Organization.teams" of non-leaf type [Team!]!',
         extensions: expect.objectContaining({
-          code: 'PROVIDES_INVALID_FIELDS',
+          code: "PROVIDES_INVALID_FIELDS",
         }),
       }),
     );

@@ -1,18 +1,18 @@
-import { ASTVisitor, Kind } from 'graphql';
-import { validateDirectiveAgainstOriginal } from '../../../helpers.js';
-import type { SubgraphValidationContext } from '../../validation-context.js';
+import { ASTVisitor, Kind } from "graphql";
+import { validateDirectiveAgainstOriginal } from "../../../helpers.js";
+import type { SubgraphValidationContext } from "../../validation-context.js";
 
 export function TagRules(context: SubgraphValidationContext): ASTVisitor {
   return {
     DirectiveDefinition(node) {
-      validateDirectiveAgainstOriginal(node, 'tag', context);
+      validateDirectiveAgainstOriginal(node, "tag", context);
     },
     Directive(node, _key, _parent, paths, ancestors) {
-      if (!context.isAvailableFederationDirective('tag', node)) {
+      if (!context.isAvailableFederationDirective("tag", node)) {
         return;
       }
 
-      const nameArg = node.arguments?.find(arg => arg.name.value === 'name');
+      const nameArg = node.arguments?.find((arg) => arg.name.value === "name");
 
       if (!nameArg) {
         throw new Error('Expected @tag to have a "name" argument');
@@ -22,7 +22,7 @@ export function TagRules(context: SubgraphValidationContext): ASTVisitor {
         throw new Error('Expected "@tag(name:)" to be a string');
       }
 
-      const directivesKeyAt = paths.findIndex(path => path === 'directives');
+      const directivesKeyAt = paths.findIndex((path) => path === "directives");
 
       if (directivesKeyAt === -1) {
         throw new Error('Could not find "directives" key in ancestors');
@@ -34,15 +34,15 @@ export function TagRules(context: SubgraphValidationContext): ASTVisitor {
       // TODO: T18 Support @tag on ARGUMENT_DEFINITION
 
       if (!parent) {
-        throw new Error('Could not find the node annotated with @inaccessible');
+        throw new Error("Could not find the node annotated with @inaccessible");
       }
 
       if (Array.isArray(parent)) {
-        throw new Error('Expected parent to be a single node');
+        throw new Error("Expected parent to be a single node");
       }
 
-      if (!('kind' in parent)) {
-        throw new Error('Expected parent to be a node');
+      if (!("kind" in parent)) {
+        throw new Error("Expected parent to be a node");
       }
 
       const tag = nameArg.value.value;
@@ -56,7 +56,9 @@ export function TagRules(context: SubgraphValidationContext): ASTVisitor {
           const typeDef = context.typeNodeInfo.getTypeDef();
 
           if (!typeDef) {
-            throw new Error('Could not find the parent type of the field annotated with @tag');
+            throw new Error(
+              "Could not find the parent type of the field annotated with @tag",
+            );
           }
 
           if (
@@ -82,7 +84,9 @@ export function TagRules(context: SubgraphValidationContext): ASTVisitor {
           const typeDef = context.typeNodeInfo.getTypeDef();
 
           if (!typeDef) {
-            throw new Error('Could not find the parent type of the field annotated with @tag');
+            throw new Error(
+              "Could not find the parent type of the field annotated with @tag",
+            );
           }
 
           if (
@@ -101,7 +105,7 @@ export function TagRules(context: SubgraphValidationContext): ASTVisitor {
             const fieldDef = context.typeNodeInfo.getFieldDef();
             if (!fieldDef) {
               throw new Error(
-                'Could not find the parent field of the input value annotated with @tag',
+                "Could not find the parent field of the input value annotated with @tag",
               );
             }
 
@@ -118,7 +122,7 @@ export function TagRules(context: SubgraphValidationContext): ASTVisitor {
             const fieldDef = context.typeNodeInfo.getFieldDef();
             if (!fieldDef) {
               throw new Error(
-                'Could not find the parent field of the input value annotated with @tag',
+                "Could not find the parent field of the input value annotated with @tag",
               );
             }
 
@@ -129,7 +133,11 @@ export function TagRules(context: SubgraphValidationContext): ASTVisitor {
               tag,
             );
           } else if (typeDef.kind === Kind.DIRECTIVE_DEFINITION) {
-            context.stateBuilder.directive.arg.setTag(typeDef.name.value, parent.name.value, tag);
+            context.stateBuilder.directive.arg.setTag(
+              typeDef.name.value,
+              parent.name.value,
+              tag,
+            );
           }
 
           break;
@@ -159,15 +167,21 @@ export function TagRules(context: SubgraphValidationContext): ASTVisitor {
           const typeDef = context.typeNodeInfo.getTypeDef();
 
           if (!typeDef) {
-            throw new Error('Could not find the parent type of the enum value annotated with @tag');
+            throw new Error(
+              "Could not find the parent type of the enum value annotated with @tag",
+            );
           }
 
-          context.stateBuilder.enumType.value.setTag(typeDef.name.value, enumValue, tag);
+          context.stateBuilder.enumType.value.setTag(
+            typeDef.name.value,
+            enumValue,
+            tag,
+          );
           break;
         }
       }
 
-      context.stateBuilder.markSpecAsUsed('tag');
+      context.stateBuilder.markSpecAsUsed("tag");
     },
   };
 }

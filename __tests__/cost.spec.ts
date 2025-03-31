@@ -1,31 +1,32 @@
-import { parse, print } from 'graphql';
-import { describe, expect, test } from 'vitest';
-import { sortSDL } from '../src/graphql/sort-sdl.js';
+import { parse, print } from "graphql";
+import { describe, expect, test } from "vitest";
+import { sortSDL } from "../src/graphql/sort-sdl.js";
 import {
   assertCompositionFailure,
   assertCompositionSuccess,
   satisfiesVersionRange,
   testVersions,
-} from './shared/testkit.js';
+} from "./shared/testkit.js";
 
 expect.addSnapshotSerializer({
-  serialize: value => print(sortSDL(parse(value as string))),
-  test: value => typeof value === 'string' && value.includes('specs.apollo.dev'),
+  serialize: (value) => print(sortSDL(parse(value as string))),
+  test: (value) =>
+    typeof value === "string" && value.includes("specs.apollo.dev"),
 });
 
 testVersions((api, version) => {
   const composeServices = api.composeServices;
 
-  if (satisfiesVersionRange('< v2.9', version)) {
-    test('@cost and @listSize is not available in this version', () => {});
+  if (satisfiesVersionRange("< v2.9", version)) {
+    test("@cost and @listSize is not available in this version", () => {});
     return;
   }
 
-  describe('@cost', () => {
-    test('@cost in the supergraph', () => {
+  describe("@cost", () => {
+    test("@cost in the supergraph", () => {
       const result = composeServices([
         {
-          name: 'foo',
+          name: "foo",
           typeDefs: parse(/* GraphQL */ `
             extend schema
               @link(
@@ -107,10 +108,10 @@ testVersions((api, version) => {
       `);
     });
 
-    test('@cost == 0', () => {
+    test("@cost == 0", () => {
       const result = composeServices([
         {
-          name: 'foo',
+          name: "foo",
           typeDefs: parse(/* GraphQL */ `
             extend schema
               @link(
@@ -188,10 +189,10 @@ testVersions((api, version) => {
       `);
     });
 
-    test('@cost < 0', () => {
+    test("@cost < 0", () => {
       const result = composeServices([
         {
-          name: 'foo',
+          name: "foo",
           typeDefs: parse(/* GraphQL */ `
             extend schema
               @link(
@@ -247,10 +248,10 @@ testVersions((api, version) => {
       `);
     });
 
-    test('@cost on shareables be Math.max', () => {
+    test("@cost on shareables be Math.max", () => {
       const result = composeServices([
         {
-          name: 'foo',
+          name: "foo",
           typeDefs: parse(/* GraphQL */ `
             extend schema
               @link(
@@ -280,7 +281,7 @@ testVersions((api, version) => {
           `),
         },
         {
-          name: 'bar',
+          name: "bar",
           typeDefs: parse(/* GraphQL */ `
             extend schema
               @link(
@@ -314,7 +315,10 @@ testVersions((api, version) => {
       assertCompositionSuccess(result);
 
       expect(result.supergraphSdl).toContainGraphQL(/* GraphQL */ `
-        enum UserType @join__type(graph: FOO) @join__type(graph: BAR) @cost(weight: 30) {
+        enum UserType
+          @join__type(graph: FOO)
+          @join__type(graph: BAR)
+          @cost(weight: 30) {
           ADMIN @join__enumValue(graph: FOO) @join__enumValue(graph: BAR)
           REGULAR @join__enumValue(graph: FOO) @join__enumValue(graph: BAR)
         }
@@ -336,10 +340,10 @@ testVersions((api, version) => {
       `);
     });
 
-    test('incosistent name for @cost', () => {
+    test("incosistent name for @cost", () => {
       const result = composeServices([
         {
-          name: 'foo',
+          name: "foo",
           typeDefs: parse(/* GraphQL */ `
             extend schema
               @link(
@@ -369,7 +373,7 @@ testVersions((api, version) => {
           `),
         },
         {
-          name: 'bar',
+          name: "bar",
           typeDefs: parse(/* GraphQL */ `
             extend schema
               @link(
@@ -405,21 +409,21 @@ testVersions((api, version) => {
       expect(result.errors).toContainEqual(
         expect.objectContaining({
           message:
-            api.library === 'apollo'
+            api.library === "apollo"
               ? `The "@cost" directive (from https://specs.apollo.dev/federation/${version}) is imported with mismatched name between subgraphs:` +
                 ` it is imported as "@cost" in subgraph "foo" but "@price" in subgraph "bar"`
               : `The import name "@cost" is imported with mismatched name between subgraphs: it is imported as  "@price" in subgraph "bar" and  "@cost" in subgraph "foo"`,
           extensions: expect.objectContaining({
-            code: 'LINK_IMPORT_NAME_MISMATCH',
+            code: "LINK_IMPORT_NAME_MISMATCH",
           }),
         }),
       );
     });
 
-    test('aliased @cost', () => {
+    test("aliased @cost", () => {
       const result = composeServices([
         {
-          name: 'foo',
+          name: "foo",
           typeDefs: parse(/* GraphQL */ `
             extend schema
               @link(
@@ -449,7 +453,7 @@ testVersions((api, version) => {
           `),
         },
         {
-          name: 'bar',
+          name: "bar",
           typeDefs: parse(/* GraphQL */ `
             extend schema
               @link(
@@ -500,11 +504,14 @@ testVersions((api, version) => {
         ) on ARGUMENT_DEFINITION | ENUM | FIELD_DEFINITION | INPUT_FIELD_DEFINITION | OBJECT | SCALAR
       `);
 
-      expect(result.publicSdl).not.toMatch('@price');
-      expect(result.publicSdl).not.toMatch('@cost');
+      expect(result.publicSdl).not.toMatch("@price");
+      expect(result.publicSdl).not.toMatch("@cost");
 
       expect(result.supergraphSdl).toContainGraphQL(/* GraphQL */ `
-        enum UserType @join__type(graph: FOO) @join__type(graph: BAR) @price(weight: 30) {
+        enum UserType
+          @join__type(graph: FOO)
+          @join__type(graph: BAR)
+          @price(weight: 30) {
           ADMIN @join__enumValue(graph: FOO) @join__enumValue(graph: BAR)
           REGULAR @join__enumValue(graph: FOO) @join__enumValue(graph: BAR)
         }
@@ -516,7 +523,7 @@ testVersions((api, version) => {
         }
       `);
 
-      if (api.library === 'guild') {
+      if (api.library === "guild") {
         expect(result.publicSdl).toContainGraphQL(/* GraphQL */ `
           input UsersFilterInput {
             limit: Int
@@ -534,10 +541,10 @@ testVersions((api, version) => {
       `);
     });
 
-    test('@cost on interface type is not allowed', () => {
+    test("@cost on interface type is not allowed", () => {
       const result = composeServices([
         {
-          name: 'foo',
+          name: "foo",
           typeDefs: parse(/* GraphQL */ `
             extend schema
               @link(
@@ -566,16 +573,16 @@ testVersions((api, version) => {
         expect.objectContaining({
           message: `[foo] Directive "@cost" may not be used on INTERFACE.`,
           extensions: expect.objectContaining({
-            code: 'INVALID_GRAPHQL',
+            code: "INVALID_GRAPHQL",
           }),
         }),
       );
     });
 
-    test('@cost on interfaceObject is not allowed', () => {
+    test("@cost on interfaceObject is not allowed", () => {
       const result = composeServices([
         {
-          name: 'foo',
+          name: "foo",
           typeDefs: parse(/* GraphQL */ `
             extend schema
               @link(
@@ -597,7 +604,7 @@ testVersions((api, version) => {
           `),
         },
         {
-          name: 'bar',
+          name: "bar",
           typeDefs: parse(/* GraphQL */ `
             extend schema
               @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@key", "@cost"])
@@ -616,16 +623,16 @@ testVersions((api, version) => {
         expect.objectContaining({
           message: `[bar] Directive "@cost" may not be used on INTERFACE.`,
           extensions: expect.objectContaining({
-            code: 'INVALID_GRAPHQL',
+            code: "INVALID_GRAPHQL",
           }),
         }),
       );
     });
 
-    test('@cost on interface field', () => {
+    test("@cost on interface field", () => {
       const result = composeServices([
         {
-          name: 'foo',
+          name: "foo",
           typeDefs: parse(/* GraphQL */ `
             extend schema
               @link(
@@ -676,10 +683,10 @@ testVersions((api, version) => {
       `);
     });
 
-    test('@cost on interfaceObject field', () => {
+    test("@cost on interfaceObject field", () => {
       const result = composeServices([
         {
-          name: 'foo',
+          name: "foo",
           typeDefs: parse(/* GraphQL */ `
             extend schema
               @link(
@@ -701,7 +708,7 @@ testVersions((api, version) => {
           `),
         },
         {
-          name: 'bar',
+          name: "bar",
           typeDefs: parse(/* GraphQL */ `
             extend schema
               @link(
@@ -724,7 +731,8 @@ testVersions((api, version) => {
           @join__type(graph: BAR, key: "id", isInterfaceObject: true)
           @join__type(graph: FOO, key: "id") {
           id: ID! @cost(weight: 10)
-          name(substring: Int @cost(weight: 10)): String @join__field(graph: BAR)
+          name(substring: Int @cost(weight: 10)): String
+            @join__field(graph: BAR)
         }
       `);
 
@@ -746,11 +754,11 @@ testVersions((api, version) => {
     });
   });
 
-  describe('@listSize', () => {
-    test('in supergraph', () => {
+  describe("@listSize", () => {
+    test("in supergraph", () => {
       const result = composeServices([
         {
-          name: 'foo',
+          name: "foo",
           typeDefs: parse(/* GraphQL */ `
             extend schema
               @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@listSize"])
@@ -779,7 +787,10 @@ testVersions((api, version) => {
       expect(result.supergraphSdl).toContainGraphQL(/* GraphQL */ `
         schema
           @link(for: EXECUTION, url: "https://specs.apollo.dev/join/v0.5")
-          @link(url: "https://specs.apollo.dev/cost/v0.1", import: ["@listSize"])
+          @link(
+            url: "https://specs.apollo.dev/cost/v0.1"
+            import: ["@listSize"]
+          )
           @link(url: "https://specs.apollo.dev/link/v1.0") {
           query: Query
         }
@@ -794,21 +805,22 @@ testVersions((api, version) => {
         ) on FIELD_DEFINITION
       `);
 
-      expect(result.publicSdl).not.toMatch('@listSize');
+      expect(result.publicSdl).not.toMatch("@listSize");
 
       expect(result.supergraphSdl).toContainGraphQL(/* GraphQL */ `
         type Query @join__type(graph: FOO) {
-          allUsers: [User] @listSize(assumedSize: 1, requireOneSlicingArgument: false)
+          allUsers: [User]
+            @listSize(assumedSize: 1, requireOneSlicingArgument: false)
           users(first: Int): UserConnection
             @listSize(sizedFields: ["count"], slicingArguments: ["first"])
         }
       `);
     });
 
-    test('aliased', () => {
+    test("aliased", () => {
       const result = composeServices([
         {
-          name: 'foo',
+          name: "foo",
           typeDefs: parse(/* GraphQL */ `
             extend schema
               @link(
@@ -837,8 +849,8 @@ testVersions((api, version) => {
 
       assertCompositionSuccess(result);
 
-      expect(result.publicSdl).not.toMatch('@listSize');
-      expect(result.publicSdl).not.toMatch('@cartSize');
+      expect(result.publicSdl).not.toMatch("@listSize");
+      expect(result.publicSdl).not.toMatch("@cartSize");
 
       expect(result.supergraphSdl).toContainGraphQL(/* GraphQL */ `
         schema
@@ -863,17 +875,18 @@ testVersions((api, version) => {
 
       expect(result.supergraphSdl).toContainGraphQL(/* GraphQL */ `
         type Query @join__type(graph: FOO) {
-          allUsers: [User] @cartSize(assumedSize: 1, requireOneSlicingArgument: false)
+          allUsers: [User]
+            @cartSize(assumedSize: 1, requireOneSlicingArgument: false)
           users(first: Int): UserConnection
             @cartSize(sizedFields: ["count"], slicingArguments: ["first"])
         }
       `);
     });
 
-    test('inconsistent name', () => {
+    test("inconsistent name", () => {
       const result = composeServices([
         {
-          name: 'foo',
+          name: "foo",
           typeDefs: parse(/* GraphQL */ `
             extend schema
               @link(
@@ -899,7 +912,7 @@ testVersions((api, version) => {
           `),
         },
         {
-          name: 'bar',
+          name: "bar",
           typeDefs: parse(/* GraphQL */ `
             extend schema
               @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@listSize"])
@@ -916,20 +929,20 @@ testVersions((api, version) => {
       expect(result.errors).toContainEqual(
         expect.objectContaining({
           message:
-            api.library === 'apollo'
+            api.library === "apollo"
               ? `The "@listSize" directive (from https://specs.apollo.dev/federation/${version}) is imported with mismatched name between subgraphs: it is imported as "@cartSize" in subgraph "foo" but "@listSize" in subgraph "bar"`
               : `The import name "@listSize" is imported with mismatched name between subgraphs: it is imported as  "@listSize" in subgraph "bar" and  "@cartSize" in subgraph "foo"`,
           extensions: expect.objectContaining({
-            code: 'LINK_IMPORT_NAME_MISMATCH',
+            code: "LINK_IMPORT_NAME_MISMATCH",
           }),
         }),
       );
     });
 
-    test('mixing assumedSize and sizedFields', () => {
+    test("mixing assumedSize and sizedFields", () => {
       const result = composeServices([
         {
-          name: 'foo',
+          name: "foo",
           typeDefs: parse(/* GraphQL */ `
             extend schema
               @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@listSize"])
@@ -952,15 +965,19 @@ testVersions((api, version) => {
       expect(result.supergraphSdl).toContainGraphQL(/* GraphQL */ `
         type Query @join__type(graph: FOO) {
           strings(first: Int): StringConnection
-            @listSize(slicingArguments: ["first"], sizedFields: ["count"], assumedSize: 1000)
+            @listSize(
+              slicingArguments: ["first"]
+              sizedFields: ["count"]
+              assumedSize: 1000
+            )
         }
       `);
     });
 
-    test('@shareable', () => {
+    test("@shareable", () => {
       const result = composeServices([
         {
-          name: 'foo',
+          name: "foo",
           typeDefs: parse(/* GraphQL */ `
             extend schema
               @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@listSize", "@shareable"])
@@ -977,7 +994,7 @@ testVersions((api, version) => {
           `),
         },
         {
-          name: 'bar',
+          name: "bar",
           typeDefs: parse(/* GraphQL */ `
             extend schema
               @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@listSize", "@shareable"])
@@ -1011,10 +1028,10 @@ testVersions((api, version) => {
       `);
     });
 
-    test('interface field', () => {
+    test("interface field", () => {
       const result = composeServices([
         {
-          name: 'foo',
+          name: "foo",
           typeDefs: parse(/* GraphQL */ `
             extend schema
               @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@listSize"])
@@ -1069,15 +1086,16 @@ testVersions((api, version) => {
         type Query @join__type(graph: FOO) {
           nodes(first: Int): NodeConnection
             @listSize(slicingArguments: ["first"], sizedFields: ["count"])
-          allNodes: [Node] @listSize(assumedSize: 1, requireOneSlicingArgument: false)
+          allNodes: [Node]
+            @listSize(assumedSize: 1, requireOneSlicingArgument: false)
         }
       `);
     });
 
-    test('interfaceObject field', () => {
+    test("interfaceObject field", () => {
       const result = composeServices([
         {
-          name: 'foo',
+          name: "foo",
           typeDefs: parse(/* GraphQL */ `
             extend schema
               @link(
@@ -1099,7 +1117,7 @@ testVersions((api, version) => {
           `),
         },
         {
-          name: 'bar',
+          name: "bar",
           typeDefs: parse(/* GraphQL */ `
             extend schema
               @link(
@@ -1122,7 +1140,9 @@ testVersions((api, version) => {
           @join__type(graph: BAR, key: "id", isInterfaceObject: true)
           @join__type(graph: FOO, key: "id") {
           id: ID!
-          accessList: [String] @join__field(graph: BAR) @listSize(assumedSize: 10)
+          accessList: [String]
+            @join__field(graph: BAR)
+            @listSize(assumedSize: 10)
         }
       `);
 
@@ -1136,10 +1156,10 @@ testVersions((api, version) => {
       `);
     });
 
-    test('negative assumedSize', () => {
+    test("negative assumedSize", () => {
       const result = composeServices([
         {
-          name: 'foo',
+          name: "foo",
           typeDefs: parse(/* GraphQL */ `
             extend schema
               @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@listSize"])
@@ -1157,7 +1177,7 @@ testVersions((api, version) => {
         },
       ]);
 
-      if (api.library === 'apollo') {
+      if (api.library === "apollo") {
         assertCompositionSuccess(result);
         return;
       }
@@ -1166,18 +1186,19 @@ testVersions((api, version) => {
 
       expect(result.errors).toContainEqual(
         expect.objectContaining({
-          message: '[foo] "Query.strings" has negative @listSize(assumedSize:) value',
+          message:
+            '[foo] "Query.strings" has negative @listSize(assumedSize:) value',
           extensions: expect.objectContaining({
-            code: 'LIST_SIZE_INVALID_ASSUMED_SIZE',
+            code: "LIST_SIZE_INVALID_ASSUMED_SIZE",
           }),
         }),
       );
     });
 
-    test('zero assumedSize', () => {
+    test("zero assumedSize", () => {
       const result = composeServices([
         {
-          name: 'foo',
+          name: "foo",
           typeDefs: parse(/* GraphQL */ `
             extend schema
               @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@listSize"])
@@ -1198,10 +1219,10 @@ testVersions((api, version) => {
       assertCompositionSuccess(result);
     });
 
-    test('non-list field with the sizedFields argument', () => {
+    test("non-list field with the sizedFields argument", () => {
       const result = composeServices([
         {
-          name: 'foo',
+          name: "foo",
           typeDefs: parse(/* GraphQL */ `
             extend schema
               @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@listSize"])
@@ -1222,10 +1243,10 @@ testVersions((api, version) => {
       assertCompositionSuccess(result);
     });
 
-    test('non-list field without the sizedFields argument', () => {
+    test("non-list field without the sizedFields argument", () => {
       const result = composeServices([
         {
-          name: 'foo',
+          name: "foo",
           typeDefs: parse(/* GraphQL */ `
             extend schema
               @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@listSize"])
@@ -1242,7 +1263,7 @@ testVersions((api, version) => {
         },
       ]);
 
-      if (api.library === 'apollo') {
+      if (api.library === "apollo") {
         assertCompositionSuccess(result);
         return;
       }
@@ -1253,16 +1274,16 @@ testVersions((api, version) => {
         expect.objectContaining({
           message: `[foo] "Query.strings" is not a list. Try to add @listSize(sizedFields:) argument.`,
           extensions: expect.objectContaining({
-            code: 'LIST_SIZE_INVALID_SIZED_FIELD',
+            code: "LIST_SIZE_INVALID_SIZED_FIELD",
           }),
         }),
       );
     });
 
-    test('sizedFields on non-object output', () => {
+    test("sizedFields on non-object output", () => {
       const result = composeServices([
         {
-          name: 'foo',
+          name: "foo",
           typeDefs: parse(/* GraphQL */ `
             extend schema
               @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@listSize"])
@@ -1275,7 +1296,7 @@ testVersions((api, version) => {
         },
       ]);
 
-      if (api.library === 'apollo') {
+      if (api.library === "apollo") {
         assertCompositionSuccess(result);
         return;
       }
@@ -1286,16 +1307,16 @@ testVersions((api, version) => {
         expect.objectContaining({
           message: `[foo] "Query.strings" has @listSize(sizedFields:) applied, but the output type is not an object`,
           extensions: expect.objectContaining({
-            code: 'LIST_SIZE_INVALID_SIZED_FIELD',
+            code: "LIST_SIZE_INVALID_SIZED_FIELD",
           }),
         }),
       );
     });
 
-    test('sizedField should be Int or Int!', () => {
+    test("sizedField should be Int or Int!", () => {
       const result = composeServices([
         {
-          name: 'foo',
+          name: "foo",
           typeDefs: parse(/* GraphQL */ `
             extend schema
               @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@listSize"])
@@ -1313,7 +1334,7 @@ testVersions((api, version) => {
         },
       ]);
 
-      if (api.library === 'apollo') {
+      if (api.library === "apollo") {
         assertCompositionSuccess(result);
         return;
       }
@@ -1324,16 +1345,16 @@ testVersions((api, version) => {
         expect.objectContaining({
           message: `[foo] "Query.strings" references "count" field in @listSize(sizedFields:) argument that is not an integer.`,
           extensions: expect.objectContaining({
-            code: 'LIST_SIZE_INVALID_SIZED_FIELD',
+            code: "LIST_SIZE_INVALID_SIZED_FIELD",
           }),
         }),
       );
     });
 
-    test('sizedField should reference existing field', () => {
+    test("sizedField should reference existing field", () => {
       const result = composeServices([
         {
-          name: 'foo',
+          name: "foo",
           typeDefs: parse(/* GraphQL */ `
             extend schema
               @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@listSize"])
@@ -1351,7 +1372,7 @@ testVersions((api, version) => {
         },
       ]);
 
-      if (api.library === 'apollo') {
+      if (api.library === "apollo") {
         assertCompositionSuccess(result);
         return;
       }
@@ -1362,16 +1383,16 @@ testVersions((api, version) => {
         expect.objectContaining({
           message: `[foo] "Query.strings" references "discount" field in @listSize(sizedFields:) argument that does not exist.`,
           extensions: expect.objectContaining({
-            code: 'LIST_SIZE_INVALID_SIZED_FIELD',
+            code: "LIST_SIZE_INVALID_SIZED_FIELD",
           }),
         }),
       );
     });
 
-    test('slicingArgument should be Int or Int!', () => {
+    test("slicingArgument should be Int or Int!", () => {
       const result = composeServices([
         {
-          name: 'foo',
+          name: "foo",
           typeDefs: parse(/* GraphQL */ `
             extend schema
               @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@listSize"])
@@ -1389,7 +1410,7 @@ testVersions((api, version) => {
         },
       ]);
 
-      if (api.library === 'apollo') {
+      if (api.library === "apollo") {
         assertCompositionSuccess(result);
         return;
       }
@@ -1400,16 +1421,16 @@ testVersions((api, version) => {
         expect.objectContaining({
           message: `[foo] "Query.strings" references "first" argument in @listSize(slicingArguments:) that is not an integer.`,
           extensions: expect.objectContaining({
-            code: 'LIST_SIZE_INVALID_SLICING_ARGUMENT',
+            code: "LIST_SIZE_INVALID_SLICING_ARGUMENT",
           }),
         }),
       );
     });
 
-    test('slicingArgument should reference existing field', () => {
+    test("slicingArgument should reference existing field", () => {
       const result = composeServices([
         {
-          name: 'foo',
+          name: "foo",
           typeDefs: parse(/* GraphQL */ `
             extend schema
               @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@listSize"])
@@ -1427,7 +1448,7 @@ testVersions((api, version) => {
         },
       ]);
 
-      if (api.library === 'apollo') {
+      if (api.library === "apollo") {
         assertCompositionSuccess(result);
         return;
       }
@@ -1438,17 +1459,19 @@ testVersions((api, version) => {
         expect.objectContaining({
           message: `[foo] "Query.strings" references "last" argument in @listSize(slicingArguments:) that does not exist.`,
           extensions: expect.objectContaining({
-            code: 'LIST_SIZE_INVALID_SLICING_ARGUMENT',
+            code: "LIST_SIZE_INVALID_SLICING_ARGUMENT",
           }),
         }),
       );
     });
 
-    test.todo('requireOneSlicingArgument when slicingArguments is empty', () => {
-      const result = composeServices([
-        {
-          name: 'foo',
-          typeDefs: parse(/* GraphQL */ `
+    test.todo(
+      "requireOneSlicingArgument when slicingArguments is empty",
+      () => {
+        const result = composeServices([
+          {
+            name: "foo",
+            typeDefs: parse(/* GraphQL */ `
             extend schema
               @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@listSize"])
 
@@ -1466,17 +1489,20 @@ testVersions((api, version) => {
                 )
             }
           `),
-        },
-      ]);
+          },
+        ]);
 
-      assertCompositionFailure(result);
-    });
+        assertCompositionFailure(result);
+      },
+    );
 
-    test.todo('requireOneSlicingArgument when slicingArguments is not defined', () => {
-      const result = composeServices([
-        {
-          name: 'foo',
-          typeDefs: parse(/* GraphQL */ `
+    test.todo(
+      "requireOneSlicingArgument when slicingArguments is not defined",
+      () => {
+        const result = composeServices([
+          {
+            name: "foo",
+            typeDefs: parse(/* GraphQL */ `
             extend schema
               @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@listSize"])
 
@@ -1490,10 +1516,11 @@ testVersions((api, version) => {
                 @listSize(sizedFields: ["count"], requireOneSlicingArgument: true)
             }
           `),
-        },
-      ]);
+          },
+        ]);
 
-      assertCompositionFailure(result);
-    });
+        assertCompositionFailure(result);
+      },
+    );
   });
 });

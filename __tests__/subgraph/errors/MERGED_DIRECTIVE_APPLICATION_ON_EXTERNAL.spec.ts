@@ -1,12 +1,16 @@
-import { expect, test } from 'vitest';
-import { assertCompositionSuccess, graphql, testVersions } from '../../shared/testkit.js';
+import { expect, test } from "vitest";
+import {
+  assertCompositionSuccess,
+  graphql,
+  testVersions,
+} from "../../shared/testkit.js";
 
 testVersions((api, version) => {
-  test('MERGED_DIRECTIVE_APPLICATION_ON_EXTERNAL', () => {
+  test("MERGED_DIRECTIVE_APPLICATION_ON_EXTERNAL", () => {
     expect(
       api.composeServices([
         {
-          name: 'users',
+          name: "users",
           typeDefs: graphql`
             extend schema
               @link(
@@ -30,7 +34,7 @@ testVersions((api, version) => {
           `,
         },
         {
-          name: 'ext',
+          name: "ext",
           typeDefs: graphql`
             extend schema
               @link(
@@ -57,7 +61,7 @@ testVersions((api, version) => {
               `[users] Cannot apply merged directive @inaccessible to external field "User.internalId"`,
             ),
             extensions: expect.objectContaining({
-              code: 'MERGED_DIRECTIVE_APPLICATION_ON_EXTERNAL',
+              code: "MERGED_DIRECTIVE_APPLICATION_ON_EXTERNAL",
             }),
           }),
           expect.objectContaining({
@@ -65,7 +69,7 @@ testVersions((api, version) => {
               `[users] Cannot apply merged directive @tag(name: "public") to external field "User.internalId"`,
             ),
             extensions: expect.objectContaining({
-              code: 'MERGED_DIRECTIVE_APPLICATION_ON_EXTERNAL',
+              code: "MERGED_DIRECTIVE_APPLICATION_ON_EXTERNAL",
             }),
           }),
         ]),
@@ -73,11 +77,11 @@ testVersions((api, version) => {
     );
   });
 
-  test('Fed v1 has no MERGED_DIRECTIVE_APPLICATION_ON_EXTERNAL', () => {
+  test("Fed v1 has no MERGED_DIRECTIVE_APPLICATION_ON_EXTERNAL", () => {
     assertCompositionSuccess(
       api.composeServices([
         {
-          name: 'inventory',
+          name: "inventory",
           typeDefs: graphql`
             directive @tag(name: String!) repeatable on FIELD_DEFINITION
 
@@ -99,7 +103,7 @@ testVersions((api, version) => {
           `,
         },
         {
-          name: 'ext',
+          name: "ext",
           typeDefs: graphql`
             directive @tag(name: String!) repeatable on FIELD_DEFINITION
 

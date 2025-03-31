@@ -1,16 +1,24 @@
-import { DirectiveNode } from 'graphql';
-import { FederationVersion } from '../../specifications/federation.js';
-import { ArgumentKind, Deprecated, Description, InputObjectType } from '../../subgraph/state.js';
-import { ensureValue, mathMax } from '../../utils/helpers.js';
-import { createInputObjectTypeNode } from './ast.js';
-import { convertToConst, type MapByGraph, type TypeBuilder } from './common.js';
+import { DirectiveNode } from "graphql";
+import { FederationVersion } from "../../specifications/federation.js";
+import {
+  ArgumentKind,
+  Deprecated,
+  Description,
+  InputObjectType,
+} from "../../subgraph/state.js";
+import { ensureValue, mathMax } from "../../utils/helpers.js";
+import { createInputObjectTypeNode } from "./ast.js";
+import { convertToConst, type MapByGraph, type TypeBuilder } from "./common.js";
 
-export function inputObjectTypeBuilder(): TypeBuilder<InputObjectType, InputObjectTypeState> {
+export function inputObjectTypeBuilder(): TypeBuilder<
+  InputObjectType,
+  InputObjectTypeState
+> {
   return {
     visitSubgraphState(graph, state, typeName, type) {
       const inputObjectTypeState = getOrCreateInputObjectType(state, typeName);
 
-      type.tags.forEach(tag => inputObjectTypeState.tags.add(tag));
+      type.tags.forEach((tag) => inputObjectTypeState.tags.add(tag));
 
       if (type.inaccessible) {
         inputObjectTypeState.inaccessible = true;
@@ -25,7 +33,7 @@ export function inputObjectTypeBuilder(): TypeBuilder<InputObjectType, InputObje
       }
 
       if (type.ast.directives) {
-        type.ast.directives.forEach(directive => {
+        type.ast.directives.forEach((directive) => {
           inputObjectTypeState.ast.directives.push(directive);
         });
       }
@@ -43,9 +51,9 @@ export function inputObjectTypeBuilder(): TypeBuilder<InputObjectType, InputObje
           field.kind,
         );
 
-        field.tags.forEach(tag => fieldState.tags.add(tag));
+        field.tags.forEach((tag) => fieldState.tags.add(tag));
 
-        if (field.type.endsWith('!') && !fieldState.type.endsWith('!')) {
+        if (field.type.endsWith("!") && !fieldState.type.endsWith("!")) {
           // Replace the nullable type with a non-nullable type
           fieldState.type = field.type;
         }
@@ -67,13 +75,13 @@ export function inputObjectTypeBuilder(): TypeBuilder<InputObjectType, InputObje
           fieldState.deprecated = field.deprecated;
         }
 
-        if (typeof field.defaultValue !== 'undefined') {
+        if (typeof field.defaultValue !== "undefined") {
           fieldState.defaultValue = field.defaultValue;
         }
 
         fieldState.kind = field.kind;
 
-        field.ast.directives.forEach(directive => {
+        field.ast.directives.forEach((directive) => {
           fieldState.ast.directives.push(directive);
         });
 
@@ -95,16 +103,18 @@ export function inputObjectTypeBuilder(): TypeBuilder<InputObjectType, InputObje
           directives: convertToConst(inputObjectType.ast.directives),
         },
         fields: Array.from(inputObjectType.fields.values())
-          .filter(field => {
+          .filter((field) => {
             if (field.byGraph.size !== inputObjectType.byGraph.size) {
               return false;
             }
 
             return true;
           })
-          .map(field => {
+          .map((field) => {
             const fieldStateInGraphs = Array.from(field.byGraph.values());
-            const hasDifferentType = fieldStateInGraphs.some(f => f.type !== field.type);
+            const hasDifferentType = fieldStateInGraphs.some(
+              (f) => f.type !== field.type,
+            );
 
             return {
               name: field.name,
@@ -117,11 +127,13 @@ export function inputObjectTypeBuilder(): TypeBuilder<InputObjectType, InputObje
                       cost: field.cost,
                       directiveName: ensureValue(
                         supergraphState.specs.cost.names.cost,
-                        'Directive name of @cost is not defined',
+                        "Directive name of @cost is not defined",
                       ),
                     }
                   : null,
-              defaultValue: fieldStateInGraphs.every(f => typeof f.defaultValue !== 'undefined')
+              defaultValue: fieldStateInGraphs.every(
+                (f) => typeof f.defaultValue !== "undefined",
+              )
                 ? field.defaultValue
                 : undefined,
               description: field.description,
@@ -140,7 +152,9 @@ export function inputObjectTypeBuilder(): TypeBuilder<InputObjectType, InputObje
             };
           }),
         join: {
-          type: Array.from(inputObjectType.byGraph.keys()).map(graph => ({ graph })),
+          type: Array.from(inputObjectType.byGraph.keys()).map((graph) => ({
+            graph,
+          })),
         },
       });
     },
@@ -148,7 +162,7 @@ export function inputObjectTypeBuilder(): TypeBuilder<InputObjectType, InputObje
 }
 
 export interface InputObjectTypeState {
-  kind: 'input';
+  kind: "input";
   name: string;
   tags: Set<string>;
   inaccessible: boolean;
@@ -189,7 +203,10 @@ type InputObjectFieldStateInGraph = {
   version: FederationVersion;
 };
 
-function getOrCreateInputObjectType(state: Map<string, InputObjectTypeState>, typeName: string) {
+function getOrCreateInputObjectType(
+  state: Map<string, InputObjectTypeState>,
+  typeName: string,
+) {
   const existing = state.get(typeName);
 
   if (existing) {
@@ -197,7 +214,7 @@ function getOrCreateInputObjectType(state: Map<string, InputObjectTypeState>, ty
   }
 
   const def: InputObjectTypeState = {
-    kind: 'input',
+    kind: "input",
     name: typeName,
     tags: new Set(),
     hasDefinition: false,

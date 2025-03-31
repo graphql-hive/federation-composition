@@ -1,6 +1,6 @@
-import { GraphQLError } from 'graphql';
-import { SupergraphVisitorMap } from '../../composition/visitor.js';
-import { SupergraphValidationContext } from '../validation-context.js';
+import { GraphQLError } from "graphql";
+import { SupergraphVisitorMap } from "../../composition/visitor.js";
+import { SupergraphValidationContext } from "../validation-context.js";
 
 export function ExternalArgumentMissingRule(
   context: SupergraphValidationContext,
@@ -8,7 +8,10 @@ export function ExternalArgumentMissingRule(
   return {
     ObjectTypeFieldArg(objectState, fieldState, argState) {
       // If the argument and the field are defined in a single graph, this rule can be ignored
-      if (argState.byGraph.size === 1 && fieldState.byGraph.size === argState.byGraph.size) {
+      if (
+        argState.byGraph.size === 1 &&
+        fieldState.byGraph.size === argState.byGraph.size
+      ) {
         return;
       }
 
@@ -20,11 +23,16 @@ export function ExternalArgumentMissingRule(
       const graphsWithRequiredArg = Array.from(argState.byGraph)
         .filter(
           ([graph, arg]) =>
-            /*arg.type.endsWith('!') && */ fieldState.byGraph.get(graph)?.external !== true,
+            /*arg.type.endsWith('!') && */ fieldState.byGraph.get(graph)
+              ?.external !== true,
         )
         .map(([graph]) => graph);
-      const externalGraphsWithoutArg = Array.from(fieldState.byGraph.keys()).filter(
-        graph => !argState.byGraph.has(graph) && fieldState.byGraph.get(graph)?.external === true,
+      const externalGraphsWithoutArg = Array.from(
+        fieldState.byGraph.keys(),
+      ).filter(
+        (graph) =>
+          !argState.byGraph.has(graph) &&
+          fieldState.byGraph.get(graph)?.external === true,
       );
 
       if (!externalGraphsWithoutArg.length) {
@@ -32,11 +40,11 @@ export function ExternalArgumentMissingRule(
       }
 
       const requiredIn = `subgraph${
-        graphsWithRequiredArg.length > 1 ? 's' : ''
+        graphsWithRequiredArg.length > 1 ? "s" : ""
       } "${graphsWithRequiredArg.map(context.graphIdToName).join('", "')}"`;
 
       const missingIn = `subgraph${
-        externalGraphsWithoutArg.length > 1 ? 's' : ''
+        externalGraphsWithoutArg.length > 1 ? "s" : ""
       } "${externalGraphsWithoutArg.map(context.graphIdToName).join('", "')}"`;
 
       const fieldCoordinate = `${objectState.name}.${fieldState.name}`;
@@ -47,7 +55,7 @@ export function ExternalArgumentMissingRule(
           `Field "${fieldCoordinate}" is missing argument "${argCoordinate}" in some subgraphs where it is marked @external: argument "${argCoordinate}" is declared in ${requiredIn} but not in ${missingIn} (where "${fieldCoordinate}" is @external)`,
           {
             extensions: {
-              code: 'EXTERNAL_ARGUMENT_MISSING',
+              code: "EXTERNAL_ARGUMENT_MISSING",
             },
           },
         ),

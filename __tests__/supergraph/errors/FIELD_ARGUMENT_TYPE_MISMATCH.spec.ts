@@ -1,12 +1,12 @@
-import { expect, test } from 'vitest';
-import { graphql, testVersions } from '../../shared/testkit.js';
+import { expect, test } from "vitest";
+import { graphql, testVersions } from "../../shared/testkit.js";
 
 testVersions((api, version) => {
-  test('FIELD_ARGUMENT_TYPE_MISMATCH', () => {
+  test("FIELD_ARGUMENT_TYPE_MISMATCH", () => {
     expect(
       api.composeServices([
         {
-          name: 'users',
+          name: "users",
           typeDefs: graphql`
             extend schema @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@key"])
             
@@ -26,7 +26,7 @@ testVersions((api, version) => {
           `,
         },
         {
-          name: 'feed',
+          name: "feed",
           typeDefs: graphql`
             extend schema @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@key"])
             
@@ -54,7 +54,7 @@ testVersions((api, version) => {
               `Type of argument "Query.users(type:)" is incompatible across subgraphs: it has type "String!" in subgraph "feed" but type "UserType!" in subgraph "users"`,
             ),
             extensions: expect.objectContaining({
-              code: 'FIELD_ARGUMENT_TYPE_MISMATCH',
+              code: "FIELD_ARGUMENT_TYPE_MISMATCH",
             }),
           }),
         ]),

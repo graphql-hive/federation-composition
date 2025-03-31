@@ -9,17 +9,19 @@ import {
   specifiedScalarTypes,
   TypeDefinitionNode,
   TypeNode,
-} from 'graphql';
-import { print } from '../graphql/printer.js';
-import { directive as inaccessibleDirective } from './inaccessible.js';
-import { Link, LinkImport, parseLink } from './link.js';
-import { directive as tagDirective } from './tag.js';
+} from "graphql";
+import { print } from "../graphql/printer.js";
+import { directive as inaccessibleDirective } from "./inaccessible.js";
+import { Link, LinkImport, parseLink } from "./link.js";
+import { directive as tagDirective } from "./tag.js";
 
 export type FederationVersion = keyof typeof federationSpecFactory;
 // new type for imports (trkohler)
 export type FederationImports = readonly LinkImport[];
 
-export function isFederationVersion(version: string): version is FederationVersion {
+export function isFederationVersion(
+  version: string,
+): version is FederationVersion {
   return version in federationSpecFactory;
 }
 
@@ -32,15 +34,15 @@ export function createSpecSchema<T extends FederationVersion & string>(
       `Invalid version ${version} for the federation feature in @link directive on schema`,
       {
         extensions: {
-          code: 'UNKNOWN_FEDERATION_LINK_VERSION',
+          code: "UNKNOWN_FEDERATION_LINK_VERSION",
         },
       },
     );
   }
 
-  if (version !== 'v1.0') {
-    const spec = federationSpecFactory[version]('', imports);
-    const namespacedSpec = federationSpecFactory[version]('federation__');
+  if (version !== "v1.0") {
+    const spec = federationSpecFactory[version]("", imports);
+    const namespacedSpec = federationSpecFactory[version]("federation__");
 
     return {
       directives: spec.directives.concat(namespacedSpec.directives),
@@ -48,7 +50,7 @@ export function createSpecSchema<T extends FederationVersion & string>(
     };
   }
 
-  const spec = federationSpecFactory[version]('');
+  const spec = federationSpecFactory[version]("");
 
   return {
     directives: spec.directives.concat([tagDirective, inaccessibleDirective]),
@@ -58,7 +60,7 @@ export function createSpecSchema<T extends FederationVersion & string>(
 
 // TODO: T02 Support aliasing of Federation directives
 const federationSpecFactory = {
-  'v1.0': (prefix: string) =>
+  "v1.0": (prefix: string) =>
     createTypeDefinitions(
       /* GraphQL */ `
         directive @key(
@@ -75,7 +77,7 @@ const federationSpecFactory = {
       `,
       prefix,
     ),
-  'v2.0': (prefix: string, imports?: readonly LinkImport[]) =>
+  "v2.0": (prefix: string, imports?: readonly LinkImport[]) =>
     createTypeDefinitions(
       /* GraphQL */ `
         directive @key(
@@ -97,7 +99,7 @@ const federationSpecFactory = {
       prefix,
       imports,
     ),
-  'v2.1': (prefix: string, imports?: readonly LinkImport[]) =>
+  "v2.1": (prefix: string, imports?: readonly LinkImport[]) =>
     createTypeDefinitions(
       /* GraphQL */ `
         directive @composeDirective(name: String!) repeatable on SCHEMA
@@ -120,7 +122,7 @@ const federationSpecFactory = {
       prefix,
       imports,
     ),
-  'v2.2': (prefix: string, imports?: readonly LinkImport[]) =>
+  "v2.2": (prefix: string, imports?: readonly LinkImport[]) =>
     createTypeDefinitions(
       /* GraphQL */ `
         directive @composeDirective(name: String!) repeatable on SCHEMA
@@ -143,7 +145,7 @@ const federationSpecFactory = {
       prefix,
       imports,
     ),
-  'v2.3': (prefix: string, imports?: readonly LinkImport[]) =>
+  "v2.3": (prefix: string, imports?: readonly LinkImport[]) =>
     createTypeDefinitions(
       /* GraphQL */ `
         directive @composeDirective(name: String!) repeatable on SCHEMA
@@ -167,7 +169,7 @@ const federationSpecFactory = {
       prefix,
       imports,
     ),
-  'v2.4': (prefix: string, imports?: readonly LinkImport[]) =>
+  "v2.4": (prefix: string, imports?: readonly LinkImport[]) =>
     createTypeDefinitions(
       /* GraphQL */ `
         directive @composeDirective(name: String!) repeatable on SCHEMA
@@ -191,7 +193,7 @@ const federationSpecFactory = {
       prefix,
       imports,
     ),
-  'v2.5': (prefix: string, imports?: readonly LinkImport[]) =>
+  "v2.5": (prefix: string, imports?: readonly LinkImport[]) =>
     createTypeDefinitions(
       /* GraphQL */ `
         directive @authenticated on FIELD_DEFINITION | OBJECT | INTERFACE | SCALAR | ENUM
@@ -220,7 +222,7 @@ const federationSpecFactory = {
       prefix,
       imports,
     ),
-  'v2.6': (prefix: string, imports?: readonly LinkImport[]) =>
+  "v2.6": (prefix: string, imports?: readonly LinkImport[]) =>
     createTypeDefinitions(
       /* GraphQL */ `
         directive @policy(
@@ -253,7 +255,7 @@ const federationSpecFactory = {
       prefix,
       imports,
     ),
-  'v2.7': (prefix: string, imports?: readonly LinkImport[]) =>
+  "v2.7": (prefix: string, imports?: readonly LinkImport[]) =>
     createTypeDefinitions(
       /* GraphQL */ `
         directive @policy(
@@ -287,7 +289,7 @@ const federationSpecFactory = {
       imports,
     ),
   // TODO: Implement @context and @fromContext from v2.8
-  'v2.8': (prefix: string, imports?: readonly LinkImport[]) =>
+  "v2.8": (prefix: string, imports?: readonly LinkImport[]) =>
     createTypeDefinitions(
       /* GraphQL */ `
         directive @policy(
@@ -322,8 +324,12 @@ const federationSpecFactory = {
           sizedFields: [String!]
           requireOneSlicingArgument: Boolean = true
         ) on FIELD_DEFINITION
-        directive @context(name: String!) repeatable on INTERFACE | OBJECT | UNION
-        directive @fromContext(field: federation__ContextFieldValue) on ARGUMENT_DEFINITION
+        directive @context(
+          name: String!
+        ) repeatable on INTERFACE | OBJECT | UNION
+        directive @fromContext(
+          field: federation__ContextFieldValue
+        ) on ARGUMENT_DEFINITION
         scalar FieldSet
         scalar federation__Policy
         scalar federation__Scope
@@ -333,7 +339,7 @@ const federationSpecFactory = {
       imports,
     ),
   // TODO: Add @context and @fromContext from v2.8
-  'v2.9': (prefix: string, imports?: readonly LinkImport[]) =>
+  "v2.9": (prefix: string, imports?: readonly LinkImport[]) =>
     createTypeDefinitions(
       /* GraphQL */ `
         directive @policy(
@@ -368,8 +374,12 @@ const federationSpecFactory = {
           sizedFields: [String!]
           requireOneSlicingArgument: Boolean = true
         ) on FIELD_DEFINITION
-        directive @context(name: String!) repeatable on INTERFACE | OBJECT | UNION
-        directive @fromContext(field: federation__ContextFieldValue) on ARGUMENT_DEFINITION
+        directive @context(
+          name: String!
+        ) repeatable on INTERFACE | OBJECT | UNION
+        directive @fromContext(
+          field: federation__ContextFieldValue
+        ) on ARGUMENT_DEFINITION
         scalar FieldSet
         scalar federation__Policy
         scalar federation__Scope
@@ -385,9 +395,13 @@ export function getLatestFederationVersion() {
 }
 
 // TODO: T03 support prefixes (imports could have them) of Federation directives
-function createTypeDefinitions(doc: string, prefix: string, imports?: readonly LinkImport[]) {
+function createTypeDefinitions(
+  doc: string,
+  prefix: string,
+  imports?: readonly LinkImport[],
+) {
   const shouldFilter = !!imports;
-  const toInclude = new Set(imports?.map(i => i.name.replace(/^@/, '')));
+  const toInclude = new Set(imports?.map((i) => i.name.replace(/^@/, "")));
   const docAST = parse(doc, {
     noLocation: true,
   });
@@ -396,20 +410,20 @@ function createTypeDefinitions(doc: string, prefix: string, imports?: readonly L
   // we do it differently, but only in next iterations.
   if (
     !imports?.length ||
-    toInclude.has('key') ||
-    toInclude.has('requires') ||
-    toInclude.has('provides')
+    toInclude.has("key") ||
+    toInclude.has("requires") ||
+    toInclude.has("provides")
   ) {
-    toInclude.add('FieldSet');
-    toInclude.add('federation__FieldSet');
+    toInclude.add("FieldSet");
+    toInclude.add("federation__FieldSet");
   }
 
-  if (toInclude.has('requiresScopes')) {
-    toInclude.add('federation__Scope');
+  if (toInclude.has("requiresScopes")) {
+    toInclude.add("federation__Scope");
   }
 
-  if (toInclude.has('policy')) {
-    toInclude.add('federation__Policy');
+  if (toInclude.has("policy")) {
+    toInclude.add("federation__Policy");
   }
 
   const directives: DirectiveDefinitionNode[] = [];
@@ -425,11 +439,11 @@ function createTypeDefinitions(doc: string, prefix: string, imports?: readonly L
 
   return {
     directives: directives.filter(
-      d =>
-        !specifiedDirectives.some(sd => sd.name === d.name.value) &&
+      (d) =>
+        !specifiedDirectives.some((sd) => sd.name === d.name.value) &&
         (!shouldFilter || toInclude.has(d.name.value)),
     ),
-    types: types.filter(t => toInclude.has(t.name.value)),
+    types: types.filter((t) => toInclude.has(t.name.value)),
   };
 }
 
@@ -448,11 +462,11 @@ function applyPrefix<T extends TypeDefinitionNode | DirectiveDefinitionNode>(
   (node.name as any).value = `${prefix}${node.name.value}`;
 
   if (isDirectiveDefinitionNode(node)) {
-    node.arguments?.forEach(arg => {
+    node.arguments?.forEach((arg) => {
       const nameNode = resolveNamedType(arg.type);
 
       // apply prefix to arguments with non-standard scalars (FieldSet -> PrefixFieldSet but not String -> PrefixString)
-      if (!specifiedScalarTypes.some(t => t.name === nameNode.value)) {
+      if (!specifiedScalarTypes.some((t) => t.name === nameNode.value)) {
         (nameNode as any).value = `${prefix}${nameNode.value}`;
       }
     });
@@ -474,34 +488,43 @@ function resolveNamedType(node: TypeNode): NameNode {
 }
 
 export function isFederationLink(link: Link): boolean {
-  return link.identity === 'https://specs.apollo.dev/federation';
+  return link.identity === "https://specs.apollo.dev/federation";
 }
 
 export function detectFederationVersion(typeDefs: DocumentNode) {
   for (const definition of typeDefs.definitions) {
-    if (definition.kind === Kind.SCHEMA_EXTENSION || definition.kind === Kind.SCHEMA_DEFINITION) {
-      const links = definition.directives?.filter(directive => directive.name.value === 'link');
+    if (
+      definition.kind === Kind.SCHEMA_EXTENSION ||
+      definition.kind === Kind.SCHEMA_DEFINITION
+    ) {
+      const links = definition.directives?.filter(
+        (directive) => directive.name.value === "link",
+      );
 
       if (links?.length) {
-        const parsedLinks = links.map(l => {
-          const url = l.arguments?.find(a => a.name.value === 'url');
-          const importArg = l.arguments?.find(a => a.name.value === 'import');
+        const parsedLinks = links.map((l) => {
+          const url = l.arguments?.find((a) => a.name.value === "url");
+          const importArg = l.arguments?.find((a) => a.name.value === "import");
 
           if (!url) {
-            throw new Error('Invalid @link directive');
+            throw new Error("Invalid @link directive");
           }
 
           return parseLink(
             (url.value as any).value,
-            importArg ? print(importArg.value as any) : '[]',
+            importArg ? print(importArg.value as any) : "[]",
           );
         });
 
-        const fedLink = parsedLinks.find(l => l.identity === 'https://specs.apollo.dev/federation');
+        const fedLink = parsedLinks.find(
+          (l) => l.identity === "https://specs.apollo.dev/federation",
+        );
 
         if (fedLink?.version) {
           if (!isFederationVersion(fedLink.version)) {
-            throw new Error(`Unsupported federation version: ${fedLink.version}`);
+            throw new Error(
+              `Unsupported federation version: ${fedLink.version}`,
+            );
           }
 
           return {
@@ -513,5 +536,5 @@ export function detectFederationVersion(typeDefs: DocumentNode) {
     }
   }
 
-  return { version: 'v1.0' as FederationVersion, imports: [] };
+  return { version: "v1.0" as FederationVersion, imports: [] };
 }

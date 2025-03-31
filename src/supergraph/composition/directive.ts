@@ -1,8 +1,8 @@
-import { DirectiveNode } from 'graphql';
-import { FederationVersion } from '../../specifications/federation.js';
-import type { ArgumentKind, Directive } from '../../subgraph/state.js';
-import { createDirectiveNode } from './ast.js';
-import { convertToConst, MapByGraph, TypeBuilder } from './common.js';
+import { DirectiveNode } from "graphql";
+import { FederationVersion } from "../../specifications/federation.js";
+import type { ArgumentKind, Directive } from "../../subgraph/state.js";
+import { createDirectiveNode } from "./ast.js";
+import { convertToConst, MapByGraph, TypeBuilder } from "./common.js";
 
 export function directiveBuilder(): TypeBuilder<Directive, DirectiveState> {
   return {
@@ -25,15 +25,20 @@ export function directiveBuilder(): TypeBuilder<Directive, DirectiveState> {
       }
 
       for (const arg of directive.args.values()) {
-        const argState = getOrCreateArg(directiveState, arg.name, arg.type, arg.kind);
+        const argState = getOrCreateArg(
+          directiveState,
+          arg.name,
+          arg.type,
+          arg.kind,
+        );
 
-        arg.tags.forEach(tag => argState.tags.add(tag));
+        arg.tags.forEach((tag) => argState.tags.add(tag));
 
-        if (arg.type.endsWith('!')) {
+        if (arg.type.endsWith("!")) {
           argState.type = arg.type;
         }
 
-        arg.ast.directives.forEach(directive => {
+        arg.ast.directives.forEach((directive) => {
           argState.ast.directives.push(directive);
         });
 
@@ -62,7 +67,7 @@ export function directiveBuilder(): TypeBuilder<Directive, DirectiveState> {
         name: directive.name,
         locations: Array.from(directive.locations),
         repeatable: directive.repeatable,
-        arguments: Array.from(directive.args.values()).map(arg => ({
+        arguments: Array.from(directive.args.values()).map((arg) => ({
           name: arg.name,
           type: arg.type,
           kind: arg.kind,
@@ -80,7 +85,7 @@ export function directiveBuilder(): TypeBuilder<Directive, DirectiveState> {
 }
 
 export type DirectiveState = {
-  kind: 'directive';
+  kind: "directive";
   name: string;
   byGraph: MapByGraph<DirectiveStateInGraph>;
   locations: Set<string>;
@@ -114,7 +119,10 @@ type ArgStateInGraph = {
   version: FederationVersion;
 };
 
-function getOrCreateDirective(state: Map<string, DirectiveState>, directiveName: string) {
+function getOrCreateDirective(
+  state: Map<string, DirectiveState>,
+  directiveName: string,
+) {
   const existing = state.get(directiveName);
 
   if (existing) {
@@ -122,7 +130,7 @@ function getOrCreateDirective(state: Map<string, DirectiveState>, directiveName:
   }
 
   const def: DirectiveState = {
-    kind: 'directive',
+    kind: "directive",
     name: directiveName,
     locations: new Set(),
     byGraph: new Map(),

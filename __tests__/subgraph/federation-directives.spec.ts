@@ -1,16 +1,16 @@
-import { expect, test } from 'vitest';
+import { expect, test } from "vitest";
 import {
   assertCompositionFailure,
   assertCompositionSuccess,
   graphql,
   testVersions,
-} from '../shared/testkit.js';
+} from "../shared/testkit.js";
 
 testVersions((api, version) => {
-  test('federation v1 directives should be available when schema @link(federation) is NOT provided', () => {
+  test("federation v1 directives should be available when schema @link(federation) is NOT provided", () => {
     const result = api.composeServices([
       {
-        name: 'a',
+        name: "a",
         typeDefs: graphql`
           type User @key(fields: "name") {
             name: String
@@ -26,10 +26,10 @@ testVersions((api, version) => {
     assertCompositionSuccess(result);
   });
 
-  test('federation v1 directives prefixed with federation__ should NOT be available when schema @link(federation) is NOT provided', () => {
+  test("federation v1 directives prefixed with federation__ should NOT be available when schema @link(federation) is NOT provided", () => {
     const result = api.composeServices([
       {
-        name: 'a',
+        name: "a",
         typeDefs: graphql`
           type User @federation__key(fields: "name") {
             name: String
@@ -48,17 +48,19 @@ testVersions((api, version) => {
       expect.objectContaining({
         errors: expect.arrayContaining([
           expect.objectContaining({
-            message: expect.stringContaining(`Unknown directive "@federation__key"`),
+            message: expect.stringContaining(
+              `Unknown directive "@federation__key"`,
+            ),
           }),
         ]),
       }),
     );
   });
 
-  test('federation directives should not be available when not imported but schema @link(federation) is provided', () => {
+  test("federation directives should not be available when not imported but schema @link(federation) is provided", () => {
     const result = api.composeServices([
       {
-        name: 'a',
+        name: "a",
         typeDefs: graphql`
           extend schema
             @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@shareable"])
@@ -82,7 +84,7 @@ testVersions((api, version) => {
               `[a] Unknown directive "@key". If you meant the "@key" federation directive, you should use fully-qualified name "@federation__key" or add "@key" to the \`import\` argument of the @link to the federation specification.`,
             ),
             extensions: expect.objectContaining({
-              code: 'INVALID_GRAPHQL',
+              code: "INVALID_GRAPHQL",
             }),
           }),
         ]),
@@ -90,10 +92,10 @@ testVersions((api, version) => {
     );
   });
 
-  test('federation directives prefixed with federation__ should be available when not imported but schema @link(federation) is provided', () => {
+  test("federation directives prefixed with federation__ should be available when not imported but schema @link(federation) is provided", () => {
     const result = api.composeServices([
       {
-        name: 'a',
+        name: "a",
         typeDefs: graphql`
           extend schema
             @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@shareable"])
@@ -111,10 +113,10 @@ testVersions((api, version) => {
     assertCompositionSuccess(result);
   });
 
-  test('support basic aliasing', () => {
+  test("support basic aliasing", () => {
     const result = api.composeServices([
       {
-        name: 'users',
+        name: "users",
         typeDefs: graphql`
           extend schema
             @link(
@@ -134,7 +136,7 @@ testVersions((api, version) => {
         `,
       },
       {
-        name: 'reviews',
+        name: "reviews",
         typeDefs: graphql`
           extend schema
             @link(

@@ -1,9 +1,19 @@
-import { SupergraphState } from '../state.js';
-import { DirectiveState } from './directive.js';
-import { EnumTypeState } from './enum-type.js';
-import { InputObjectTypeFieldState, InputObjectTypeState } from './input-object-type.js';
-import { InterfaceTypeFieldState, InterfaceTypeState } from './interface-type.js';
-import { ObjectTypeFieldArgState, ObjectTypeFieldState, ObjectTypeState } from './object-type.js';
+import { SupergraphState } from "../state.js";
+import { DirectiveState } from "./directive.js";
+import { EnumTypeState } from "./enum-type.js";
+import {
+  InputObjectTypeFieldState,
+  InputObjectTypeState,
+} from "./input-object-type.js";
+import {
+  InterfaceTypeFieldState,
+  InterfaceTypeState,
+} from "./interface-type.js";
+import {
+  ObjectTypeFieldArgState,
+  ObjectTypeFieldState,
+  ObjectTypeState,
+} from "./object-type.js";
 
 /**
  * Implements a visitor pattern to easily access types, fields, arguments and so on without iterating over the subgraph's state over and over again.
@@ -18,7 +28,7 @@ export function visitSupergraphState(
   visitors: Array<SupergraphVisitorMap>,
 ) {
   // Object
-  supergraphState.objectTypes.forEach(objectTypeState => {
+  supergraphState.objectTypes.forEach((objectTypeState) => {
     for (const visitor of visitors) {
       if (visitor.ObjectType) {
         visitor.ObjectType(objectTypeState);
@@ -43,7 +53,7 @@ export function visitSupergraphState(
   });
 
   // Enum
-  supergraphState.enumTypes.forEach(enumTypeState => {
+  supergraphState.enumTypes.forEach((enumTypeState) => {
     for (const visitor of visitors) {
       if (visitor.EnumType) {
         visitor.EnumType(enumTypeState);
@@ -52,7 +62,7 @@ export function visitSupergraphState(
   });
 
   // Input Object
-  supergraphState.inputObjectTypes.forEach(inputObjectTypeState => {
+  supergraphState.inputObjectTypes.forEach((inputObjectTypeState) => {
     for (const visitor of visitors) {
       if (visitor.InputObjectType) {
         visitor.InputObjectType(inputObjectTypeState);
@@ -69,7 +79,7 @@ export function visitSupergraphState(
   });
 
   // Interface
-  supergraphState.interfaceTypes.forEach(interfaceTypeState => {
+  supergraphState.interfaceTypes.forEach((interfaceTypeState) => {
     for (const visitor of visitors) {
       if (visitor.InterfaceType) {
         visitor.InterfaceType(interfaceTypeState);
@@ -86,7 +96,7 @@ export function visitSupergraphState(
   });
 
   // Directive
-  supergraphState.directives.forEach(directiveState => {
+  supergraphState.directives.forEach((directiveState) => {
     for (const visitor of visitors) {
       if (visitor.Directive) {
         visitor.Directive(directiveState);
@@ -98,7 +108,10 @@ export function visitSupergraphState(
 export interface SupergraphVisitorMap {
   // Object
   ObjectType?(objectState: ObjectTypeState): void;
-  ObjectTypeField?(objectState: ObjectTypeState, fieldState: ObjectTypeFieldState): void;
+  ObjectTypeField?(
+    objectState: ObjectTypeState,
+    fieldState: ObjectTypeFieldState,
+  ): void;
   ObjectTypeFieldArg?(
     objectState: ObjectTypeState,
     fieldState: ObjectTypeFieldState,

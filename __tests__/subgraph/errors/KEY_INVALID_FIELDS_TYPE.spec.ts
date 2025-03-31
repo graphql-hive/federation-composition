@@ -1,12 +1,16 @@
-import { expect, test } from 'vitest';
-import { assertCompositionSuccess, graphql, testVersions } from '../../shared/testkit.js';
+import { expect, test } from "vitest";
+import {
+  assertCompositionSuccess,
+  graphql,
+  testVersions,
+} from "../../shared/testkit.js";
 
 testVersions((api, version) => {
-  test('KEY_INVALID_FIELDS_TYPE', () => {
+  test("KEY_INVALID_FIELDS_TYPE", () => {
     expect(
       api.composeServices([
         {
-          name: 'users',
+          name: "users",
           typeDefs: graphql`
             extend schema @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@key"])
 
@@ -28,7 +32,7 @@ testVersions((api, version) => {
               `[users] On type "User", for @key(fields: true): Invalid value for argument "fields": must be a string.`,
             ),
             extensions: expect.objectContaining({
-              code: 'KEY_INVALID_FIELDS_TYPE',
+              code: "KEY_INVALID_FIELDS_TYPE",
             }),
           }),
         ]),
@@ -39,7 +43,7 @@ testVersions((api, version) => {
   assertCompositionSuccess(
     api.composeServices([
       {
-        name: 'a',
+        name: "a",
         typeDefs: graphql`
           type User @key(fields: ["id", "uuid"]) {
             id: ID!

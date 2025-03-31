@@ -1,16 +1,19 @@
-import { specifiedScalarTypes } from 'graphql';
-import type { Logger } from '../../../../utils/logger.js';
-import { stripTypeModifiers } from '../../../../utils/state.js';
-import type { EnumTypeState } from '../../../composition/enum-type.js';
+import { specifiedScalarTypes } from "graphql";
+import type { Logger } from "../../../../utils/logger.js";
+import { stripTypeModifiers } from "../../../../utils/state.js";
+import type { EnumTypeState } from "../../../composition/enum-type.js";
 import type {
   InterfaceTypeFieldState,
   InterfaceTypeState,
-} from '../../../composition/interface-type.js';
-import type { ObjectTypeFieldState, ObjectTypeState } from '../../../composition/object-type.js';
-import type { ScalarTypeState } from '../../../composition/scalar-type.js';
-import type { UnionTypeState } from '../../../composition/union-type.js';
-import type { SupergraphState } from '../../../state.js';
-import { MERGEDGRAPH_ID, SUPERGRAPH_ID } from './constants.js';
+} from "../../../composition/interface-type.js";
+import type {
+  ObjectTypeFieldState,
+  ObjectTypeState,
+} from "../../../composition/object-type.js";
+import type { ScalarTypeState } from "../../../composition/scalar-type.js";
+import type { UnionTypeState } from "../../../composition/union-type.js";
+import type { SupergraphState } from "../../../state.js";
+import { MERGEDGRAPH_ID, SUPERGRAPH_ID } from "./constants.js";
 import {
   assertAbstractEdge,
   assertFieldEdge,
@@ -18,11 +21,11 @@ import {
   isAbstractEdge,
   isEntityEdge,
   isFieldEdge,
-} from './edge.js';
-import { scoreKeyFields } from './helpers.js';
-import { AbstractMove, EntityMove, FieldMove } from './moves.js';
-import { Node } from './node.js';
-import type { SelectionNode, SelectionResolver } from './selection.js';
+} from "./edge.js";
+import { scoreKeyFields } from "./helpers.js";
+import { AbstractMove, EntityMove, FieldMove } from "./moves.js";
+import { Node } from "./node.js";
+import type { SelectionNode, SelectionResolver } from "./selection.js";
 
 export class Graph {
   private _warnedAboutIncorrectEdge = false;
@@ -66,8 +69,8 @@ export class Graph {
     private selectionResolver: SelectionResolver,
     private ignoreInaccessible = false,
   ) {
-    this.logger = logger.create('Graph');
-    if (typeof id === 'string') {
+    this.logger = logger.create("Graph");
+    if (typeof id === "string") {
       this.idSymbol = Symbol.for(id);
       this.id = id;
       this.isSubgraph = true;
@@ -115,10 +118,13 @@ export class Graph {
   }
 
   addFromRoots() {
-    for (const typeName of ['Query', 'Mutation', 'Subscription']) {
+    for (const typeName of ["Query", "Mutation", "Subscription"]) {
       const typeState = this.supergraphState.objectTypes.get(typeName);
 
-      if (typeState && this.trueOrIfSubgraphThen(() => typeState.byGraph.has(this.id))) {
+      if (
+        typeState &&
+        this.trueOrIfSubgraphThen(() => typeState.byGraph.has(this.id))
+      ) {
         this.createNodesAndEdgesForType(typeState.name);
       }
     }
@@ -131,7 +137,7 @@ export class Graph {
    */
   addInterfaceObjectFields() {
     if (this.isSubgraph) {
-      throw new Error('Expected to be called only on supergraph');
+      throw new Error("Expected to be called only on supergraph");
     }
 
     for (const interfaceState of this.supergraphState.interfaceTypes.values()) {
@@ -156,7 +162,10 @@ export class Graph {
           continue;
         }
 
-        for (const [interfaceFieldName, interfaceField] of interfaceState.fields) {
+        for (const [
+          interfaceFieldName,
+          interfaceField,
+        ] of interfaceState.fields) {
           if (objectState.fields.has(interfaceFieldName)) {
             // It already has a field with the same name, we don't need to do anything
             continue;
@@ -177,7 +186,10 @@ export class Graph {
 
   addFromEntities() {
     for (const typeState of this.supergraphState.objectTypes.values()) {
-      if (typeState?.isEntity && this.trueOrIfSubgraphThen(() => typeState.byGraph.has(this.id))) {
+      if (
+        typeState?.isEntity &&
+        this.trueOrIfSubgraphThen(() => typeState.byGraph.has(this.id))
+      ) {
         this.createNodesAndEdgesForType(typeState.name);
       }
     }
@@ -240,25 +252,41 @@ export class Graph {
 
         for (const tailNode of this.nodesByTypeIndex[otherNodeIndex]) {
           if (
-            !(tailNode.typeState && 'isEntity' in tailNode.typeState && tailNode.typeState.isEntity)
+            !(
+              tailNode.typeState &&
+              "isEntity" in tailNode.typeState &&
+              tailNode.typeState.isEntity
+            )
           ) {
             continue;
           }
-          const typeStateInGraph = tailNode.typeState.byGraph.get(tailNode.graphId);
+          const typeStateInGraph = tailNode.typeState.byGraph.get(
+            tailNode.graphId,
+          );
 
           const keys = (typeStateInGraph?.keys ?? [])
             .slice()
-            .sort((a, b) => scoreKeyFields(a.fields) - scoreKeyFields(b.fields));
+            .sort(
+              (a, b) => scoreKeyFields(a.fields) - scoreKeyFields(b.fields),
+            );
 
           for (const key of keys) {
             if (key.resolvable) {
               edgesToAdd.push(
                 new Edge(
                   headNode,
-                  tailNode.typeState.kind === 'object'
-                    ? new EntityMove(this.selectionResolver.resolve(headNode.typeName, key.fields))
+                  tailNode.typeState.kind === "object"
+                    ? new EntityMove(
+                        this.selectionResolver.resolve(
+                          headNode.typeName,
+                          key.fields,
+                        ),
+                      )
                     : new AbstractMove(
-                        this.selectionResolver.resolve(headNode.typeName, key.fields),
+                        this.selectionResolver.resolve(
+                          headNode.typeName,
+                          key.fields,
+                        ),
                       ),
                   tailNode,
                 ),
@@ -281,7 +309,7 @@ export class Graph {
     const abstractIndexes = head.getAbstractEdgeIndexes(head.typeName);
 
     if (!abstractIndexes || abstractIndexes.length === 0) {
-      throw new Error('Expected abstract indexes to be defined');
+      throw new Error("Expected abstract indexes to be defined");
     }
 
     const interfaceFields: SelectionNode[] = [];
@@ -311,7 +339,7 @@ export class Graph {
         const potentialEdge = this.edgesByHeadTypeIndex[head.index][index];
 
         if (!potentialEdge) {
-          throw new Error('Expected edge to be defined');
+          throw new Error("Expected edge to be defined");
         }
 
         if (potentialEdge.tail.typeName === typeName) {
@@ -321,8 +349,10 @@ export class Graph {
         }
       }
 
-      if (typeof edgeIndex === 'undefined' || !edge) {
-        throw new Error(`Expected an abstract edge matching "${typeName}" to be defined`);
+      if (typeof edgeIndex === "undefined" || !edge) {
+        throw new Error(
+          `Expected an abstract edge matching "${typeName}" to be defined`,
+        );
       }
 
       const newTail = this.duplicateNode(edge.tail);
@@ -343,7 +373,7 @@ export class Graph {
       const edge = this.edgesByHeadTypeIndex[head.index][index];
 
       if (!edge) {
-        throw new Error('Expected edge to be defined');
+        throw new Error("Expected edge to be defined");
       }
 
       assertAbstractEdge(edge);
@@ -358,7 +388,7 @@ export class Graph {
 
       queue.push({
         head: newTail,
-        providedFields: interfaceFields.map(f => ({
+        providedFields: interfaceFields.map((f) => ({
           ...f,
           typeName: newTail.typeName,
         })),
@@ -375,11 +405,14 @@ export class Graph {
     }[],
   ) {
     // As we only need to check if all fields are reachable from the head, we can ignore __typename
-    if (providedField.kind === 'field' && providedField.fieldName === '__typename') {
+    if (
+      providedField.kind === "field" &&
+      providedField.fieldName === "__typename"
+    ) {
       return;
     }
 
-    if (providedField.kind === 'fragment') {
+    if (providedField.kind === "fragment") {
       queue.push({
         head,
         providedFields: providedField.selectionSet,
@@ -390,11 +423,11 @@ export class Graph {
     const indexes = head.getFieldEdgeIndexes(providedField.fieldName);
 
     if (!indexes || indexes.length === 0) {
-      if (head.typeState?.kind === 'object') {
+      if (head.typeState?.kind === "object") {
         throw new Error(
-          'Expected indexes to be defined: ' +
+          "Expected indexes to be defined: " +
             providedField.typeName +
-            '.' +
+            "." +
             providedField.fieldName,
         );
       } else {
@@ -408,7 +441,7 @@ export class Graph {
       const edge = this.edgesByHeadTypeIndex[head.index][index];
 
       if (!edge) {
-        throw new Error('Expected edge to be defined');
+        throw new Error("Expected edge to be defined");
       }
 
       assertFieldEdge(edge);
@@ -460,7 +493,8 @@ export class Graph {
       }
 
       if (
-        (typeNode.typeState?.kind === 'object' || typeNode.typeState?.kind === 'interface') &&
+        (typeNode.typeState?.kind === "object" ||
+          typeNode.typeState?.kind === "interface") &&
         typeNode.typeState?.isEntity
       ) {
         this.connectEntities(i, otherNodesIndexes, edgesToAdd);
@@ -487,7 +521,10 @@ export class Graph {
 
             const interfaceTypeNode = interfaceNodes[0];
 
-            if (!interfaceTypeNode.typeState || interfaceTypeNode.typeState?.kind !== 'interface') {
+            if (
+              !interfaceTypeNode.typeState ||
+              interfaceTypeNode.typeState?.kind !== "interface"
+            ) {
               continue;
             }
 
@@ -496,13 +533,15 @@ export class Graph {
             }
 
             for (const interfaceNode of interfaceNodes) {
-              if (interfaceNode.typeState?.kind !== 'interface') {
+              if (interfaceNode.typeState?.kind !== "interface") {
                 throw new Error(
                   `Expected interfaceNode ${interfaceNode.toString()} to be an interface`,
                 );
               }
 
-              const keys = interfaceNode.typeState.byGraph.get(interfaceNode.graphId)?.keys;
+              const keys = interfaceNode.typeState.byGraph.get(
+                interfaceNode.graphId,
+              )?.keys;
 
               if (!keys || keys.length === 0) {
                 continue;
@@ -516,7 +555,9 @@ export class Graph {
                 edgesToAdd.push(
                   new Edge(
                     head,
-                    new AbstractMove(this.selectionResolver.resolve(interfaceName, key.fields)),
+                    new AbstractMove(
+                      this.selectionResolver.resolve(interfaceName, key.fields),
+                    ),
                     interfaceNode,
                   ),
                 );
@@ -524,7 +565,10 @@ export class Graph {
             }
           }
         }
-      } else if (typeNode.typeState.kind === 'union' || typeNode.typeState.kind === 'interface') {
+      } else if (
+        typeNode.typeState.kind === "union" ||
+        typeNode.typeState.kind === "interface"
+      ) {
         this.connectUnionOrInterface(i, otherNodesIndexes, edgesToAdd);
       }
     }
@@ -533,14 +577,18 @@ export class Graph {
       const edge = edgesToAdd.pop();
 
       if (!edge) {
-        throw new Error('Expected edge to be defined');
+        throw new Error("Expected edge to be defined");
       }
 
       this.addEdge(edge);
     }
 
     // iterate over all edges
-    for (let headIndex = 0; headIndex < this.edgesByHeadTypeIndex.length; headIndex++) {
+    for (
+      let headIndex = 0;
+      headIndex < this.edgesByHeadTypeIndex.length;
+      headIndex++
+    ) {
       const edges = this.edgesByHeadTypeIndex[headIndex];
       for (let edgeIndex = 0; edgeIndex < edges.length; edgeIndex++) {
         const edge = edges[edgeIndex];
@@ -575,12 +623,12 @@ export class Graph {
           const item = queue.pop();
 
           if (!item) {
-            throw new Error('Expected item to be defined');
+            throw new Error("Expected item to be defined");
           }
 
           const { head, providedFields } = item;
 
-          if (head.typeState?.kind === 'interface') {
+          if (head.typeState?.kind === "interface") {
             this.addProvidedInterfaceFields(head, providedFields, queue);
             continue;
           }
@@ -606,17 +654,17 @@ export class Graph {
         const objectTypeState = this.supergraphState.objectTypes.get(typeName);
 
         if (!objectTypeState) {
-          throw new Error('Expected to find object type state');
+          throw new Error("Expected to find object type state");
         }
 
         const fieldState = objectTypeState.fields.get(fieldName);
 
         if (!fieldState) {
-          throw new Error('Expected to find field state');
+          throw new Error("Expected to find field state");
         }
 
         if (!fieldState.overrideLabel) {
-          throw new Error('Expected a label on a field');
+          throw new Error("Expected a label on a field");
         }
 
         for (const [_, fieldStateInGraph] of fieldState.byGraph) {
@@ -635,17 +683,17 @@ export class Graph {
             };
 
             // When the label is off, use the other field
-            this.addEdge(new Edge(superFieldEdge.head, new FieldMove(
-              typeName,
-              fieldName,
-              null,
-              null,
-              {
-                label: fieldStateInGraph.overrideLabel,
-                value: false,
-                fromGraphId: null,
-              }
-            ), superFieldEdge.tail));
+            this.addEdge(
+              new Edge(
+                superFieldEdge.head,
+                new FieldMove(typeName, fieldName, null, null, {
+                  label: fieldStateInGraph.overrideLabel,
+                  value: false,
+                  fromGraphId: null,
+                }),
+                superFieldEdge.tail,
+              ),
+            );
           }
         }
       }
@@ -653,12 +701,12 @@ export class Graph {
     }
 
     if (!this.isMergedGraph()) {
-      throw new Error('Expected to be called only on merged graph');
+      throw new Error("Expected to be called only on merged graph");
     }
 
     for (const fieldWithOverride of this.fieldEdgesWithProgressiveOverride) {
       if (!fieldWithOverride.move.override) {
-        throw new Error('Expected edge.move.override to be defined');
+        throw new Error("Expected edge.move.override to be defined");
       }
 
       const fromGraphId = fieldWithOverride.move.override.fromGraphId;
@@ -666,17 +714,20 @@ export class Graph {
       if (!fromGraphId) {
         // This edge is the source of the override,
         // it should contain the `@override(from:)` argument
-        throw new Error('Expected fromGraphId to be defined');
+        throw new Error("Expected fromGraphId to be defined");
       }
 
       const nodes = this.nodesOf(fieldWithOverride.head.typeName, true);
-      for(const node of nodes) {
+      for (const node of nodes) {
         if (node.graphId !== fromGraphId) {
           // We're not in the right graph
           continue;
         }
 
-        const fieldEdges = this.fieldEdgesOfHead(node, fieldWithOverride.move.fieldName);
+        const fieldEdges = this.fieldEdgesOfHead(
+          node,
+          fieldWithOverride.move.fieldName,
+        );
         for (const fieldEdge of fieldEdges) {
           if (fieldEdge.move.provided) {
             // We don't want to override provided fields
@@ -689,14 +740,14 @@ export class Graph {
             // for a given progressive override
             value: !fieldWithOverride.move.override.value,
             fromGraphId: null,
-          })
+          });
         }
       }
     }
 
     for (const fieldWithOverride of this.fieldEdgesWithOverride) {
       if (!fieldWithOverride.move.override) {
-        throw new Error('Expected edge.move.override to be defined');
+        throw new Error("Expected edge.move.override to be defined");
       }
 
       const fromGraphId = fieldWithOverride.move.override.fromGraphId;
@@ -704,17 +755,20 @@ export class Graph {
       if (!fromGraphId) {
         // This edge is the source of the override,
         // it should contain the `@override(from:)` argument
-        throw new Error('Expected fromGraphId to be defined');
+        throw new Error("Expected fromGraphId to be defined");
       }
 
       const nodes = this.nodesOf(fieldWithOverride.head.typeName, true);
-      for(const node of nodes) {
+      for (const node of nodes) {
         if (node.graphId !== fromGraphId) {
           // We're not in the right graph
           continue;
         }
 
-        const fieldEdges = this.fieldEdgesOfHead(node, fieldWithOverride.move.fieldName);
+        const fieldEdges = this.fieldEdgesOfHead(
+          node,
+          fieldWithOverride.move.fieldName,
+        );
         for (const fieldEdge of fieldEdges) {
           if (fieldEdge.move.provided) {
             // We don't want to override provided fields
@@ -744,7 +798,12 @@ export class Graph {
     return newNode;
   }
 
-  private replaceEdgeAt(headIndex: number, tailIndex: number, newEdge: Edge, edgeIndex: number) {
+  private replaceEdgeAt(
+    headIndex: number,
+    tailIndex: number,
+    newEdge: Edge,
+    edgeIndex: number,
+  ) {
     this.edgesByHeadTypeIndex[headIndex][edgeIndex] = newEdge;
 
     const newEdgesByTail: Edge[] = [];
@@ -759,18 +818,18 @@ export class Graph {
   }
 
   print(asLink = false) {
-    let str = 'digraph G {';
+    let str = "digraph G {";
 
-    if (this.supergraphState.objectTypes.has('Query')) {
-      str += '\n root -> Query';
+    if (this.supergraphState.objectTypes.has("Query")) {
+      str += "\n root -> Query";
     }
 
-    if (this.supergraphState.objectTypes.has('Mutation')) {
-      str += '\n root -> Mutation';
+    if (this.supergraphState.objectTypes.has("Mutation")) {
+      str += "\n root -> Mutation";
     }
 
-    if (this.supergraphState.objectTypes.has('Subscription')) {
-      str += '\n root -> Subscription';
+    if (this.supergraphState.objectTypes.has("Subscription")) {
+      str += "\n root -> Subscription";
     }
 
     for (const edge of this.edgesByHeadTypeIndex.flat()) {
@@ -778,18 +837,18 @@ export class Graph {
         continue;
       }
 
-      if (edge.head.typeName === 'Query') {
+      if (edge.head.typeName === "Query") {
         str += `\n  "Query" -> "${edge.head}";`;
-      } else if (edge.head.typeName === 'Mutation') {
+      } else if (edge.head.typeName === "Mutation") {
         str += `\n  "Mutation" -> "${edge.head}";`;
-      } else if (edge.head.typeName === 'Subscription') {
+      } else if (edge.head.typeName === "Subscription") {
         str += `\n  "Subscription" -> "${edge.head}";`;
       }
 
       str += `\n  "${edge.head}" -> "${edge.tail}" [label="${edge.move}"];`;
     }
 
-    str += '\n}';
+    str += "\n}";
 
     if (asLink) {
       return `https://dreampuf.github.io/GraphvizOnline/#${encodeURIComponent(str)}`;
@@ -814,14 +873,18 @@ export class Graph {
 
     if (!Array.isArray(indexes)) {
       if (failIfMissing) {
-        throw new Error(`Expected TypeNode(${typeName}) to be inserted first in graph ${this.id}`);
+        throw new Error(
+          `Expected TypeNode(${typeName}) to be inserted first in graph ${this.id}`,
+        );
       }
 
       return undefined;
     }
 
     if (indexes.length > 1) {
-      throw new Error(`Expected only one node for ${typeName} in graph ${this.id}`);
+      throw new Error(
+        `Expected only one node for ${typeName} in graph ${this.id}`,
+      );
     }
 
     return this.nodesByTypeIndex[indexes[0]][0];
@@ -832,7 +895,9 @@ export class Graph {
 
     if (!Array.isArray(indexes)) {
       if (failIfMissing) {
-        throw new Error(`Expected TypeNode(${typeName}) to be inserted first in graph ${this.id}`);
+        throw new Error(
+          `Expected TypeNode(${typeName}) to be inserted first in graph ${this.id}`,
+        );
       }
 
       return [];
@@ -877,7 +942,10 @@ export class Graph {
       }
 
       if (!this._warnedAboutIncorrectEdge) {
-        console.error(`Expected edge to be in the same graph as head (${kind})` + edge.toString());
+        console.error(
+          `Expected edge to be in the same graph as head (${kind})` +
+            edge.toString(),
+        );
         this._warnedAboutIncorrectEdge = true;
       }
     }
@@ -886,14 +954,18 @@ export class Graph {
   }
 
   fieldEdgesOfHead(head: Node, fieldName: string): Edge<FieldMove>[] {
-    return this.getSameGraphEdgesOfIndex(head, head.getFieldEdgeIndexes(fieldName), 'field') as Edge<FieldMove>[]
+    return this.getSameGraphEdgesOfIndex(
+      head,
+      head.getFieldEdgeIndexes(fieldName),
+      "field",
+    ) as Edge<FieldMove>[];
   }
 
   abstractEdgesOfHead(head: Node) {
     return this.getSameGraphEdgesOfIndex(
       head,
       head.getAbstractEdgeIndexes(head.typeName),
-      'abstract',
+      "abstract",
     );
   }
 
@@ -902,32 +974,50 @@ export class Graph {
   }
 
   entityEdgesOfHead(head: Node) {
-    return this.getSameGraphEdgesOfIndex(head, head.getEntityEdgeIndexes(head.typeName), 'entity');
+    return this.getSameGraphEdgesOfIndex(
+      head,
+      head.getEntityEdgeIndexes(head.typeName),
+      "entity",
+    );
   }
 
   indirectEdgesOfHead(head: Node) {
     return this.getSameGraphEdgesOfIndex(
       head,
       head.getCrossGraphEdgeIndexes(head.typeName),
-      'cross-graph',
+      "cross-graph",
     )
       .concat(
-        this.getSameGraphEdgesOfIndex(head, head.getAbstractEdgeIndexes(head.typeName), 'abstract'),
+        this.getSameGraphEdgesOfIndex(
+          head,
+          head.getAbstractEdgeIndexes(head.typeName),
+          "abstract",
+        ),
       )
       .filter((edge, i, all) => all.indexOf(edge) === i);
   }
 
   edgesOfHead(head: Node) {
-    return this.filterEdges(this.edgesByHeadTypeIndex[head.index]?.filter(e => e.head === head)) ?? [];
+    return (
+      this.filterEdges(
+        this.edgesByHeadTypeIndex[head.index]?.filter((e) => e.head === head),
+      ) ?? []
+    );
   }
 
   edgesOfTail(tail: Node) {
-    return this.filterEdges(this.edgesByTailTypeIndex[tail.index]?.filter(e => e.tail === tail)) ?? [];
+    return (
+      this.filterEdges(
+        this.edgesByTailTypeIndex[tail.index]?.filter((e) => e.tail === tail),
+      ) ?? []
+    );
   }
 
   possibleTypesOf(typeName: string) {
     if (this.supergraphState.interfaceTypes.has(typeName)) {
-      return Array.from(this.supergraphState.interfaceTypes.get(typeName)!.implementedBy);
+      return Array.from(
+        this.supergraphState.interfaceTypes.get(typeName)!.implementedBy,
+      );
     }
 
     if (this.supergraphState.unionTypes.has(typeName)) {
@@ -962,12 +1052,12 @@ export class Graph {
     while (queue.length > 0) {
       const typeName = queue.shift();
       if (!typeName) {
-        throw new Error('Unexpected end of queue');
+        throw new Error("Unexpected end of queue");
       }
 
       const typeIndexes = this.getIndexesOfType(typeName);
 
-      if (typeof typeIndexes === 'undefined') {
+      if (typeof typeIndexes === "undefined") {
         throw new Error(`Could not find an index of type: ${typeName}`);
       }
 
@@ -983,15 +1073,21 @@ export class Graph {
 
         for (const childTypeName of children) {
           const childTypeIndexes = this.getIndexesOfType(childTypeName);
-          if (typeof childTypeIndexes === 'undefined') {
+          if (typeof childTypeIndexes === "undefined") {
             throw new Error(`Could not find an index of type: ${typeName}`);
           }
 
           for (const childTypeIndex of childTypeIndexes) {
             if (!visited[childTypeIndex]) {
               visited[childTypeIndex] = true;
-              this.typeChildrenCache.set(`${fromTypeName} -> ${childTypeName}`, true);
-              this.typeChildrenCache.set(`${typeName} -> ${childTypeName}`, true);
+              this.typeChildrenCache.set(
+                `${fromTypeName} -> ${childTypeName}`,
+                true,
+              );
+              this.typeChildrenCache.set(
+                `${typeName} -> ${childTypeName}`,
+                true,
+              );
               queue.push(childTypeName);
             }
           }
@@ -1005,29 +1101,39 @@ export class Graph {
 
   private createNodesAndEdgesForType(typeName: string): Node {
     if (this.supergraphState.objectTypes.has(typeName)) {
-      return this.createNodesAndEdgesForObjectType(this.supergraphState.objectTypes.get(typeName)!);
+      return this.createNodesAndEdgesForObjectType(
+        this.supergraphState.objectTypes.get(typeName)!,
+      );
     }
 
     if (
-      specifiedScalarTypes.some(t => t.name === typeName) ||
+      specifiedScalarTypes.some((t) => t.name === typeName) ||
       this.supergraphState.scalarTypes.has(typeName)
     ) {
       return this.createNodeForScalarType(typeName);
     }
 
     if (this.supergraphState.enumTypes.has(typeName)) {
-      return this.createNodeForEnumType(this.supergraphState.enumTypes.get(typeName)!);
+      return this.createNodeForEnumType(
+        this.supergraphState.enumTypes.get(typeName)!,
+      );
     }
 
     if (this.supergraphState.unionTypes.has(typeName)) {
-      return this.createNodeForUnionType(this.supergraphState.unionTypes.get(typeName)!);
+      return this.createNodeForUnionType(
+        this.supergraphState.unionTypes.get(typeName)!,
+      );
     }
 
     if (this.supergraphState.interfaceTypes.has(typeName)) {
-      return this.createNodeForInterfaceType(this.supergraphState.interfaceTypes.get(typeName)!);
+      return this.createNodeForInterfaceType(
+        this.supergraphState.interfaceTypes.get(typeName)!,
+      );
     }
 
-    throw new Error(`Not implemented path: createNodesAndEdgesForType(${typeName})`);
+    throw new Error(
+      `Not implemented path: createNodesAndEdgesForType(${typeName})`,
+    );
   }
 
   private ensureNonOrSingleNode(typeName: string) {
@@ -1038,7 +1144,9 @@ export class Graph {
     }
 
     if (indexes.length > 1) {
-      throw new Error(`Expected only one node for ${typeName} in graph ${this.id}`);
+      throw new Error(
+        `Expected only one node for ${typeName} in graph ${this.id}`,
+      );
     }
 
     return this.nodesByTypeIndex[indexes[0]][0];
@@ -1067,7 +1175,10 @@ export class Graph {
       return existing;
     }
 
-    return this.createTypeNode(typeName, this.supergraphState.scalarTypes.get(typeName) ?? null);
+    return this.createTypeNode(
+      typeName,
+      this.supergraphState.scalarTypes.get(typeName) ?? null,
+    );
   }
 
   private createNodeForEnumType(typeState: EnumTypeState) {
@@ -1140,7 +1251,10 @@ export class Graph {
     return head;
   }
 
-  private createEdgeForInterfaceTypeField(head: Node, field: InterfaceTypeFieldState) {
+  private createEdgeForInterfaceTypeField(
+    head: Node,
+    field: InterfaceTypeFieldState,
+  ) {
     if (this.ignoreInaccessible && field.inaccessible) {
       return;
     }
@@ -1149,7 +1263,9 @@ export class Graph {
     const tail = this.createNodesAndEdgesForType(outputTypeName);
 
     if (!tail) {
-      throw new Error(`Failed to create Node for ${outputTypeName} in subgraph ${this.id}`);
+      throw new Error(
+        `Failed to create Node for ${outputTypeName} in subgraph ${this.id}`,
+      );
     }
 
     const requires = field.byGraph.get(head.graphId)?.requires;
@@ -1161,15 +1277,22 @@ export class Graph {
         new FieldMove(
           head.typeName,
           field.name,
-          requires ? this.selectionResolver.resolve(head.typeName, requires) : null,
-          provides ? this.selectionResolver.resolve(outputTypeName, provides) : null,
+          requires
+            ? this.selectionResolver.resolve(head.typeName, requires)
+            : null,
+          provides
+            ? this.selectionResolver.resolve(outputTypeName, provides)
+            : null,
         ),
         tail,
       ),
     );
   }
 
-  private createEdgeForObjectTypeField(head: Node, field: ObjectTypeFieldState) {
+  private createEdgeForObjectTypeField(
+    head: Node,
+    field: ObjectTypeFieldState,
+  ) {
     if (this.ignoreInaccessible && field.inaccessible) {
       return;
     }
@@ -1178,7 +1301,8 @@ export class Graph {
       const graphId = Array.from(field.byGraph.keys())[0];
       const isExternal = field.byGraph.get(graphId)?.external === true;
       const isFederationV1 =
-        this.supergraphState.subgraphs.get(graphId)?.federation.version === 'v1.0';
+        this.supergraphState.subgraphs.get(graphId)?.federation.version ===
+        "v1.0";
 
       if (isExternal && isFederationV1) {
         return;
@@ -1189,7 +1313,9 @@ export class Graph {
     const tail = this.createNodesAndEdgesForType(outputTypeName);
 
     if (!tail) {
-      throw new Error(`Failed to create Node for ${outputTypeName} in subgraph ${this.id}`);
+      throw new Error(
+        `Failed to create Node for ${outputTypeName} in subgraph ${this.id}`,
+      );
     }
 
     if (this.isSupergraph()) {
@@ -1198,7 +1324,11 @@ export class Graph {
       // - one for the case when the gateway should override the field
       // - one for the case when it should not
       // This is because we want to allow progressive overrides
-      const edge = new Edge(head, new FieldMove(head.typeName, field.name), tail);
+      const edge = new Edge(
+        head,
+        new FieldMove(head.typeName, field.name),
+        tail,
+      );
       if (field.override && field.overrideLabel) {
         this.superFieldEdgesToApplyOverride.push(edge);
       }
@@ -1218,13 +1348,19 @@ export class Graph {
         new FieldMove(
           head.typeName,
           field.name,
-          requires ? this.selectionResolver.resolve(head.typeName, requires) : null,
-          provides ? this.selectionResolver.resolve(outputTypeName, provides) : null,
-          overrideFromGraphId ? {
-            label: overrideLabel ?? null,
-            value: true,
-            fromGraphId: overrideFromGraphId,
-          } : null
+          requires
+            ? this.selectionResolver.resolve(head.typeName, requires)
+            : null,
+          provides
+            ? this.selectionResolver.resolve(outputTypeName, provides)
+            : null,
+          overrideFromGraphId
+            ? {
+                label: overrideLabel ?? null,
+                value: true,
+                fromGraphId: overrideFromGraphId,
+              }
+            : null,
         ),
         tail,
       ),
@@ -1242,7 +1378,9 @@ export class Graph {
       | null,
   ) {
     if (this.typeNameToNodeIndexes.has(typeName)) {
-      throw new Error(`Node for ${typeName} already exists in subgraph ${this.id}`);
+      throw new Error(
+        `Node for ${typeName} already exists in subgraph ${this.id}`,
+      );
     }
 
     return this.createNode(typeName, typeState, this.id, this.name);
@@ -1299,10 +1437,10 @@ export class Graph {
   }
 
   /**
-  * Removing an edge from the graph is a bit tricky,
-  * because we need to remove it from bunch of indexes.
-  * Let's do a soft delete :)
-  */
+   * Removing an edge from the graph is a bit tricky,
+   * because we need to remove it from bunch of indexes.
+   * Let's do a soft delete :)
+   */
   private ignoreEdge(edge: Edge) {
     edge.setIgnored(true);
   }

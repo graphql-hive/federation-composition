@@ -1,12 +1,16 @@
-import { expect, test } from 'vitest';
-import { graphql, satisfiesVersionRange, testVersions } from '../../shared/testkit.js';
+import { expect, test } from "vitest";
+import {
+  graphql,
+  satisfiesVersionRange,
+  testVersions,
+} from "../../shared/testkit.js";
 
 testVersions((api, version) => {
-  test('KEY_UNSUPPORTED_ON_INTERFACE', () => {
+  test("KEY_UNSUPPORTED_ON_INTERFACE", () => {
     expect(
       api.composeServices([
         {
-          name: 'users',
+          name: "users",
           typeDefs: graphql`
               extend schema @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@key"])
 
@@ -29,7 +33,7 @@ testVersions((api, version) => {
         },
       ]),
     ).toEqual(
-      satisfiesVersionRange('>= v2.3', version)
+      satisfiesVersionRange(">= v2.3", version)
         ? expect.objectContaining({
             supergraphSdl: expect.any(String),
           })
@@ -40,7 +44,7 @@ testVersions((api, version) => {
                   `[users] Cannot use @key on interface "User": @key is not yet supported on interfaces`,
                 ),
                 extensions: expect.objectContaining({
-                  code: 'KEY_UNSUPPORTED_ON_INTERFACE',
+                  code: "KEY_UNSUPPORTED_ON_INTERFACE",
                 }),
               }),
             ]),

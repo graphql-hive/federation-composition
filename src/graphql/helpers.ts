@@ -1,6 +1,13 @@
-import { DocumentNode, Kind, type DefinitionNode, type DirectiveDefinitionNode } from 'graphql';
+import {
+  DocumentNode,
+  Kind,
+  type DefinitionNode,
+  type DirectiveDefinitionNode,
+} from "graphql";
 
-export function isDirectiveDefinition(node: DefinitionNode): node is DirectiveDefinitionNode {
+export function isDirectiveDefinition(
+  node: DefinitionNode,
+): node is DirectiveDefinitionNode {
   return node.kind === Kind.DIRECTIVE_DEFINITION;
 }
 
@@ -12,7 +19,9 @@ const kindOrderWeightMap: {
   [Kind.DIRECTIVE_DEFINITION]: 2,
 };
 
-export function moveSchemaAndDirectiveDefinitionsToTop(ast: DocumentNode): DocumentNode {
+export function moveSchemaAndDirectiveDefinitionsToTop(
+  ast: DocumentNode,
+): DocumentNode {
   return {
     kind: Kind.DOCUMENT,
     definitions: ast.definitions.slice().sort((a, b) => {

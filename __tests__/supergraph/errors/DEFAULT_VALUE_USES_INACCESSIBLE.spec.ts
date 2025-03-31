@@ -1,12 +1,12 @@
-import { expect, test } from 'vitest';
-import { graphql, testVersions } from '../../shared/testkit.js';
+import { expect, test } from "vitest";
+import { graphql, testVersions } from "../../shared/testkit.js";
 
 testVersions((api, version) => {
-  test('DEFAULT_VALUE_USES_INACCESSIBLE', () => {
+  test("DEFAULT_VALUE_USES_INACCESSIBLE", () => {
     expect(
       api.composeServices([
         {
-          name: 'users',
+          name: "users",
           typeDefs: graphql`
             extend schema
               @link(
@@ -38,7 +38,7 @@ testVersions((api, version) => {
               `Enum value "FriendType.FAMILY" is @inaccessible but is used in the default value of "User.friends(type:)", which is in the API schema.`,
             ),
             extensions: expect.objectContaining({
-              code: 'DEFAULT_VALUE_USES_INACCESSIBLE',
+              code: "DEFAULT_VALUE_USES_INACCESSIBLE",
             }),
           }),
         ]),
@@ -48,7 +48,7 @@ testVersions((api, version) => {
     expect(
       api.composeServices([
         {
-          name: 'users',
+          name: "users",
           typeDefs: graphql`
           extend schema
             @link(
@@ -77,7 +77,7 @@ testVersions((api, version) => {
     expect(
       api.composeServices([
         {
-          name: 'users',
+          name: "users",
           typeDefs: graphql`
             extend schema
               @link(
@@ -105,7 +105,7 @@ testVersions((api, version) => {
     expect(
       api.composeServices([
         {
-          name: 'users',
+          name: "users",
           typeDefs: graphql`
             extend schema
               @link(

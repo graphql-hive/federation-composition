@@ -1,12 +1,12 @@
-import { expect, test } from 'vitest';
-import { graphql, testVersions } from '../../shared/testkit.js';
+import { expect, test } from "vitest";
+import { graphql, testVersions } from "../../shared/testkit.js";
 
 testVersions((api, version) => {
-  test('PROVIDES_UNSUPPORTED_ON_INTERFACE', () => {
+  test("PROVIDES_UNSUPPORTED_ON_INTERFACE", () => {
     expect(
       api.composeServices([
         {
-          name: 'users',
+          name: "users",
           typeDefs: graphql`
             extend schema
               @link(
@@ -44,7 +44,7 @@ testVersions((api, version) => {
               `[users] Cannot use @provides on field "User.profile" of parent type "User": @provides is not yet supported within interfaces`,
             ),
             extensions: expect.objectContaining({
-              code: 'PROVIDES_UNSUPPORTED_ON_INTERFACE',
+              code: "PROVIDES_UNSUPPORTED_ON_INTERFACE",
             }),
           }),
         ]),

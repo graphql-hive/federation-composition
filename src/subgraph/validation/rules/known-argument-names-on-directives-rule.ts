@@ -1,4 +1,4 @@
-import { ASTVisitor, DocumentNode, GraphQLError, Kind } from 'graphql';
+import { ASTVisitor, DocumentNode, GraphQLError, Kind } from "graphql";
 
 export function KnownArgumentNamesOnDirectivesRule(context: {
   reportError: (error: GraphQLError) => void;
@@ -11,7 +11,10 @@ export function KnownArgumentNamesOnDirectivesRule(context: {
     if (def.kind === Kind.DIRECTIVE_DEFINITION) {
       const argsNodes = def.arguments ?? [];
 
-      directiveArgs.set(def.name.value, new Set(argsNodes.map(arg => arg.name.value)));
+      directiveArgs.set(
+        def.name.value,
+        new Set(argsNodes.map((arg) => arg.name.value)),
+      );
     }
   }
 
@@ -25,12 +28,15 @@ export function KnownArgumentNamesOnDirectivesRule(context: {
           const argName = argNode.name.value;
           if (!knownArgs.has(argName)) {
             context.reportError(
-              new GraphQLError(`Unknown argument "${argName}" on directive "@${directiveName}".`, {
-                nodes: argNode,
-                extensions: {
-                  code: 'INVALID_GRAPHQL',
+              new GraphQLError(
+                `Unknown argument "${argName}" on directive "@${directiveName}".`,
+                {
+                  nodes: argNode,
+                  extensions: {
+                    code: "INVALID_GRAPHQL",
+                  },
                 },
-              }),
+              ),
             );
           }
         }

@@ -141,8 +141,8 @@ export class DepGraph<T> {
       delete this.nodes[name];
       delete this.outgoingEdges[name];
       delete this.incomingEdges[name];
-      [this.incomingEdges, this.outgoingEdges].forEach(edgeList => {
-        Object.keys(edgeList).forEach(key => {
+      [this.incomingEdges, this.outgoingEdges].forEach((edgeList) => {
+        Object.keys(edgeList).forEach((key) => {
           const idx = edgeList[key].indexOf(name);
           if (idx >= 0) {
             edgeList[key].splice(idx, 1);
@@ -164,7 +164,7 @@ export class DepGraph<T> {
     if (this.hasNode(name)) {
       return this.nodes[name];
     } else {
-      throw new Error('Node does not exist: ' + name);
+      throw new Error("Node does not exist: " + name);
     }
   }
   /**
@@ -174,7 +174,7 @@ export class DepGraph<T> {
     if (this.hasNode(name)) {
       this.nodes[name] = data;
     } else {
-      throw new Error('Node does not exist: ' + name);
+      throw new Error("Node does not exist: " + name);
     }
   }
   /**
@@ -183,10 +183,10 @@ export class DepGraph<T> {
    */
   addDependency(from: string, to: string) {
     if (!this.hasNode(from)) {
-      throw new Error('Node does not exist: ' + from);
+      throw new Error("Node does not exist: " + from);
     }
     if (!this.hasNode(to)) {
-      throw new Error('Node does not exist: ' + to);
+      throw new Error("Node does not exist: " + to);
     }
     if (this.outgoingEdges[from].indexOf(to) === -1) {
       this.outgoingEdges[from].push(to);
@@ -224,7 +224,7 @@ export class DepGraph<T> {
     if (this.hasNode(name)) {
       return this.outgoingEdges[name].slice(0);
     } else {
-      throw new Error('Node does not exist: ' + name);
+      throw new Error("Node does not exist: " + name);
     }
   }
   /**
@@ -236,7 +236,7 @@ export class DepGraph<T> {
     if (this.hasNode(name)) {
       return this.incomingEdges[name].slice(0);
     } else {
-      throw new Error('Node does not exist: ' + name);
+      throw new Error("Node does not exist: " + name);
     }
   }
   /**
@@ -250,7 +250,12 @@ export class DepGraph<T> {
   dependenciesOf(name: string, leavesOnly?: boolean) {
     if (this.hasNode(name)) {
       const result: string[] = [];
-      const DFS = createDFS(this.outgoingEdges, leavesOnly, result, this.circular);
+      const DFS = createDFS(
+        this.outgoingEdges,
+        leavesOnly,
+        result,
+        this.circular,
+      );
       DFS(name);
       const idx = result.indexOf(name);
       if (idx >= 0) {
@@ -258,7 +263,7 @@ export class DepGraph<T> {
       }
       return result;
     } else {
-      throw new Error('Node does not exist: ' + name);
+      throw new Error("Node does not exist: " + name);
     }
   }
   /**
@@ -271,7 +276,12 @@ export class DepGraph<T> {
   dependantsOf(name: string, leavesOnly?: boolean) {
     if (this.hasNode(name)) {
       const result: string[] = [];
-      const DFS = createDFS(this.incomingEdges, leavesOnly, result, this.circular);
+      const DFS = createDFS(
+        this.incomingEdges,
+        leavesOnly,
+        result,
+        this.circular,
+      );
       DFS(name);
       const idx = result.indexOf(name);
       if (idx >= 0) {
@@ -279,7 +289,7 @@ export class DepGraph<T> {
       }
       return result;
     } else {
-      throw new Error('Node does not exist: ' + name);
+      throw new Error("Node does not exist: " + name);
     }
   }
   /**
@@ -298,18 +308,28 @@ export class DepGraph<T> {
       if (!this.circular) {
         // Look for cycles - we run the DFS starting at all the nodes in case there
         // are several disconnected subgraphs inside this dependency graph.
-        const CycleDFS = createDFS(this.outgoingEdges, false, [], this.circular);
+        const CycleDFS = createDFS(
+          this.outgoingEdges,
+          false,
+          [],
+          this.circular,
+        );
         keys.forEach(function (n) {
           CycleDFS(n);
         });
       }
 
-      const DFS = createDFS(this.outgoingEdges, leavesOnly, result, this.circular);
+      const DFS = createDFS(
+        this.outgoingEdges,
+        leavesOnly,
+        result,
+        this.circular,
+      );
       // Find all potential starting points (nodes with nothing depending on them) an
       // run a DFS starting at these points to get the order
       keys
-        .filter(node => this.incomingEdges[node].length === 0)
-        .forEach(n => {
+        .filter((node) => this.incomingEdges[node].length === 0)
+        .forEach((n) => {
           DFS(n);
         });
 
@@ -318,7 +338,7 @@ export class DepGraph<T> {
       // subgraph that does not have a clear starting point)
       if (this.circular) {
         keys
-          .filter(node => result.indexOf(node) === -1)
+          .filter((node) => result.indexOf(node) === -1)
           .forEach(function (n) {
             DFS(n);
           });
@@ -331,7 +351,9 @@ export class DepGraph<T> {
    * Get an array of nodes that have no dependants (i.e. nothing depends on them).
    */
   entryNodes() {
-    return Object.keys(this.nodes).filter(node => this.incomingEdges[node].length === 0);
+    return Object.keys(this.nodes).filter(
+      (node) => this.incomingEdges[node].length === 0,
+    );
   }
 
   // Create some aliases
@@ -344,6 +366,6 @@ export class DepGraph<T> {
  */
 export class DepGraphCycleError extends Error {
   constructor(public cyclePath: string[]) {
-    super('Dependency Cycle Found: ' + cyclePath.join(' -> '));
+    super("Dependency Cycle Found: " + cyclePath.join(" -> "));
   }
 }
