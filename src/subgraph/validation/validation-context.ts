@@ -13,36 +13,51 @@ import {
   specifiedScalarTypes,
   TypeDefinitionNode,
   TypeExtensionNode,
-} from 'graphql';
-import { TypeNodeInfo } from '../../graphql/type-node-info.js';
-import { createSpecSchema, FederationVersion } from '../../specifications/federation.js';
-import { LinkImport, sdl as linkSpecSdl } from '../../specifications/link.js';
-import { stripTypeModifiers } from '../../utils/state.js';
-import { satisfiesVersionRange } from '../../utils/version.js';
-import { TypeKind, type SubgraphStateBuilder } from '../state.js';
+} from "graphql";
+import { TypeNodeInfo } from "../../graphql/type-node-info.js";
+import {
+  createSpecSchema,
+  FederationVersion,
+} from "../../specifications/federation.js";
+import { LinkImport, sdl as linkSpecSdl } from "../../specifications/link.js";
+import { stripTypeModifiers } from "../../utils/state.js";
+import { satisfiesVersionRange } from "../../utils/version.js";
+import { TypeKind, type SubgraphStateBuilder } from "../state.js";
 
 const linkSpec = parse(linkSpecSdl);
 const linkSpecDirectives = linkSpec.definitions.filter(
-  (def): def is DirectiveDefinitionNode => def.kind === Kind.DIRECTIVE_DEFINITION,
+  (def): def is DirectiveDefinitionNode =>
+    def.kind === Kind.DIRECTIVE_DEFINITION,
 );
 const linkSpecTypes = linkSpec.definitions.filter(isTypeDefinitionNode);
 
-export type SubgraphValidationContext = ReturnType<typeof createSubgraphValidationContext>;
-export type SimpleValidationContext = ReturnType<typeof createSimpleValidationContext>;
+export type SubgraphValidationContext = ReturnType<
+  typeof createSubgraphValidationContext
+>;
+export type SimpleValidationContext = ReturnType<
+  typeof createSimpleValidationContext
+>;
 
-export function createSimpleValidationContext(typeDefs: DocumentNode, typeNodeInfo: TypeNodeInfo) {
+export function createSimpleValidationContext(
+  typeDefs: DocumentNode,
+  typeNodeInfo: TypeNodeInfo,
+) {
   let reportedErrors: GraphQLError[] = [];
 
   const directiveDefinitionMap = new Map<string, DirectiveDefinitionNode>();
   const typeDefinitionMap = new Map<
     string,
-    Pick<TypeDefinitionNode | TypeExtensionNode, 'name' | 'kind'>
+    Pick<TypeDefinitionNode | TypeExtensionNode, "name" | "kind">
   >();
 
   for (const definition of typeDefs.definitions) {
     if (definition.kind === Kind.DIRECTIVE_DEFINITION) {
       directiveDefinitionMap.set(definition.name.value, definition);
-    } else if ('name' in definition && definition.name && definition.name.kind === Kind.NAME) {
+    } else if (
+      "name" in definition &&
+      definition.name &&
+      definition.name.kind === Kind.NAME
+    ) {
       // TODO: What if we have a type extension (or many) and a type definition with the same name?
       typeDefinitionMap.set(definition.name.value, {
         name: definition.name,
@@ -62,19 +77,20 @@ export function createSimpleValidationContext(typeDefs: DocumentNode, typeNodeIn
       return typeDefinitionMap.get(name);
     },
     getSchemaCoordinate(ancestors: readonly (ASTNode | readonly ASTNode[])[]) {
-      let coordinate = '';
+      let coordinate = "";
       for (let i = 0; i < ancestors.length; i++) {
         const ancestor = ancestors[i];
 
-        if ('kind' in ancestor && ancestor.kind !== Kind.DOCUMENT) {
+        if ("kind" in ancestor && ancestor.kind !== Kind.DOCUMENT) {
           const name =
-            ancestor.kind === Kind.SCHEMA_DEFINITION || ancestor.kind === Kind.SCHEMA_EXTENSION
-              ? 'schema'
-              : 'name' in ancestor && ancestor.name
+            ancestor.kind === Kind.SCHEMA_DEFINITION ||
+            ancestor.kind === Kind.SCHEMA_EXTENSION
+              ? "schema"
+              : "name" in ancestor && ancestor.name
                 ? ancestor.name.value
-                : '';
+                : "";
           if (coordinate.length > 0) {
-            coordinate = coordinate + '.' + name;
+            coordinate = coordinate + "." + name;
           } else {
             coordinate = name;
           }
@@ -124,19 +140,41 @@ export function createSubgraphValidationContext(
     | InterfaceTypeExtensionNode
   >();
 
-  //
-  for (const def of subgraph.typeDefs.definitions.filter(
-    def =>
-      def.kind === Kind.OBJECT_TYPE_DEFINITION ||
-      def.kind === Kind.OBJECT_TYPE_EXTENSION ||
-      def.kind === Kind.INTERFACE_TYPE_DEFINITION ||
-      def.kind === Kind.INTERFACE_TYPE_EXTENSION,
-  ) as Array<
+  const typenameToKind = new Map<
+    string,
+    TypeKind.OBJECT | TypeKind.INTERFACE
+  >();
+
+  const objectOrInterfaceKinds = [
+    Kind.OBJECT_TYPE_DEFINITION,
+    Kind.OBJECT_TYPE_EXTENSION,
+    Kind.INTERFACE_TYPE_DEFINITION,
+    Kind.INTERFACE_TYPE_EXTENSION,
+  ];
+
+  function isObjectOrInterfaceNode(
+    node: ASTNode,
+  ): node is
     | ObjectTypeDefinitionNode
     | ObjectTypeExtensionNode
     | InterfaceTypeDefinitionNode
-    | InterfaceTypeExtensionNode
-  >) {
+    | InterfaceTypeExtensionNode {
+    return objectOrInterfaceKinds.includes(node.kind);
+  }
+
+  for (const def of subgraph.typeDefs.definitions) {
+    if (!isObjectOrInterfaceNode(def)) {
+      continue;
+    }
+
+    typenameToKind.set(
+      def.name.value,
+      def.kind === Kind.OBJECT_TYPE_DEFINITION ||
+        def.kind === Kind.OBJECT_TYPE_EXTENSION
+        ? TypeKind.OBJECT
+        : TypeKind.INTERFACE,
+    );
+
     const found = knownSubgraphEntities.get(def.name.value);
 
     if (!found) {
@@ -145,10 +183,17 @@ export function createSubgraphValidationContext(
     }
 
     (found as any).fields = (found.fields ?? []).concat(def.fields ?? []);
-    (found as any).interfaces = (found.interfaces ?? []).concat(def.interfaces ?? []);
-    (found as any).directives = (found.directives ?? []).concat(def.directives ?? []);
+    (found as any).interfaces = (found.interfaces ?? []).concat(
+      def.interfaces ?? [],
+    );
+    (found as any).directives = (found.directives ?? []).concat(
+      def.directives ?? [],
+    );
 
-    if (def.kind === Kind.OBJECT_TYPE_DEFINITION && found.kind === Kind.OBJECT_TYPE_EXTENSION) {
+    if (
+      def.kind === Kind.OBJECT_TYPE_DEFINITION &&
+      found.kind === Kind.OBJECT_TYPE_EXTENSION
+    ) {
       (found as any).kind = Kind.OBJECT_TYPE_DEFINITION;
     } else if (
       def.kind === Kind.INTERFACE_TYPE_DEFINITION &&
@@ -162,12 +207,14 @@ export function createSubgraphValidationContext(
   const knownSubgraphDirectiveDefinitions = new Map(
     (
       subgraph.typeDefs.definitions.filter(
-        def => def.kind === Kind.DIRECTIVE_DEFINITION,
+        (def) => def.kind === Kind.DIRECTIVE_DEFINITION,
       ) as DirectiveDefinitionNode[]
-    ).map(def => [def.name.value, def]),
+    ).map((def) => [def.name.value, def]),
   );
 
-  const leafTypeNames = new Set<string>(specifiedScalarTypes.map(type => type.name));
+  const leafTypeNames = new Set<string>(
+    specifiedScalarTypes.map((type) => type.name),
+  );
 
   for (const def of subgraph.typeDefs.definitions) {
     if (
@@ -198,31 +245,44 @@ export function createSubgraphValidationContext(
   // That's why we need this map, to take the normalized name and find the available one.
   const directiveAlternativeNamesMap = new Map<string, Set<string>>();
   for (const specDirective of availableSpec.directives) {
-    const isFederationPrefixed = specDirective.name.value.startsWith('federation__');
+    const isFederationPrefixed =
+      specDirective.name.value.startsWith("federation__");
 
     if (isFederationPrefixed) {
-      const normalizedName = specDirective.name.value.replace('federation__', '');
+      const normalizedName = specDirective.name.value.replace(
+        "federation__",
+        "",
+      );
       const setOfNames = directiveAlternativeNamesMap.get(normalizedName);
 
       if (!setOfNames) {
-        directiveAlternativeNamesMap.set(normalizedName, new Set([specDirective.name.value]));
+        directiveAlternativeNamesMap.set(
+          normalizedName,
+          new Set([specDirective.name.value]),
+        );
       }
     } else {
       // TODO: get rid of `@` prefix in directive names of link.imports
       const { alias } = imports.find(
-        i => i.name.replace(/^@/, '') === specDirective.name.value,
+        (i) => i.name.replace(/^@/, "") === specDirective.name.value,
       ) ?? {
         alias: undefined,
       };
 
-      let setOfNames = directiveAlternativeNamesMap.get(specDirective.name.value);
+      let setOfNames = directiveAlternativeNamesMap.get(
+        specDirective.name.value,
+      );
 
       if (!setOfNames) {
         directiveAlternativeNamesMap.set(specDirective.name.value, new Set());
-        setOfNames = directiveAlternativeNamesMap.get(specDirective.name.value)!;
+        setOfNames = directiveAlternativeNamesMap.get(
+          specDirective.name.value,
+        )!;
       }
 
-      setOfNames.add(alias ? alias.replace(/^@/, '') : specDirective.name.value);
+      setOfNames.add(
+        alias ? alias.replace(/^@/, "") : specDirective.name.value,
+      );
       setOfNames.add(`federation__${specDirective.name.value}`);
     }
   }
@@ -230,17 +290,20 @@ export function createSubgraphValidationContext(
   // Same story as in `directiveAlternativeNamesMap`.
   const typeAlternativeNamesMap = new Map<string, Set<string>>();
   for (const specType of availableSpec.types) {
-    const isFederationPrefixed = specType.name.value.startsWith('federation__');
+    const isFederationPrefixed = specType.name.value.startsWith("federation__");
 
     if (isFederationPrefixed) {
-      const normalizedName = specType.name.value.replace('federation__', '');
+      const normalizedName = specType.name.value.replace("federation__", "");
       const setOfNames = typeAlternativeNamesMap.get(normalizedName);
 
       if (!setOfNames) {
-        typeAlternativeNamesMap.set(normalizedName, new Set([specType.name.value]));
+        typeAlternativeNamesMap.set(
+          normalizedName,
+          new Set([specType.name.value]),
+        );
       }
     } else {
-      const { alias } = imports.find(i => i.name === specType.name.value) ?? {
+      const { alias } = imports.find((i) => i.name === specType.name.value) ?? {
         alias: undefined,
       };
 
@@ -256,10 +319,12 @@ export function createSubgraphValidationContext(
     }
   }
 
-  const importedTypesSet = new Set(availableSpec.types.map(t => t.name.value));
+  const importedTypesSet = new Set(
+    availableSpec.types.map((t) => t.name.value),
+  );
   if (importedTypesSet.size) {
-    subgraph.typeDefs.definitions.forEach(def => {
-      if ('name' in def && def.name && importedTypesSet.has(def.name.value)) {
+    subgraph.typeDefs.definitions.forEach((def) => {
+      if ("name" in def && def.name && importedTypesSet.has(def.name.value)) {
         overwrittenFederationDefinitionNames.add(def.name.value);
       }
     });
@@ -269,10 +334,10 @@ export function createSubgraphValidationContext(
     stateBuilder,
     federationImports: imports,
     isLinkSpecDirective(name: string) {
-      return linkSpecDirectives.some(d => d.name.value === name);
+      return linkSpecDirectives.some((d) => d.name.value === name);
     },
     isLinkSpecType(name: string) {
-      return linkSpecTypes.some(t => t.name.value === name);
+      return linkSpecTypes.some((t) => t.name.value === name);
     },
     /**
      * Check if a type is available to the subgraph (either imported directly or available out of the box).
@@ -299,17 +364,20 @@ export function createSubgraphValidationContext(
           | string;
       },
     ) {
-      const alternativeNames = directiveAlternativeNamesMap.get(specDirectiveName);
+      const alternativeNames =
+        directiveAlternativeNamesMap.get(specDirectiveName);
 
       if (alternativeNames) {
         return alternativeNames.has(
-          typeof directiveNode.name === 'string' ? directiveNode.name : directiveNode.name.value,
+          typeof directiveNode.name === "string"
+            ? directiveNode.name
+            : directiveNode.name.value,
         );
       }
 
       return false;
     },
-    satisfiesVersionRange(range: `${'<' | '>=' | '>'} ${FederationVersion}`) {
+    satisfiesVersionRange(range: `${"<" | ">=" | ">"} ${FederationVersion}`) {
       return satisfiesVersionRange(version, range);
     },
     /**
@@ -345,17 +413,19 @@ export function createSubgraphValidationContext(
      */
     getAvailableFederationTypeAndDirectiveDefinitions() {
       return ([] as Array<TypeDefinitionNode | DirectiveDefinitionNode>).concat(
-        availableSpec.directives.map(d => {
-          const alias = imports.find(i => i.name.replace(/^@/, '') === d.name.value)?.alias;
+        availableSpec.directives.map((d) => {
+          const alias = imports.find(
+            (i) => i.name.replace(/^@/, "") === d.name.value,
+          )?.alias;
 
           if (alias) {
-            (d.name as any).value = alias.replace(/^@/, '');
+            (d.name as any).value = alias.replace(/^@/, "");
           }
 
           return d;
         }),
-        availableSpec.types.map(t => {
-          const alias = imports.find(i => i.name === t.name.value)?.alias;
+        availableSpec.types.map((t) => {
+          const alias = imports.find((i) => i.name === t.name.value)?.alias;
 
           if (alias) {
             (t.name as any).value = alias;
@@ -378,8 +448,24 @@ export function createSubgraphValidationContext(
     markAsExternal(coordinate: string) {
       markedAsExternal.add(coordinate);
     },
+    getFieldsToMarkAsShareable() {
+      const shareableFields: Array<{
+        typeName: string;
+        fieldName: string;
+      }> = [];
+
+      for (const coordinate of markedAsKeyField) {
+        const [typeName, fieldName] = coordinate.split(".");
+
+        if (typenameToKind.get(typeName) === TypeKind.OBJECT) {
+          shareableFields.push({ typeName, fieldName });
+        }
+      }
+
+      return shareableFields;
+    },
     markAsUsed(
-      reason: 'fields' | '@extends' | 'references @shareable',
+      reason: "fields" | "@extends" | "references @shareable",
       kind:
         | Kind.OBJECT_TYPE_DEFINITION
         | Kind.INTERFACE_TYPE_DEFINITION
@@ -388,7 +474,11 @@ export function createSubgraphValidationContext(
       typeName: string,
       fieldName: string,
     ) {
-      if (!fieldName.startsWith('__') && !typeName.startsWith('__') && reason === 'fields') {
+      if (
+        !fieldName.startsWith("__") &&
+        !typeName.startsWith("__") &&
+        reason === "fields"
+      ) {
         switch (kind) {
           case Kind.OBJECT_TYPE_DEFINITION:
           case Kind.OBJECT_TYPE_EXTENSION: {
@@ -408,6 +498,7 @@ export function createSubgraphValidationContext(
     markAsKeyField(coordinate: string) {
       markedAsKeyField.add(coordinate);
     },
+
     /**
      * Let the system know that there's a correct replacement of a Federation's directive or scalar.
      * Subgraph can define its own @key directive or any other Federation v2 bit.
@@ -422,16 +513,18 @@ export function createSubgraphValidationContext(
       return overwrittenFederationDefinitionNames;
     },
     collectUnusedExternal() {
-      if (version === 'v1.0') {
+      if (version === "v1.0") {
         return Array.from(markedAsExternal).filter(
-          c => !markedAsUsed.has(c) && markedAsKeyField.has(c),
+          (c) => !markedAsUsed.has(c) && markedAsKeyField.has(c),
         );
       }
 
-      const unused = Array.from(markedAsExternal).filter(c => !markedAsUsed.has(c));
+      const unused = Array.from(markedAsExternal).filter(
+        (c) => !markedAsUsed.has(c),
+      );
 
-      return unused.filter(coordinate => {
-        const [typeName, fieldName] = coordinate.split('.');
+      return unused.filter((coordinate) => {
+        const [typeName, fieldName] = coordinate.split(".");
 
         const typeDef = stateBuilder.state.types.get(typeName);
 
@@ -439,7 +532,10 @@ export function createSubgraphValidationContext(
           return true;
         }
 
-        if (typeDef.kind === TypeKind.OBJECT && !stateBuilder.isInterfaceObject(typeName)) {
+        if (
+          typeDef.kind === TypeKind.OBJECT &&
+          !stateBuilder.isInterfaceObject(typeName)
+        ) {
           const fieldDef = typeDef.fields.get(fieldName);
 
           if (fieldDef) {
@@ -459,7 +555,10 @@ export function createSubgraphValidationContext(
               continue;
             }
 
-            if (iDef.kind === TypeKind.INTERFACE && iDef.fields.has(fieldName)) {
+            if (
+              iDef.kind === TypeKind.INTERFACE &&
+              iDef.fields.has(fieldName)
+            ) {
               if (iDef.fields.has(fieldName)) {
                 return false;
               }

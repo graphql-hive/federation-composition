@@ -1,11 +1,15 @@
 import { bench, group, run } from 'mitata';
 import { composeServices as apolloComposeServices } from '@apollo/composition';
-import { getSubgraphs } from './__tests__/fixtures/huge-schema/index.js';
+import { getSubgraphs as huge } from './__tests__/fixtures/huge-schema/index.js';
+import { getSubgraphs as dgs } from './__tests__/fixtures/dgs/index.js';
+import {createStarsStuff} from './__tests__/fixtures/stars-stuff.js'
 import { graphql } from './__tests__/shared/utils.js';
 import {
   assertCompositionSuccess,
   composeServices as guildComposeServices,
 } from './src/compose.js';
+
+const starsStuff = Object.values(createStarsStuff());
 
 const basicServices = [
   {
@@ -45,7 +49,8 @@ const basicServices = [
   },
 ];
 
-const hugeSchema = await getSubgraphs();
+const hugeSchema = await huge();
+const mediumSchema = await dgs();
 
 group('basic schema', () => {
   bench('apollo', () => {
@@ -56,6 +61,26 @@ group('basic schema', () => {
     assertCompositionSuccess(guildComposeServices(basicServices));
   }).gc('inner');
 });
+
+group('starsStuff schema', () => {
+  bench('apollo', () => {
+    assertCompositionSuccess(apolloComposeServices(starsStuff));
+  }).gc('inner');
+
+  bench('guild', () => {
+    assertCompositionSuccess(guildComposeServices(starsStuff));
+  }).gc('inner');
+});
+
+group('medium schema', () => {
+  bench('apollo', () => {
+    assertCompositionSuccess(apolloComposeServices(mediumSchema));
+  }).gc('inner');
+
+  bench('guild', () => {
+    assertCompositionSuccess(guildComposeServices(mediumSchema));
+  }).gc('inner');
+})
 
 group('huge schema', () => {
   bench('apollo', () => {

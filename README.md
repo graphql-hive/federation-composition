@@ -12,8 +12,8 @@ Supports all Federation versions. Drop-in replacement for `@apollo/composition`.
 - produces Supergraph SDL (can be used with Apollo Router and every tool that supports Supergraph
   SDL)
 - does not support Hints
-- 5x faster when composing and validating small to medium schemas (a bit slower for huge schemas)
-- 2x less memory usage
+- 3-4x faster
+- up to 2x less memory usage
 
 ## Installation
 

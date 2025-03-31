@@ -47,7 +47,7 @@
     "graphql-federation"
   ],
   "scripts": {
-    "bench": "tsx --expose-gc ./benchmark.ts",
+    "bench": "NODE_ENV=production tsx --expose-gc ./benchmark.ts",
     "build": "rimraf dist && bob build && bob check",
     "compose": "tsx --expose-gc ./compose.ts",
     "compose:apollo": "pnpm compose apollo",

@@ -5,23 +5,23 @@ import {
   Kind,
   SelectionSetNode,
   StringValueNode,
-} from 'graphql';
-import { print } from '../../../../graphql/printer.js';
+} from "graphql";
+import { print } from "../../../../graphql/printer.js";
 import {
   getFieldsArgument,
   parseFields,
   validateDirectiveAgainstOriginal,
   visitFields,
-} from '../../../helpers.js';
-import type { SubgraphValidationContext } from '../../validation-context.js';
+} from "../../../helpers.js";
+import type { SubgraphValidationContext } from "../../validation-context.js";
 
 export function KeyRules(context: SubgraphValidationContext): ASTVisitor {
   return {
     DirectiveDefinition(node) {
-      validateDirectiveAgainstOriginal(node, 'key', context);
+      validateDirectiveAgainstOriginal(node, "key", context);
     },
     Directive(directiveNode) {
-      if (!context.isAvailableFederationDirective('key', directiveNode)) {
+      if (!context.isAvailableFederationDirective("key", directiveNode)) {
         return;
       }
 
@@ -36,11 +36,13 @@ export function KeyRules(context: SubgraphValidationContext): ASTVisitor {
       const typeCoordinate = typeDef.name.value;
 
       const usedOnObject =
-        typeDef.kind === Kind.OBJECT_TYPE_DEFINITION || typeDef.kind === Kind.OBJECT_TYPE_EXTENSION;
+        typeDef.kind === Kind.OBJECT_TYPE_DEFINITION ||
+        typeDef.kind === Kind.OBJECT_TYPE_EXTENSION;
       const usedOnInterface =
         typeDef.kind === Kind.INTERFACE_TYPE_DEFINITION ||
         typeDef.kind === Kind.INTERFACE_TYPE_EXTENSION ||
-        (usedOnObject && context.stateBuilder.isInterfaceObject(typeDef.name.value));
+        (usedOnObject &&
+          context.stateBuilder.isInterfaceObject(typeDef.name.value));
 
       if (!usedOnObject && !usedOnInterface) {
         return; // Let regular validation handle this
@@ -48,15 +50,15 @@ export function KeyRules(context: SubgraphValidationContext): ASTVisitor {
 
       if (
         usedOnInterface &&
-        context.satisfiesVersionRange('> v1.0') &&
-        context.satisfiesVersionRange('< v2.3')
+        context.satisfiesVersionRange("> v1.0") &&
+        context.satisfiesVersionRange("< v2.3")
       ) {
         context.reportError(
           new GraphQLError(
             `Cannot use @key on interface "${typeCoordinate}": @key is not yet supported on interfaces`,
             {
               nodes: directiveNode,
-              extensions: { code: 'KEY_UNSUPPORTED_ON_INTERFACE' },
+              extensions: { code: "KEY_UNSUPPORTED_ON_INTERFACE" },
             },
           ),
         );
@@ -75,8 +77,8 @@ export function KeyRules(context: SubgraphValidationContext): ASTVisitor {
         // In Federation v1, a string ["id", "name"] is equal to "id name" (that is not true for Federation v2)
         const isListWithStrings =
           fieldsArg.value.kind === Kind.LIST &&
-          fieldsArg.value.values.every(value => value.kind === Kind.STRING);
-        if (context.satisfiesVersionRange('> v1.0') || !isListWithStrings) {
+          fieldsArg.value.values.every((value) => value.kind === Kind.STRING);
+        if (context.satisfiesVersionRange("> v1.0") || !isListWithStrings) {
           // V2
           context.reportError(
             new GraphQLError(
@@ -84,7 +86,7 @@ export function KeyRules(context: SubgraphValidationContext): ASTVisitor {
               {
                 nodes: directiveNode,
                 extensions: {
-                  code: 'KEY_INVALID_FIELDS_TYPE',
+                  code: "KEY_INVALID_FIELDS_TYPE",
                 },
               },
             ),
@@ -100,20 +102,22 @@ export function KeyRules(context: SubgraphValidationContext): ASTVisitor {
           : ({
               kind: Kind.STRING,
               value: fieldsArg.value.values
-                .map(v => {
+                .map((v) => {
                   if (v.kind !== Kind.STRING) {
                     // We checked if it's a string before, it should be at this point
-                    throw new Error('Expected fields argument value to be a string');
+                    throw new Error(
+                      "Expected fields argument value to be a string",
+                    );
                   }
 
                   return v.value;
                 })
-                .join(' '),
+                .join(" "),
             } satisfies StringValueNode);
 
       if (normalizedFieldsArgValue.kind !== Kind.STRING) {
         // We checked if it's a string before, it should be at this point
-        throw new Error('Expected fields argument value to be a string');
+        throw new Error("Expected fields argument value to be a string");
       }
 
       try {
@@ -126,7 +130,7 @@ export function KeyRules(context: SubgraphValidationContext): ASTVisitor {
               {
                 nodes: directiveNode,
                 extensions: {
-                  code: 'KEY_INVALID_FIELDS',
+                  code: "KEY_INVALID_FIELDS",
                 },
               },
             ),
@@ -142,13 +146,16 @@ export function KeyRules(context: SubgraphValidationContext): ASTVisitor {
         return;
       }
 
-      const knownObjectsAndInterfaces = context.getSubgraphObjectOrInterfaceTypes();
+      const knownObjectsAndInterfaces =
+        context.getSubgraphObjectOrInterfaceTypes();
 
       let isValid = true;
 
       const fieldsUsedInKey = new Set<string>();
 
-      const mergedTypeDef = context.getSubgraphObjectOrInterfaceTypes().get(typeDef.name.value);
+      const mergedTypeDef = context
+        .getSubgraphObjectOrInterfaceTypes()
+        .get(typeDef.name.value);
 
       if (!mergedTypeDef) {
         throw new Error(`Could not find type "${typeDef.name.value}"`);
@@ -162,15 +169,20 @@ export function KeyRules(context: SubgraphValidationContext): ASTVisitor {
           // Mark the field as used in the key when it's a field of the type annotated with @key
           if (info.typeDefinition.name.value === typeDef.name.value) {
             fieldsUsedInKey.add(info.fieldName);
-            context.markAsKeyField(`${info.typeDefinition.name}.${info.fieldName}`);
           }
+          context.markAsKeyField(
+            `${info.typeDefinition.name.value}.${info.fieldName}`,
+          );
         },
         interceptUnknownField(info) {
           isValid = false;
           context.reportError(
             new GraphQLError(
               `On type "${typeCoordinate}", for @key(fields: ${printedFieldsValue}): Cannot query field "${info.fieldName}" on type "${info.typeDefinition.name.value}" (the field should either be added to this subgraph or, if it should not be resolved by this subgraph, you need to add it to this subgraph with @external).`,
-              { nodes: directiveNode, extensions: { code: 'KEY_INVALID_FIELDS' } },
+              {
+                nodes: directiveNode,
+                extensions: { code: "KEY_INVALID_FIELDS" },
+              },
             ),
           );
         },
@@ -182,7 +194,7 @@ export function KeyRules(context: SubgraphValidationContext): ASTVisitor {
                 `On type "${typeCoordinate}", for @key(fields: ${printedFieldsValue}): cannot have directive applications in the @key(fields:) argument but found @${info.directiveName}.`,
                 {
                   nodes: directiveNode,
-                  extensions: { code: 'KEY_DIRECTIVE_IN_FIELDS_ARG' },
+                  extensions: { code: "KEY_DIRECTIVE_IN_FIELDS_ARG" },
                 },
               ),
             );
@@ -192,7 +204,7 @@ export function KeyRules(context: SubgraphValidationContext): ASTVisitor {
                 `On type "${typeCoordinate}", for @key(fields: ${printedFieldsValue}): Unknown directive "@${info.directiveName}"`,
                 {
                   nodes: directiveNode,
-                  extensions: { code: 'KEY_INVALID_FIELDS' },
+                  extensions: { code: "KEY_INVALID_FIELDS" },
                 },
               ),
             );
@@ -203,7 +215,10 @@ export function KeyRules(context: SubgraphValidationContext): ASTVisitor {
           context.reportError(
             new GraphQLError(
               `On type "${typeCoordinate}", for @key(fields: ${printedFieldsValue}): field ${info.typeDefinition.name.value}.${info.fieldName} cannot be included because it has arguments (fields with argument are not allowed in @key)`,
-              { nodes: directiveNode, extensions: { code: 'KEY_FIELDS_HAS_ARGS' } },
+              {
+                nodes: directiveNode,
+                extensions: { code: "KEY_FIELDS_HAS_ARGS" },
+              },
             ),
           );
         },
@@ -212,7 +227,10 @@ export function KeyRules(context: SubgraphValidationContext): ASTVisitor {
           context.reportError(
             new GraphQLError(
               `On type "${typeCoordinate}", for @key(fields: ${printedFieldsValue}): field "${info.typeDefinition.name.value}.${info.fieldName}" is a Interface type which is not allowed in @key`,
-              { nodes: directiveNode, extensions: { code: 'KEY_FIELDS_SELECT_INVALID_TYPE' } },
+              {
+                nodes: directiveNode,
+                extensions: { code: "KEY_FIELDS_SELECT_INVALID_TYPE" },
+              },
             ),
           );
         },
@@ -223,11 +241,13 @@ export function KeyRules(context: SubgraphValidationContext): ASTVisitor {
       if (usedOnInterface) {
         // TODO: It's a poor's man implementation of the check, we should compare the selected fields, but just a string
         const expectedFieldsValue = normalizedFieldsArgValue.value;
-        knownObjectsAndInterfaces.forEach(def => {
-          if (def.interfaces?.some(i => i.name.value === typeDef.name.value)) {
+        knownObjectsAndInterfaces.forEach((def) => {
+          if (
+            def.interfaces?.some((i) => i.name.value === typeDef.name.value)
+          ) {
             let shouldError = true;
-            const keyDirectives = def.directives?.filter(d =>
-              context.isAvailableFederationDirective('key', d),
+            const keyDirectives = def.directives?.filter((d) =>
+              context.isAvailableFederationDirective("key", d),
             );
 
             if (!!keyDirectives?.length) {
@@ -244,14 +264,14 @@ export function KeyRules(context: SubgraphValidationContext): ASTVisitor {
               }
             }
 
-            if (shouldError && context.satisfiesVersionRange('> v1.0')) {
+            if (shouldError && context.satisfiesVersionRange("> v1.0")) {
               isValid = false;
               context.reportError(
                 new GraphQLError(
                   `Key @key(fields: ${printedFieldsValue}) on interface type "${typeDef.name.value}" is missing on implementation type "${def.name.value}".`,
                   {
                     nodes: directiveNode,
-                    extensions: { code: 'INTERFACE_KEY_NOT_ON_IMPLEMENTATION' },
+                    extensions: { code: "INTERFACE_KEY_NOT_ON_IMPLEMENTATION" },
                   },
                 ),
               );
@@ -262,7 +282,8 @@ export function KeyRules(context: SubgraphValidationContext): ASTVisitor {
 
       if (isValid) {
         const resolvableArgValue = directiveNode.arguments?.find(
-          arg => arg.name.value === 'resolvable' && arg.value.kind === Kind.BOOLEAN,
+          (arg) =>
+            arg.name.value === "resolvable" && arg.value.kind === Kind.BOOLEAN,
         )?.value as BooleanValueNode | undefined;
 
         const resolvable = resolvableArgValue?.value ?? true;

@@ -1,18 +1,18 @@
-import { describe, expect, test } from 'vitest';
+import { describe, expect, test } from "vitest";
 import {
   assertCompositionFailure,
   assertCompositionSuccess,
   graphql,
   testVersions,
-} from '../../shared/testkit.js';
+} from "../../shared/testkit.js";
 
 testVersions((api, version) => {
-  describe('INVALID_FIELD_SHARING', () => {
-    test('set of tests', () => {
+  describe("INVALID_FIELD_SHARING", () => {
+    test("set of tests", () => {
       expect(
         api.composeServices([
           {
-            name: 'users',
+            name: "users",
             typeDefs: graphql`
               extend schema
                 @link(
@@ -35,7 +35,7 @@ testVersions((api, version) => {
             `,
           },
           {
-            name: 'feed',
+            name: "feed",
             typeDefs: graphql`
               extend schema
                 @link(
@@ -62,7 +62,7 @@ testVersions((api, version) => {
                 `Non-shareable field "User.profile" is resolved from multiple subgraphs: it is resolved from subgraphs "feed" and "users" and defined as non-shareable in all of them`,
               ),
               extensions: expect.objectContaining({
-                code: 'INVALID_FIELD_SHARING',
+                code: "INVALID_FIELD_SHARING",
               }),
             }),
           ]),
@@ -72,7 +72,7 @@ testVersions((api, version) => {
       expect(
         api.composeServices([
           {
-            name: 'users',
+            name: "users",
             typeDefs: graphql`
               extend schema
                 @link(
@@ -91,7 +91,7 @@ testVersions((api, version) => {
             `,
           },
           {
-            name: 'feed',
+            name: "feed",
             typeDefs: graphql`
               extend schema
                 @link(
@@ -118,7 +118,7 @@ testVersions((api, version) => {
                 `Non-shareable field "User.id" is resolved from multiple subgraphs: it is resolved from subgraphs "feed" and "users" and defined as non-shareable in subgraph "users"`,
               ),
               extensions: expect.objectContaining({
-                code: 'INVALID_FIELD_SHARING',
+                code: "INVALID_FIELD_SHARING",
               }),
             }),
           ]),
@@ -128,7 +128,7 @@ testVersions((api, version) => {
       expect(
         api.composeServices([
           {
-            name: 'users',
+            name: "users",
             typeDefs: graphql`
               extend schema
                 @link(
@@ -147,7 +147,7 @@ testVersions((api, version) => {
             `,
           },
           {
-            name: 'feed',
+            name: "feed",
             typeDefs: graphql`
               extend schema
                 @link(
@@ -166,7 +166,7 @@ testVersions((api, version) => {
             `,
           },
           {
-            name: 'noop',
+            name: "noop",
             typeDefs: graphql`
               extend schema
                 @link(
@@ -188,7 +188,7 @@ testVersions((api, version) => {
                 `Non-shareable field "Query.foo" is resolved from multiple subgraphs: it is resolved from subgraphs "feed" and "users" and defined as non-shareable in all of them`,
               ),
               extensions: expect.objectContaining({
-                code: 'INVALID_FIELD_SHARING',
+                code: "INVALID_FIELD_SHARING",
               }),
             }),
           ]),
@@ -198,7 +198,7 @@ testVersions((api, version) => {
       expect(
         api.composeServices([
           {
-            name: 'foo',
+            name: "foo",
             typeDefs: graphql`
               extend schema
               @link(
@@ -220,7 +220,7 @@ testVersions((api, version) => {
             `,
           },
           {
-            name: 'bar',
+            name: "bar",
             typeDefs: graphql`
               extend schema
               @link(
@@ -250,7 +250,7 @@ testVersions((api, version) => {
                 `Non-shareable field "Note.url" is resolved from multiple subgraphs: it is resolved from subgraphs "bar" and "foo" and defined as non-shareable in all of them`,
               ),
               extensions: expect.objectContaining({
-                code: 'INVALID_FIELD_SHARING',
+                code: "INVALID_FIELD_SHARING",
               }),
             }),
           ]),
@@ -258,11 +258,11 @@ testVersions((api, version) => {
       );
     });
 
-    test('fed v1', () => {
+    test("fed v1", () => {
       expect(
         api.composeServices([
           {
-            name: 'foo',
+            name: "foo",
             typeDefs: graphql`
               extend type Note {
                 url: String!
@@ -278,7 +278,7 @@ testVersions((api, version) => {
             `,
           },
           {
-            name: 'bar',
+            name: "bar",
             typeDefs: graphql`
               extend type Note {
                 url: String!
@@ -302,7 +302,7 @@ testVersions((api, version) => {
                 `Non-shareable field "Note.url" is resolved from multiple subgraphs: it is resolved from subgraphs "bar" and "foo" and defined as non-shareable in all of them`,
               ),
               extensions: expect.objectContaining({
-                code: 'INVALID_FIELD_SHARING',
+                code: "INVALID_FIELD_SHARING",
               }),
             }),
           ]),
@@ -312,7 +312,7 @@ testVersions((api, version) => {
       assertCompositionSuccess(
         api.composeServices([
           {
-            name: 'foo',
+            name: "foo",
             typeDefs: graphql`
               extend type Note @key(fields: "id") {
                 id: ID!
@@ -329,7 +329,7 @@ testVersions((api, version) => {
             `,
           },
           {
-            name: 'bar',
+            name: "bar",
             typeDefs: graphql`
               extend type Note @key(fields: "id") {
                 id: ID!
@@ -349,11 +349,11 @@ testVersions((api, version) => {
       );
     });
 
-    test('subscription fields (fed v1)', () => {
+    test("subscription fields (fed v1)", () => {
       expect(
         api.composeServices([
           {
-            name: 'foo',
+            name: "foo",
             typeDefs: graphql`
               type Query {
                 foo: String
@@ -365,7 +365,7 @@ testVersions((api, version) => {
             `,
           },
           {
-            name: 'bar',
+            name: "bar",
             typeDefs: graphql`
               type Query {
                 bar: String
@@ -382,12 +382,12 @@ testVersions((api, version) => {
           errors: expect.arrayContaining([
             expect.objectContaining({
               message: expect.stringContaining(
-                api.library === 'guild'
+                api.library === "guild"
                   ? `Fields on root level subscription object cannot be marked as shareable`
                   : 'Non-shareable field "Subscription.event" is resolved from multiple subgraphs: it is resolved from subgraphs "bar" and "foo" and defined as non-shareable in all of them',
               ),
               extensions: expect.objectContaining({
-                code: 'INVALID_FIELD_SHARING',
+                code: "INVALID_FIELD_SHARING",
               }),
             }),
           ]),
@@ -395,11 +395,11 @@ testVersions((api, version) => {
       );
     });
 
-    test('subscription fields', () => {
+    test("subscription fields", () => {
       expect(
         api.composeServices([
           {
-            name: 'foo',
+            name: "foo",
             typeDefs: graphql`
               extend schema
                 @link(
@@ -417,7 +417,7 @@ testVersions((api, version) => {
             `,
           },
           {
-            name: 'bar',
+            name: "bar",
             typeDefs: graphql`
               extend schema
                 @link(
@@ -443,19 +443,90 @@ testVersions((api, version) => {
                 `Fields on root level subscription object cannot be marked as shareable`,
               ),
               extensions: expect.objectContaining({
-                code: 'INVALID_FIELD_SHARING',
+                code: "INVALID_FIELD_SHARING",
               }),
             }),
           ]),
         }),
       );
     });
+
+    test("nested key fields", () => {
+      const result = api.composeServices([
+        {
+          name: "a",
+          typeDefs: graphql`
+            extend schema
+              @link(
+              url: "https://specs.apollo.dev/federation/${version}"
+                import: ["@key"]
+              )
+
+            type A
+              @key(fields: "id", resolvable: true)
+              @key(fields: "pId", resolvable: false)
+              @key(fields: "compositeId { one two }", resolvable: false)
+              @key(fields: "id compositeId { two three }", resolvable: false) {
+              id: ID!
+              pId: ID!
+              compositeId: CompositeID!
+              name: String!
+            }
+
+            type CompositeID {
+              one: ID!
+              two: ID!
+              three: ID!
+            }
+          `,
+        },
+        {
+          name: "b",
+          typeDefs: graphql`
+            extend schema
+              @link(
+              url: "https://specs.apollo.dev/federation/${version}"
+                import: ["@key", "@requires", "@external"]
+              )
+
+            type Query {
+              b: B
+            }
+
+            type B @key(fields: "id") {
+              id: ID!
+              a: [A!]!
+            }
+
+            type A
+              @key(fields: "compositeId { one two }", resolvable: false)
+              @key(fields: "id compositeId { two three }", resolvable: true)
+              @key(fields: "pId", resolvable: false)
+              @key(fields: "id", resolvable: false) {
+              id: ID!
+              pId: ID!
+              compositeId: CompositeID!
+              name: String! @external
+              nameInB: String! @requires(fields: "name")
+            }
+
+            type CompositeID {
+              one: ID!
+              two: ID!
+              three: ID!
+            }
+          `,
+        },
+      ]);
+
+      assertCompositionSuccess(result);
+    });
   });
 
-  test('non-shareable field in @interfaceObject and interface implementation', () => {
+  test("non-shareable field in @interfaceObject and interface implementation", () => {
     const result = api.composeServices([
       {
-        name: 'a',
+        name: "a",
         typeDefs: graphql`
           extend schema
             @link(
@@ -479,7 +550,7 @@ testVersions((api, version) => {
         `,
       },
       {
-        name: 'b',
+        name: "b",
         typeDefs: graphql`
           extend schema
             @link(
@@ -494,7 +565,7 @@ testVersions((api, version) => {
         `,
       },
       {
-        name: 'c',
+        name: "c",
         typeDefs: graphql`
           extend schema
             @link(
@@ -502,7 +573,9 @@ testVersions((api, version) => {
               import: ["@key", "@interfaceObject"]
             )
 
-          type MyInterface @key(fields: "id", resolvable: false) @interfaceObject {
+          type MyInterface
+            @key(fields: "id", resolvable: false)
+            @interfaceObject {
             id: ID!
             field: String
           }
@@ -517,7 +590,7 @@ testVersions((api, version) => {
         message:
           'Non-shareable field "MyType.field" is resolved from multiple subgraphs: it is resolved from subgraphs "a" and "c" (through @interfaceObject field "MyInterface.field") and defined as non-shareable in all of them',
         extensions: expect.objectContaining({
-          code: 'INVALID_FIELD_SHARING',
+          code: "INVALID_FIELD_SHARING",
         }),
       }),
     );
