@@ -331,7 +331,7 @@ export class Walker {
           this.logger.groupEnd(
             () => "Reached leaf node, no need to find indirect paths",
           );
-          continue;
+          break;
         }
 
         const indirectPathsResult = this.pathFinder.findIndirectPaths(
