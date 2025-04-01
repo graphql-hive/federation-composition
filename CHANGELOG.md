@@ -1,5 +1,15 @@
 # @theguild/federation-composition
 
+## 0.18.1
+
+### Patch Changes
+
+- [#129](https://github.com/graphql-hive/federation-composition/pull/129) [`9382277`](https://github.com/graphql-hive/federation-composition/commit/9382277ae4077c6f3d9783df2664e68481618d65) Thanks [@kamilkisiela](https://github.com/kamilkisiela)! - Ensure nested key fields are marked as `@shareable`
+
+- [#132](https://github.com/graphql-hive/federation-composition/pull/132) [`ae3152c`](https://github.com/graphql-hive/federation-composition/commit/ae3152c5e829a1278de9839f8bef3bbeb0472947) Thanks [@kamilkisiela](https://github.com/kamilkisiela)! - Stop collecting paths when a leaf field was reached
+
+- [#132](https://github.com/graphql-hive/federation-composition/pull/132) [`ae3152c`](https://github.com/graphql-hive/federation-composition/commit/ae3152c5e829a1278de9839f8bef3bbeb0472947) Thanks [@kamilkisiela](https://github.com/kamilkisiela)! - Avoid infinite loop when entity field returns itself
+
 ## 0.18.0
 
 ### Minor Changes
