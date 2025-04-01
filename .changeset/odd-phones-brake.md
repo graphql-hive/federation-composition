@@ -2,4 +2,4 @@
 "@theguild/federation-composition": patch
 ---
 
-avoid infinite loop when entity field returns itself
+Avoid infinite loop when entity field returns itself
