@@ -584,13 +584,11 @@ export class Graph {
     }
 
     // iterate over all edges
-    for (
-      let headIndex = 0;
-      headIndex < this.edgesByHeadTypeIndex.length;
-      headIndex++
-    ) {
+    const headEdgesLength = this.edgesByHeadTypeIndex.length;
+    for (let headIndex = 0; headIndex < headEdgesLength; headIndex++) {
       const edges = this.edgesByHeadTypeIndex[headIndex];
-      for (let edgeIndex = 0; edgeIndex < edges.length; edgeIndex++) {
+      const edgesLength = edges.length;
+      for (let edgeIndex = 0; edgeIndex < edgesLength; edgeIndex++) {
         const edge = edges[edgeIndex];
 
         // if it's a cross-graph edge, we don't want to resolve it

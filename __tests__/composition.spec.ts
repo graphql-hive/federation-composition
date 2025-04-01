@@ -3863,6 +3863,52 @@ testImplementations((api) => {
       `);
     });
 
+    test("@provides itself - circular reference", () => {
+      const result = api.composeServices([
+        {
+          name: "a",
+          typeDefs: parse(/* GraphQL */ `
+            extend schema
+              @link(
+                url: "https://specs.apollo.dev/federation/v2.3"
+                import: ["@key", "@external", "@provides"]
+              )
+
+            type Query {
+              product: Product
+            }
+
+            interface Product {
+              samePriceProduct: Product
+            }
+
+            type Book implements Product @key(fields: "id") {
+              id: ID!
+              samePriceProduct: Book @provides(fields: "price")
+              price: Float @external
+            }
+          `),
+        },
+        {
+          name: "b",
+          typeDefs: parse(/* GraphQL */ `
+            extend schema
+              @link(
+                url: "https://specs.apollo.dev/federation/v2.3"
+                import: ["@key", "@shareable"]
+              )
+
+            type Book @key(fields: "id") {
+              id: ID!
+              price: Float @shareable
+            }
+          `),
+        },
+      ]);
+
+      assertCompositionSuccess(result);
+    });
+
     test("@external + @provides", () => {
       const result = composeServices([
         {
