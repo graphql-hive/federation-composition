@@ -57,7 +57,8 @@ export function ProvidedArgumentsOnDirectivesRule(
                   // or a non-null list type
                   if (
                     argDefinition.type.kind === Kind.LIST_TYPE ||
-                    argDefinition.type.kind === Kind.NON_NULL_TYPE && argDefinition.type.type.kind === Kind.LIST_TYPE
+                    (argDefinition.type.kind === Kind.NON_NULL_TYPE &&
+                      argDefinition.type.type.kind === Kind.LIST_TYPE)
                   ) {
                     continue;
                   }

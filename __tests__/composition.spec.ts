@@ -7720,32 +7720,35 @@ testImplementations((api) => {
     `);
   });
 
-  test.only('reproduction: GW-164 - empty list as a non-nullable enum value argument of a directive', () => {
+  test("reproduction: GW-164 - empty list as a non-nullable enum value argument of a directive", () => {
     const result = api.composeServices([
       {
         name: "a",
         typeDefs: parse(/* GraphQL */ `
-            extend schema
-              @link(
-                url: "https://specs.apollo.dev/federation/v2.7"
-                import: ["@key", "@composeDirective"]
-              )
-              @link(url: "https://myspecs.dev/myDirective/v1.0", import: ["@myDirective"])
-              @composeDirective(name: "@myDirective")
+          extend schema
+            @link(
+              url: "https://specs.apollo.dev/federation/v2.7"
+              import: ["@key", "@composeDirective"]
+            )
+            @link(
+              url: "https://myspecs.dev/myDirective/v1.0"
+              import: ["@myDirective"]
+            )
+            @composeDirective(name: "@myDirective")
 
-            directive @myDirective(myarg: [MyEnum!]!) on OBJECT
-            enum MyEnum {
-              MY_ENUM_VALUE
-            }
-            type Query {
-              myRootField: MyObject
-            }
+          directive @myDirective(myarg: [MyEnum!]!) on OBJECT
+          enum MyEnum {
+            MY_ENUM_VALUE
+          }
+          type Query {
+            myRootField: MyObject
+          }
 
-            type MyObject @myDirective(myarg: []) {
-              myField: String
-            }
+          type MyObject @myDirective(myarg: []) {
+            myField: String
+          }
         `),
-      }
+      },
     ]);
     assertCompositionSuccess(result);
     expect(result.supergraphSdl).toContainGraphQL(/* GraphQL */ `
