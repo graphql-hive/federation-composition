@@ -53,10 +53,12 @@ export function ProvidedArgumentsOnDirectivesRule(
               if (printedType !== "Any" && printedType !== printedValue) {
                 // received empty list
                 if (printedValue === "[]") {
-                  // if the argument's type is a list, but the list item type is not non-null, then it's valid
+                  // An empty list can be a valid value for a list type
+                  // or a non-null list type
                   if (
-                    argDefinition.type.kind === Kind.LIST_TYPE &&
-                    argDefinition.type.type.kind !== Kind.NON_NULL_TYPE
+                    argDefinition.type.kind === Kind.LIST_TYPE ||
+                    (argDefinition.type.kind === Kind.NON_NULL_TYPE &&
+                      argDefinition.type.type.kind === Kind.LIST_TYPE)
                   ) {
                     continue;
                   }
