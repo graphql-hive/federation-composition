@@ -7757,4 +7757,64 @@ testImplementations((api) => {
       }
     `);
   });
+
+  test("@tag usage without 'name' argument raises no exception", () => {
+    const result = api.composeServices([
+      {
+        name: "a service",
+        typeDefs: parse(/* GraphQL */ `
+          extend schema
+            @link(url: "https://specs.apollo.dev/link/v1.0")
+            @link(
+              url: "https://specs.apollo.dev/federation/v2.0"
+              import: ["@tag"]
+            )
+
+          type Query {
+            ping: String
+            pong: String
+            foo: User @tag
+          }
+
+          type User {
+            id: ID!
+          }
+        `),
+      },
+    ]);
+    expect(result.errors).toHaveLength(1);
+    expect(result.errors?.at(0)?.message).toContain(
+      `Directive "@tag" argument "name" of type "String!" is required, but it was not provided.`,
+    );
+  });
+
+  test("@tag usage with wrong 'name' argument type raises no exception", () => {
+    const result = api.composeServices([
+      {
+        name: "a service",
+        typeDefs: parse(/* GraphQL */ `
+          extend schema
+            @link(url: "https://specs.apollo.dev/link/v1.0")
+            @link(
+              url: "https://specs.apollo.dev/federation/v2.0"
+              import: ["@tag"]
+            )
+
+          type Query {
+            ping: String
+            pong: String
+            foo: User @tag(name: {})
+          }
+
+          type User {
+            id: ID!
+          }
+        `),
+      },
+    ]);
+    expect(result.errors).toHaveLength(1);
+    expect(result.errors?.at(0)?.message).toContain(
+      `Invalid value for "@tag(name:)" of type "String!" in application of "@tag" to "Query.foo".`,
+    );
+  });
 });

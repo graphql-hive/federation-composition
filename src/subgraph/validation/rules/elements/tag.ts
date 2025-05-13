@@ -15,11 +15,11 @@ export function TagRules(context: SubgraphValidationContext): ASTVisitor {
       const nameArg = node.arguments?.find((arg) => arg.name.value === "name");
 
       if (!nameArg) {
-        throw new Error('Expected @tag to have a "name" argument');
+        return;
       }
 
       if (nameArg.value.kind !== Kind.STRING) {
-        throw new Error('Expected "@tag(name:)" to be a string');
+        return;
       }
 
       const directivesKeyAt = paths.findIndex((path) => path === "directives");
