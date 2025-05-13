@@ -1,5 +1,33 @@
 # @theguild/federation-composition
 
+## 0.18.2
+
+### Patch Changes
+
+- [#141](https://github.com/graphql-hive/federation-composition/pull/141) [`fdb491f`](https://github.com/graphql-hive/federation-composition/commit/fdb491ffb483119dda33791f37ec20d4cb01153e) Thanks [@ardatan](https://github.com/ardatan)! - Fixes the issue where the composition gives errors in case of the following:
+
+  ```graphql
+  extend schema
+    @link(
+      url: "https://specs.apollo.dev/federation/v2.7"
+      import: ["@key", "@composeDirective"]
+    )
+    @link(url: "https://myspecs.dev/myDirective/v1.0", import: ["@myDirective"])
+    @composeDirective(name: "@myDirective")
+
+  directive @myDirective(myarg: [MyEnum!]!) on OBJECT # A directive with a non-nullable list argument of non-nullable enums
+  enum MyEnum {
+    MY_ENUM_VALUE
+  }
+  type Query {
+    myRootField: MyObject
+  }
+
+  type MyObject @myDirective(myarg: []) {
+    myField: String
+  }
+  ```
+
 ## 0.18.1
 
 ### Patch Changes
