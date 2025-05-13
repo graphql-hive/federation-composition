@@ -1,5 +1,11 @@
 # @theguild/federation-composition
 
+## 0.18.3
+
+### Patch Changes
+
+- [#143](https://github.com/graphql-hive/federation-composition/pull/143) [`bcea968`](https://github.com/graphql-hive/federation-composition/commit/bcea96897579bd92944a0b64608102f56548bacc) Thanks [@n1ru4l](https://github.com/n1ru4l)! - Do not throw an error when encountering invalid usage of `@tag` directive within subgraphs.
+
 ## 0.18.2
 
 ### Patch Changes
