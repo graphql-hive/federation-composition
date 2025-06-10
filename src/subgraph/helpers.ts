@@ -396,7 +396,6 @@ export function visitFields({
               outputType: print(selectionFieldDef.type),
             });
           }
-          // continue;
           return;
         }
 
