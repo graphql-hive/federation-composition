@@ -108,7 +108,7 @@ testVersions((api, version) => {
 
             union UnionType = EntityA
 
-            extend type FederatedEntity  @key(fields: "id") {
+            extend type FederatedEntity @key(fields: "id") {
               id: ID!
               requiredField: UnionType @external
               providedField: String! @requires(fields: "requiredField { ...on EntityA { status } } ")
