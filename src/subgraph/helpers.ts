@@ -2,6 +2,7 @@ import {
   DirectiveDefinitionNode,
   DirectiveNode,
   FieldDefinitionNode,
+  FieldNode,
   GraphQLError,
   InterfaceTypeDefinitionNode,
   InterfaceTypeExtensionNode,
@@ -362,52 +363,89 @@ export function visitFields({
       }
     }
 
+    const handleInnerSelection = ((
+      selection: FieldNode,
+      selectionFieldDef: FieldDefinitionNode,
+    ) =>
+      function handleInnerSelectionImpl(
+        innerTypeDef:
+          | ObjectTypeDefinitionNode
+          | InterfaceTypeDefinitionNode
+          | ObjectTypeExtensionNode
+          | InterfaceTypeExtensionNode,
+      ) {
+        if (
+          !isTypename &&
+          interceptInterfaceType &&
+          (innerTypeDef.kind === Kind.INTERFACE_TYPE_DEFINITION ||
+            innerTypeDef.kind === Kind.INTERFACE_TYPE_EXTENSION)
+        ) {
+          interceptInterfaceType({
+            typeDefinition,
+            fieldName: selection.name.value,
+          });
+        }
+
+        const innerSelection = selection.selectionSet;
+
+        if (!innerSelection) {
+          if (interceptFieldWithMissingSelectionSet) {
+            interceptFieldWithMissingSelectionSet({
+              typeDefinition,
+              fieldName: selection.name.value,
+              outputType: print(selectionFieldDef.type),
+            });
+          }
+          // continue;
+          return;
+        }
+
+        visitFields({
+          context,
+          selectionSet: innerSelection,
+          typeDefinition: innerTypeDef,
+          interceptField,
+          interceptArguments,
+          interceptUnknownField,
+          interceptInterfaceType,
+          interceptDirective,
+          interceptExternalField,
+          interceptFieldWithMissingSelectionSet,
+        });
+      })(selection, selectionFieldDef);
+
     const outputType = namedTypeFromTypeNode(selectionFieldDef.type).name.value;
+    // This does not return a type definition for union fields.
     const innerTypeDef = context
       .getSubgraphObjectOrInterfaceTypes()
       .get(outputType);
 
     if (!innerTypeDef) {
-      continue;
-    }
+      // In case it is a union type we need to process the selection for each union member
+      const unionMemberTypeNames = context
+        .getSubgraphUnionTypes()
+        .get(outputType);
 
-    if (
-      !isTypename &&
-      interceptInterfaceType &&
-      (innerTypeDef.kind === Kind.INTERFACE_TYPE_DEFINITION ||
-        innerTypeDef.kind === Kind.INTERFACE_TYPE_EXTENSION)
-    ) {
-      interceptInterfaceType({
-        typeDefinition,
-        fieldName: selection.name.value,
-      });
-    }
-
-    const innerSelection = selection.selectionSet;
-
-    if (!innerSelection) {
-      if (interceptFieldWithMissingSelectionSet) {
-        interceptFieldWithMissingSelectionSet({
-          typeDefinition,
-          fieldName: selection.name.value,
-          outputType: print(selectionFieldDef.type),
-        });
+      if (!unionMemberTypeNames) {
+        continue;
       }
+
+      for (const typeName of unionMemberTypeNames) {
+        const innerTypeDef = context
+          .getSubgraphObjectOrInterfaceTypes()
+          .get(typeName);
+
+        if (!innerTypeDef) {
+          continue;
+        }
+
+        handleInnerSelection(innerTypeDef);
+      }
+
       continue;
     }
 
-    visitFields({
-      context,
-      selectionSet: innerSelection,
-      typeDefinition: innerTypeDef,
-      interceptField,
-      interceptArguments,
-      interceptUnknownField,
-      interceptInterfaceType,
-      interceptDirective,
-      interceptExternalField,
-      interceptFieldWithMissingSelectionSet,
-    });
+    handleInnerSelection(innerTypeDef);
   }
 }
 
