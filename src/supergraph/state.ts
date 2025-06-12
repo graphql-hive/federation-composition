@@ -468,10 +468,16 @@ function createFieldsTransformer(state: SupergraphState) {
           const referencedTypeName = fieldState.type.replace(/[!\[\]]+/g, "");
           const referencedType =
             state.objectTypes.get(referencedTypeName) ??
-            state.interfaceTypes.get(referencedTypeName);
+            state.interfaceTypes.get(referencedTypeName) ??
+            state.unionTypes.get(referencedTypeName);
 
           if (!referencedType) {
             throw new Error("Referenced type not found: " + referencedTypeName);
+          }
+
+          if (referencedType.kind === "union") {
+            // TODO: not sure if we have to do something here
+            continue;
           }
 
           const referencedTypeInGraph = referencedType.byGraph.get(graphId)!;
