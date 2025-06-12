@@ -84,6 +84,74 @@ testVersions((api, version) => {
     );
   });
 
+  test("EXTERNAL_UNUSED on requires with union selection set does not raise an error", () => {
+    const errors = api.composeServices([
+      {
+        name: "users",
+        typeDefs: graphql`
+          extend schema
+            @link(
+              url: "https://specs.apollo.dev/federation/${version}"
+              import: ["@key", "@external", "@requires"]
+            )
+
+            enum Status {
+              ACTIVE
+              CANCELLED
+              EXPIRED
+            }
+
+            type EntityA {
+              status: Status! @external
+            }
+
+
+            union UnionType = EntityA
+
+            extend type FederatedEntity @key(fields: "id") {
+              id: ID!
+              requiredField: UnionType @external
+              providedField: String! @requires(fields: "requiredField { ...on EntityA { status } } ")
+            }
+        `,
+      },
+      {
+        name: "entities",
+        typeDefs: graphql`
+        extend schema
+          @link(
+            url: "https://specs.apollo.dev/federation/${version}"
+            import: ["@key", "@external", "@requires"]
+          )
+
+          enum Status {
+            ACTIVE
+            CANCELLED
+            EXPIRED
+          }
+
+          type EntityA @key(fields: "id") {
+            id: ID!
+            status: Status!
+          }
+
+          union UnionType = EntityA
+
+          type FederatedEntity @key(fields: "id") {
+            id: ID!
+            requiredField: UnionType
+          }
+
+          type Query {
+            a(id: ID): FederatedEntity
+          }
+        `,
+      },
+    ]).errors;
+
+    expect(errors).toEqual(undefined);
+  });
+
   test("Fed v1: No EXTERNAL_UNUSED", () => {
     const result = api.composeServices([
       {

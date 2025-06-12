@@ -13,6 +13,8 @@ import {
   specifiedScalarTypes,
   TypeDefinitionNode,
   TypeExtensionNode,
+  UnionTypeDefinitionNode,
+  UnionTypeExtensionNode,
 } from "graphql";
 import { TypeNodeInfo } from "../../graphql/type-node-info.js";
 import {
@@ -132,13 +134,14 @@ export function createSubgraphValidationContext(
   // Directives and types available in the spec (some parts may not be available to a subgraph)
   const knownSpec = createSpecSchema(version);
   // Object and interface types defined in a subgraph
-  const knownSubgraphEntities = new Map<
+  const knownObjectAndInterfaceSubgraphEntities = new Map<
     string,
     | ObjectTypeDefinitionNode
     | ObjectTypeExtensionNode
     | InterfaceTypeDefinitionNode
     | InterfaceTypeExtensionNode
   >();
+  const knownUnionTypesMembers = new Map<string, Set<string>>();
 
   const typenameToKind = new Map<
     string,
@@ -162,7 +165,34 @@ export function createSubgraphValidationContext(
     return objectOrInterfaceKinds.includes(node.kind);
   }
 
+  function isUnionNode(
+    node: ASTNode,
+  ): node is UnionTypeDefinitionNode | UnionTypeExtensionNode {
+    return (
+      node.kind === Kind.UNION_TYPE_EXTENSION ||
+      node.kind === Kind.UNION_TYPE_DEFINITION
+    );
+  }
+
   for (const def of subgraph.typeDefs.definitions) {
+    if (isUnionNode(def)) {
+      const found = knownUnionTypesMembers.get(def.name.value);
+
+      if (!found) {
+        knownUnionTypesMembers.set(
+          def.name.value,
+          new Set(def.types?.map((type) => type.name.value)),
+        );
+        continue;
+      }
+
+      def.types?.forEach((namedType) => {
+        found.add(namedType.name.value);
+      });
+
+      continue;
+    }
+
     if (!isObjectOrInterfaceNode(def)) {
       continue;
     }
@@ -175,10 +205,10 @@ export function createSubgraphValidationContext(
         : TypeKind.INTERFACE,
     );
 
-    const found = knownSubgraphEntities.get(def.name.value);
+    const found = knownObjectAndInterfaceSubgraphEntities.get(def.name.value);
 
     if (!found) {
-      knownSubgraphEntities.set(def.name.value, { ...def });
+      knownObjectAndInterfaceSubgraphEntities.set(def.name.value, { ...def });
       continue;
     }
 
@@ -400,7 +430,13 @@ export function createSubgraphValidationContext(
      * Get a list of object and interface types defined by a subgraph.
      */
     getSubgraphObjectOrInterfaceTypes() {
-      return knownSubgraphEntities;
+      return knownObjectAndInterfaceSubgraphEntities;
+    },
+    /**
+     * Get a list of union types defined within the subgraphs.
+     */
+    getSubgraphUnionTypes() {
+      return knownUnionTypesMembers;
     },
     /**
      * Get a list of directives defined by a subgraph.
