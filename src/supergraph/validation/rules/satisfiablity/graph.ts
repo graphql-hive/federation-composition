@@ -396,6 +396,71 @@ export class Graph {
     }
   }
 
+  private addProvidedUnionFields(
+    head: Node,
+    providedFields: SelectionNode[],
+    queue: {
+      head: Node;
+      providedFields: SelectionNode[];
+    }[],
+  ) {
+    const abstractIndexes = head.getAbstractEdgeIndexes(head.typeName);
+
+    if (!abstractIndexes || abstractIndexes.length === 0) {
+      throw new Error("Expected abstract indexes to be defined");
+    }
+
+    const fieldsByType = new Map<string, SelectionNode[]>();
+
+    for (const providedField of providedFields) {
+      if (providedField.kind !== "fragment") {
+        throw new Error(
+          `Selection on union must be fragment. Received "${providedField.kind}".`,
+        );
+      }
+
+      const existing = fieldsByType.get(providedField.typeName);
+
+      if (existing) {
+        existing.push(...providedField.selectionSet);
+      } else {
+        fieldsByType.set(providedField.typeName, [
+          ...providedField.selectionSet,
+        ]);
+      }
+    }
+
+    for (const [typeName, providedFields] of fieldsByType) {
+      let edgeIndex: number | undefined;
+      let edge: Edge | undefined;
+      for (let i = 0; i < abstractIndexes.length; i++) {
+        const index = abstractIndexes[i];
+        const potentialEdge = this.edgesByHeadTypeIndex[head.index][index];
+
+        if (potentialEdge.tail.typeName === typeName) {
+          edgeIndex = index;
+          edge = potentialEdge;
+          break;
+        }
+      }
+
+      if (typeof edgeIndex === "undefined" || !edge) {
+        throw new Error(
+          `Expected an abstract edge matching "${typeName}" to be defined`,
+        );
+      }
+
+      const newTail = this.duplicateNode(edge.tail);
+      const newEdge = new Edge(edge.head, edge.move, newTail);
+      this.replaceEdgeAt(edge.head.index, edge.tail.index, newEdge, edgeIndex);
+
+      queue.push({
+        head: newTail,
+        providedFields,
+      });
+    }
+  }
+
   private addProvidedField(
     head: Node,
     providedField: SelectionNode,
@@ -628,6 +693,11 @@ export class Graph {
 
           if (head.typeState?.kind === "interface") {
             this.addProvidedInterfaceFields(head, providedFields, queue);
+            continue;
+          }
+
+          if (head.typeState?.kind === "union") {
+            this.addProvidedUnionFields(head, providedFields, queue);
             continue;
           }
 

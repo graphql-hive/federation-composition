@@ -127,11 +127,12 @@ export class SelectionResolver {
 
     const typeState =
       this.supergraphState.objectTypes.get(typeName) ??
-      this.supergraphState.interfaceTypes.get(typeName);
+      this.supergraphState.interfaceTypes.get(typeName) ??
+      this.supergraphState.unionTypes.get(typeName);
 
     if (!typeState) {
       throw new Error(
-        `Expected an object/interface type when resolving keyFields of ${typeName}`,
+        `Expected an object/interface/union type when resolving keyFields of ${typeName}`,
       );
     }
 
