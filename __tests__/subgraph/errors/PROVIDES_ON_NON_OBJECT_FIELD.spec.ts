@@ -47,4 +47,70 @@ testVersions((api, version) => {
       }),
     );
   });
+
+  test("PROVIDES_ON_NON_OBJECT_FIELD: is not raised for union field with fragment object type selection sets", () => {
+    const errors = api.composeServices([
+      {
+        name: "users",
+        typeDefs: graphql`
+          extend schema
+            @link(
+              url: "https://specs.apollo.dev/federation/${version}"
+              import: ["@key", "@provides", "@external"]
+            )
+
+          type Query {
+            result: ResultType
+          }
+
+          type EntityA {
+            field1: String @external
+            field2: String @external
+          }
+
+          type EntityB {
+            field1: String @external
+            field2: String @external
+            field3: String @external
+          }
+
+          union UnionType = EntityA | EntityB
+
+          type ResultType {
+            results: [UnionType!]! @provides(fields: "... on EntityA { field1 field2 } ... on EntityB { field1 field2 field3 }")
+          }
+        `,
+      },
+      {
+        name: "other",
+        typeDefs: graphql`
+          extend schema
+            @link(
+              url: "https://specs.apollo.dev/federation/${version}"
+              import: ["@key", "@shareable"]
+            )
+
+          type Query {
+            a: EntityA
+            b: EntityB
+          }
+
+          union UnionType = EntityA | EntityB
+
+          type EntityA @key(fields: "field1") {
+            field1: String @shareable
+            field2: String @shareable
+          }
+
+          type EntityB @key(fields: "field1")  {
+            field1: String @shareable
+            field2: String @shareable
+            field3: String @shareable
+          }
+        `,
+      },
+    ]).errors;
+    console.log(errors?.map((error) => error.message).join("\n"));
+    expect(errors).toEqual(undefined);
+  });
 });
