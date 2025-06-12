@@ -355,12 +355,8 @@ export class Graph {
         );
       }
 
-      const newTail = this.duplicateNode(edge.tail);
-      const newEdge = new Edge(edge.head, edge.move, newTail);
-      this.replaceEdgeAt(edge.head.index, edge.tail.index, newEdge, edgeIndex);
-
       queue.push({
-        head: newTail,
+        head: edge.tail,
         providedFields,
       });
     }
@@ -450,12 +446,8 @@ export class Graph {
         );
       }
 
-      const newTail = this.duplicateNode(edge.tail);
-      const newEdge = new Edge(edge.head, edge.move, newTail);
-      this.replaceEdgeAt(edge.head.index, edge.tail.index, newEdge, edgeIndex);
-
       queue.push({
-        head: newTail,
+        head: edge.tail,
         providedFields,
       });
     }
@@ -668,16 +660,12 @@ export class Graph {
 
         // find field edges that are provided and mark them as resolvable.
         // if they are not available, create them
-        const newTail = this.duplicateNode(edge.tail);
-        const newEdge = new Edge(edge.head, edge.move, newTail);
-        this.replaceEdgeAt(headIndex, edge.tail.index, newEdge, edgeIndex);
-
         const queue: {
           head: Node;
           providedFields: SelectionNode[];
         }[] = [
           {
-            head: newTail,
+            head: edge.tail,
             providedFields: edge.move.provides.selectionSet,
           },
         ];
