@@ -1,5 +1,11 @@
 # @theguild/federation-composition
 
+## 0.18.4
+
+### Patch Changes
+
+- [#146](https://github.com/graphql-hive/federation-composition/pull/146) [`55b48e9`](https://github.com/graphql-hive/federation-composition/commit/55b48e942ed58084fe56e33f15e3454b43c2ec24) Thanks [@n1ru4l](https://github.com/n1ru4l)! - Resolve usage of `@requires` `FieldSet` with a union field selection to raise an `EXTERNAL_UNUSED` error.
+
 ## 0.18.3
 
 ### Patch Changes
