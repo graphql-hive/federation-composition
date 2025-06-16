@@ -2,4 +2,4 @@
 "@theguild/federation-composition": patch
 ---
 
-changeset
+Add support for `@provides` fragment selection sets on union type fields.
