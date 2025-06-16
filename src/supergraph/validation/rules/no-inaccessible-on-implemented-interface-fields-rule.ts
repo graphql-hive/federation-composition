@@ -24,7 +24,10 @@ export function NoInaccessibleOnImplementedInterfaceFieldsRule(
             continue;
           }
 
-          if (interfaceField.inaccessible === false) {
+          if (
+            interfaceField.inaccessible === false &&
+            objectTypeState.inaccessible === false
+          ) {
             const objectTypeFieldSchemaCoordinate =
               objectTypeState.name + "." + fieldState.name;
             const interfaceFieldSchemaCoordinate =
