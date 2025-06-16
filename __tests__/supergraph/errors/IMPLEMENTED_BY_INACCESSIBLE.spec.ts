@@ -82,5 +82,39 @@ testVersions((api, version) => {
         },
       ]),
     ).toEqual(expect.objectContaining({ supergraphSdl: expect.any(String) }));
+
+    expect(
+      api.composeServices([
+        {
+          name: "node",
+          typeDefs: graphql`
+            schema
+              @link(
+                url: "https://specs.apollo.dev/federation/v2.9"
+                import: ["@tag"]
+              ) {
+              query: Query
+            }
+
+            type Query {
+              b(id: ID! @federation__inaccessible): B @federation__inaccessible
+              a(id: ID!): A
+            }
+
+            type B implements Node @federation__inaccessible {
+              id: ID! @federation__inaccessible
+            }
+
+            type A implements Node {
+              id: ID!
+            }
+
+            interface Node {
+              id: ID!
+            }
+          `,
+        },
+      ]),
+    ).toEqual(expect.objectContaining({ supergraphSdl: expect.any(String) }));
   });
 });
