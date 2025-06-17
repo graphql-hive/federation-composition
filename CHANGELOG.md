@@ -1,5 +1,48 @@
 # @theguild/federation-composition
 
+## 0.18.4
+
+### Patch Changes
+
+- [#146](https://github.com/graphql-hive/federation-composition/pull/146) [`55b48e9`](https://github.com/graphql-hive/federation-composition/commit/55b48e942ed58084fe56e33f15e3454b43c2ec24) Thanks [@n1ru4l](https://github.com/n1ru4l)! - Resolve usage of `@requires` `FieldSet` with a union field selection to raise an `EXTERNAL_UNUSED` error.
+
+- [#150](https://github.com/graphql-hive/federation-composition/pull/150) [`9bd8016`](https://github.com/graphql-hive/federation-composition/commit/9bd80160ab12d0ae9bbcc283c0bacc02a8830d8b) Thanks [@n1ru4l](https://github.com/n1ru4l)! - Fix incorrectly raised `IMPLEMENTED_BY_INACCESSIBLE` error for inaccessible object fields where the object type is inaccessible.
+
+  For example the following subgraph, will no longer result in the error `Field B.id is @inaccessible but implements the interface field Node.id, which is in the API schema.`.
+
+  ```graphql
+  schema
+    @link(url: "https://specs.apollo.dev/federation/v2.9", import: ["@tag"]) {
+    query: Query
+  }
+
+  type Query {
+    b(id: ID! @federation__inaccessible): B @federation__inaccessible
+    a(id: ID!): A
+  }
+
+  type B implements Node @federation__inaccessible {
+    id: ID! @federation__inaccessible
+  }
+
+  type A implements Node {
+    id: ID!
+  }
+
+  interface Node {
+    id: ID!
+  }
+  ```
+
+- [#147](https://github.com/graphql-hive/federation-composition/pull/147) [`8c5bc0c`](https://github.com/graphql-hive/federation-composition/commit/8c5bc0cf5744c0ee54ca71a30e19ef07baad742d) Thanks [@n1ru4l](https://github.com/n1ru4l)! - Add support for `@provides` fragment selection sets on union type fields.
+
+  ```graphql
+  type Query {
+    media: [Media] @shareable @provides(fields: "... on Book { title }")
+  }
+  union Media = Book | Movie
+  ```
+
 ## 0.18.3
 
 ### Patch Changes
