@@ -1,5 +1,9 @@
 import { expect, test } from "vitest";
-import { graphql, testVersions } from "../../shared/testkit.js";
+import {
+  assertCompositionSuccess,
+  graphql,
+  testVersions,
+} from "../../shared/testkit.js";
 
 testVersions((api, version) => {
   test("PROVIDES_ON_NON_OBJECT_FIELD", () => {
@@ -111,5 +115,81 @@ testVersions((api, version) => {
       },
     ]).errors;
     expect(errors).toEqual(undefined);
+  });
+
+  test("PROVIDES_ON_NON_OBJECT_FIELD: is not raised for union field with fragment object type selection sets (variant)", () => {
+    const result = api.composeServices([
+      {
+        name: "a",
+        typeDefs: graphql`
+          extend schema
+            @link(
+              url: "https://specs.apollo.dev/federation/v2.3"
+              import: ["@key", "@shareable", "@external"]
+            )
+
+          type Query {
+            media: [Media] @shareable
+          }
+
+          union Media = Book | Movie
+
+          type Book @key(fields: "id") {
+            id: ID!
+          }
+
+          type Movie @key(fields: "id") {
+            id: ID!
+          }
+        `,
+      },
+      {
+        name: "b",
+        typeDefs: graphql`
+          extend schema
+            @link(
+              url: "https://specs.apollo.dev/federation/v2.3"
+              import: ["@key", "@shareable", "@provides", "@external"]
+            )
+
+          type Query {
+            media: [Media] @shareable @provides(fields: "... on Book { title }")
+          }
+
+          union Media = Book | Movie
+
+          type Book @key(fields: "id") {
+            id: ID!
+            title: String @external
+          }
+
+          type Movie @key(fields: "id") {
+            id: ID!
+          }
+        `,
+      },
+      {
+        name: "c",
+        typeDefs: graphql`
+          extend schema
+            @link(
+              url: "https://specs.apollo.dev/federation/v2.3"
+              import: ["@key", "@shareable"]
+            )
+
+          type Book @key(fields: "id") {
+            id: ID!
+            title: String @shareable
+          }
+
+          type Movie @key(fields: "id") {
+            id: ID!
+            title: String @shareable
+          }
+        `,
+      },
+    ]);
+    console.log(result.errors);
+    assertCompositionSuccess(result);
   });
 });
