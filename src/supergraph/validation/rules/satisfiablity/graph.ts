@@ -23,7 +23,7 @@ import {
   isFieldEdge,
 } from "./edge.js";
 import { scoreKeyFields } from "./helpers.js";
-import { AbstractMove, EntityMove, FieldMove } from "./moves.js";
+import { AbstractMove, EntityMove, FieldMove, Move } from "./moves.js";
 import { Node } from "./node.js";
 import type { SelectionNode, SelectionResolver } from "./selection.js";
 
@@ -355,7 +355,7 @@ export class Graph {
         );
       }
 
-      const newTail = this.duplicateNode(edge.tail);
+      const newTail = this.duplicateNode(edge.tail, edge.move);
       const newEdge = new Edge(edge.head, edge.move, newTail);
       this.replaceEdgeAt(edge.head.index, edge.tail.index, newEdge, edgeIndex);
 
@@ -382,7 +382,7 @@ export class Graph {
         continue;
       }
 
-      const newTail = this.duplicateNode(edge.tail);
+      const newTail = this.duplicateNode(edge.tail, edge.move);
       const newEdge = new Edge(edge.head, new AbstractMove(), newTail);
       this.replaceEdgeAt(edge.head.index, edge.tail.index, newEdge, index);
 
@@ -450,7 +450,7 @@ export class Graph {
         );
       }
 
-      const newTail = this.duplicateNode(edge.tail);
+      const newTail = this.duplicateNode(edge.tail, edge.move);
       const newEdge = new Edge(edge.head, edge.move, newTail);
       this.replaceEdgeAt(edge.head.index, edge.tail.index, newEdge, edgeIndex);
 
@@ -515,7 +515,7 @@ export class Graph {
         continue;
       }
 
-      const newTail = this.duplicateNode(edge.tail);
+      const newTail = this.duplicateNode(edge.tail, edge.move);
       const newEdge = new Edge(
         edge.head,
         new FieldMove(
@@ -668,7 +668,7 @@ export class Graph {
 
         // find field edges that are provided and mark them as resolvable.
         // if they are not available, create them
-        const newTail = this.duplicateNode(edge.tail);
+        const newTail = this.duplicateNode(edge.tail, edge.move);
         const newEdge = new Edge(edge.head, edge.move, newTail);
         this.replaceEdgeAt(headIndex, edge.tail.index, newEdge, edgeIndex);
 
@@ -851,7 +851,7 @@ export class Graph {
     return this;
   }
 
-  private duplicateNode(originalNode: Node) {
+  private duplicateNode(originalNode: Node, move: Move) {
     const newNode = this.createNode(
       originalNode.typeName,
       originalNode.typeState,
@@ -861,6 +861,10 @@ export class Graph {
 
     for (const edge of this.edgesOfHead(originalNode)) {
       this.addEdge(new Edge(newNode, edge.move, edge.tail));
+    }
+
+    if (move instanceof FieldMove && move.provides) {
+      newNode.debugPostFix = " (for " + move.toString() + ")";
     }
 
     return newNode;

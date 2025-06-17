@@ -189,7 +189,6 @@ testVersions((api, version) => {
         `,
       },
     ]);
-    console.log(result.errors);
     assertCompositionSuccess(result);
   });
 });
