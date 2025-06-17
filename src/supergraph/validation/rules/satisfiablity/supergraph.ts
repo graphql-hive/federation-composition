@@ -60,7 +60,6 @@ export class Supergraph {
       this.logger,
       this.mergedGraph,
     );
-
   }
 
   validate() {
