@@ -110,7 +110,6 @@ testVersions((api, version) => {
         `,
       },
     ]).errors;
-    console.log(errors?.map((error) => error.message).join("\n"));
     expect(errors).toEqual(undefined);
   });
 });
