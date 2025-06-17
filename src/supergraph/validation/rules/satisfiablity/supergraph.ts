@@ -32,6 +32,7 @@ export class Supergraph {
       supergraphState,
       this.selectionResolver,
     );
+
     for (const [id, subgraphState] of supergraphState.subgraphs) {
       this.mergedGraph.addSubgraph(
         new Graph(
@@ -60,6 +61,8 @@ export class Supergraph {
       this.logger,
       this.mergedGraph,
     );
+
+    console.log(this.mergedGraph.print(true));
   }
 
   validate() {
