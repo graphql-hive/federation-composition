@@ -6,7 +6,10 @@ import type { UnionTypeState } from "../../../composition/union-type.js";
 import { lazy, OverrideLabels } from "./helpers.js";
 
 export class Node {
-  private _toString = lazy(() => `${this.typeName}/${this.graphName}`);
+  private _toString = lazy(
+    () => `${this.typeName}/${this.graphName}${this.debugPostFix}`,
+  );
+  public debugPostFix = "";
   public isLeaf = false;
   private childrenIndex = new Map<string, number[]>();
   /**
