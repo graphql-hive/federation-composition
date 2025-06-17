@@ -863,7 +863,7 @@ export class Graph {
       this.addEdge(new Edge(newNode, edge.move, edge.tail));
     }
 
-    if (move instanceof FieldMove && move.provides) {
+    if (move instanceof FieldMove) {
       newNode.debugPostFix = " (for " + move.toString() + ")";
     }
 
@@ -1381,7 +1381,10 @@ export class Graph {
       }
     }
 
-    const outputTypeName = stripTypeModifiers(field.type);
+    // We always want to connect it to the field type within our graph not the field type from another graph/supergraph
+    const fieldType = field.byGraph.get(this.id)?.type ?? field.type;
+    const outputTypeName = stripTypeModifiers(fieldType);
+
     const tail = this.createNodesAndEdgesForType(outputTypeName);
 
     if (!tail) {
