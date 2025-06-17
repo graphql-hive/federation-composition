@@ -476,7 +476,7 @@ function createFieldsTransformer(state: SupergraphState) {
           }
 
           if (referencedType.kind === "union") {
-            // TODO: not sure if we have to do something here
+            // Nothing to transform on union types
             continue;
           }
 
