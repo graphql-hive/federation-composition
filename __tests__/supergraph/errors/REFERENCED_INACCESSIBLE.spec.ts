@@ -130,6 +130,54 @@ testVersions((api, version) => {
       }),
     );
 
+    expect(
+      api.composeServices([
+        {
+          name: "a",
+          typeDefs: graphql`
+            extend schema
+              @link(
+                url: "https://specs.apollo.dev/federation/${version}"
+                import: [ "@inaccessible"]
+              )
+
+            type Query {
+              a: Foo
+            }
+
+            scalar Foo
+          `,
+        },
+        {
+          name: "b",
+          typeDefs: graphql`
+            extend schema
+              @link(
+                url: "https://specs.apollo.dev/federation/${version}"
+                import: [ "@inaccessible"]
+              )
+
+            type Query {
+              b: String
+            }
+
+            scalar Foo @inaccessible
+          `,
+        },
+      ]).errors,
+    ).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          message: expect.stringContaining(
+            `Type "Foo" is @inaccessible but is referenced by "Query.a", which is in the API schema.`,
+          ),
+          extensions: expect.objectContaining({
+            code: "REFERENCED_INACCESSIBLE",
+          }),
+        }),
+      ]),
+    );
+
     // KNOW: check if a type is accessible when it's directly referenced by a field from a Query type
   });
 });
