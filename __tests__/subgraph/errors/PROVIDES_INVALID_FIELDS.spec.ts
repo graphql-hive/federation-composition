@@ -18,11 +18,11 @@ testVersions((api, version) => {
                   url: "https://specs.apollo.dev/federation/${version}"
                   import: ["@key"]
                 )
-              
+
               type Query {
                 users: [User]
               }
-  
+
               type User @key(fields: "id") {
                 id: ID!
               }
@@ -36,16 +36,16 @@ testVersions((api, version) => {
                   url: "https://specs.apollo.dev/federation/${version}"
                   import: ["@key", "@external", "@provides"]
                 )
-  
+
               type Query {
                 feed: [Post]
               }
-  
+
               type Post @key(fields: "id") {
                 id: ID!
                 author: User @provides(fields: "userId")
               }
-  
+
               extend type User @key(fields: "id") {
                 id: ID! @external
               }
@@ -148,5 +148,73 @@ testVersions((api, version) => {
         }),
       }),
     );
+  });
+
+  test("error: Expected abstract indexes to be defined", () => {
+    const result = api.composeServices([
+      {
+        typeDefs: graphql`
+          extend schema
+            @link(
+              url: "https://specs.apollo.dev/federation/v2.3"
+              import: ["@key", "@shareable"]
+            )
+
+          type Query {
+            a: Int!
+          }
+
+          interface SomeInterface {
+            id: ID!
+            someField: String!
+          }
+
+          type AAAAAAAAAAAAA implements SomeInterface @key(fields: "id") {
+            id: ID!
+            someField: String! @shareable
+          }
+
+          type BBBBBBBBBBBBB @shareable @key(fields: "id") {
+            id: ID!
+            aaaaaaaaaaaa: SomeInterface!
+          }
+        `,
+        name: "a",
+      },
+      {
+        typeDefs: graphql`
+          extend schema
+            @link(
+              url: "https://specs.apollo.dev/federation/v2.3"
+              import: ["@key", "@provides", "@shareable", "@external"]
+            )
+
+          type Query {
+            b: Int!
+          }
+
+          type MutationResponse @shareable {
+            bbbbbbbbbbbbb: BBBBBBBBBBBBB!
+          }
+
+          type BBBBBBBBBBBBB @key(fields: "id") @shareable {
+            id: ID!
+            aaaaaaaaaaaa: AAAAAAAAAAAAA!
+          }
+
+          type Mutation {
+            mutationField: MutationResponse!
+              @provides(fields: "bbbbbbbbbbbbb { aaaaaaaaaaaa { someField } }")
+          }
+
+          type AAAAAAAAAAAAA @key(fields: "id") {
+            id: ID! @external
+            someField: String! @external
+          }
+        `,
+        name: "b",
+      },
+    ]);
+    expect(result.errors).toBeUndefined();
   });
 });
