@@ -58,7 +58,8 @@ function findOutputType(supergraph: SupergraphState, typeName: string) {
     supergraph.enumTypes.get(typeName) ||
     supergraph.objectTypes.get(typeName) ||
     supergraph.interfaceTypes.get(typeName) ||
-    supergraph.unionTypes.get(typeName)
+    supergraph.unionTypes.get(typeName) ||
+    supergraph.scalarTypes.get(typeName)
   );
 }
 
