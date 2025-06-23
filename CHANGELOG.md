@@ -1,5 +1,47 @@
 # @theguild/federation-composition
 
+## 0.18.5
+
+### Patch Changes
+
+- [#151](https://github.com/graphql-hive/federation-composition/pull/151) [`f9b9908`](https://github.com/graphql-hive/federation-composition/commit/f9b9908fcbfff601c53c8310bbd427c594919202) Thanks [@n1ru4l](https://github.com/n1ru4l)! - Fix issue where the satisfiability check raised an exception for fields that share different object type and interface definitions across subgraphs.
+
+- [#152](https://github.com/graphql-hive/federation-composition/pull/152) [`e4440a1`](https://github.com/graphql-hive/federation-composition/commit/e4440a1f3c4d33de478b67cd5ea2c3e806620f3c) Thanks [@n1ru4l](https://github.com/n1ru4l)! - Fix issue where scalar type marked with `@inaccessible` does not fail the composition if all usages are not marked with `@inaccessible`.
+
+  Composing the following subgraphs resulted in an invalid supergraph instead of failing the composition.
+
+  ```graphql
+  # Subgraph A
+  extend schema
+    @link(
+      url: "https://specs.apollo.dev/federation/v2.9"
+      import: ["@inaccessible"]
+    )
+
+  type Query {
+    a: Foo
+  }
+
+  scalar Foo
+  ```
+
+  ```graphql
+  # Subgraph B
+  extend schema
+    @link(
+      url: "https://specs.apollo.dev/federation/v2.9"
+      import: ["@inaccessible"]
+    )
+
+  type Query {
+    b: String
+  }
+
+  scalar Foo @inaccessible
+  ```
+
+  Now it correctly raises a composition error with the message `Type "Foo" is @inaccessible but is referenced by "Query.a", which is in the API schema.`.
+
 ## 0.18.4
 
 ### Patch Changes
