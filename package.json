@@ -80,7 +80,7 @@
     "lodash.sortby": "4.7.0",
     "mitata": "1.0.34",
     "prettier": "3.6.0",
-    "rimraf": "5.0.5",
+    "rimraf": "6.0.1",
     "strip-indent": "4.0.0",
     "tsx": "4.19.3",
     "typescript": "5.8.2",
