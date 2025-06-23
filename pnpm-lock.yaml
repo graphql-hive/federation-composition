@@ -47,7 +47,7 @@ importers:
         version: 3.2.4(vitest@3.2.4)
       bob-the-bundler:
         specifier: 7.0.1
-        version: 7.0.1(typescript@5.8.2)
+        version: 7.0.1(typescript@5.8.3)
       graphql:
         specifier: 16.10.0
         version: 16.10.0
@@ -67,8 +67,8 @@ importers:
         specifier: 4.19.3
         version: 4.19.3
       typescript:
-        specifier: 5.8.2
-        version: 5.8.2
+        specifier: 5.8.3
+        version: 5.8.3
       vitest:
         specifier: 3.2.4
         version: 3.2.4(@types/debug@4.1.12)(@types/node@22.13.13)(@vitest/ui@3.2.4)(tsx@4.19.3)
@@ -1433,8 +1433,8 @@ packages:
     engines: {node: '>=18.0.0'}
     hasBin: true
 
-  typescript@5.8.2:
-    resolution: {integrity: sha512-aJn6wq13/afZp/jT9QZmwEjDqqvSGp1VT5GVg+f/t6/oVyrgXM6BY1h9BRh/O5p3PlUPAe+WuiEZOmb/49RqoQ==}
+  typescript@5.8.3:
+    resolution: {integrity: sha512-p1diW6TqL9L07nNxvRMM7hMMw4c5XOo/1ibL4aAIGmSAt9slTE1Xgw5KWuof2uTOvCg9BY7ZRi+GaF+7sfgPeQ==}
     engines: {node: '>=14.17'}
     hasBin: true
 
@@ -2064,7 +2064,7 @@ snapshots:
     dependencies:
       is-windows: 1.0.2
 
-  bob-the-bundler@7.0.1(typescript@5.8.2):
+  bob-the-bundler@7.0.1(typescript@5.8.3):
     dependencies:
       consola: 3.4.2
       execa: 7.1.1
@@ -2075,7 +2075,7 @@ snapshots:
       p-limit: 4.0.0
       resolve.exports: 2.0.3
       tslib: 2.8.1
-      typescript: 5.8.2
+      typescript: 5.8.3
       yargs: 17.7.2
       zod: 3.25.67
 
@@ -2963,7 +2963,7 @@ snapshots:
     optionalDependencies:
       fsevents: 2.3.3
 
-  typescript@5.8.2: {}
+  typescript@5.8.3: {}
 
   undici-types@6.20.0: {}
 
