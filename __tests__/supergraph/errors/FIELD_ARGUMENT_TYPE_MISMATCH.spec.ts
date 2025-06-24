@@ -100,6 +100,44 @@ testVersions((api, version) => {
     });
   });
 
+  test("FIELD_ARGUMENT_TYPE_MISMATCH: directive definition arguments do not match (3 different definitions)", () => {
+    const result = api.composeServices([
+      {
+        name: "a",
+        url: "http://a.com",
+        typeDefs: graphql`
+          extend schema
+            @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@key"])
+
+          directive @a(n: Int) on FIELD
+
+          type Query {
+            a: Int
+          }
+        `,
+      },
+      {
+        name: "b",
+        url: "http://b.com",
+        typeDefs: graphql`
+          extend schema
+            @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@key"])
+
+          directive @a(n: String) on FIELD
+
+          type Query {
+            b: Int
+          }
+          `,
+      },
+    ]);
+    expect(result.errors).toHaveLength(1);
+    expect(result.errors?.[0].toJSON()).toMatchObject({
+      message: `Type of argument "@a(n:)" is incompatible across subgraphs: it has type "Int" in subgraph "a" but type "String" in subgraph "b"`,
+      extensions: { code: "FIELD_ARGUMENT_TYPE_MISMATCH" },
+    });
+  });
+
   test("FIELD_ARGUMENT_TYPE_MISMATCH: directive definition arguments do not match (plural)", () => {
     const result = api.composeServices([
       {
@@ -137,7 +175,7 @@ testVersions((api, version) => {
           extend schema
             @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@key"])
 
-          directive @a(n: String) on FIELD
+          directive @a(n: Boolean) on FIELD
 
           type Query {
             c: Int
@@ -147,7 +185,7 @@ testVersions((api, version) => {
     ]);
     expect(result.errors).toHaveLength(1);
     expect(result.errors?.[0].toJSON()).toMatchObject({
-      message: `Type of argument "@a(n:)" is incompatible across subgraphs: it has type "Int" in subgraphs "a" and "b" but type "String" in subgraph "c"`,
+      message: `Type of argument "@a(n:)" is incompatible across subgraphs: it has type "Int" in subgraphs "a" and "b" but type "Boolean" in subgraph "c"`,
       extensions: { code: "FIELD_ARGUMENT_TYPE_MISMATCH" },
     });
   });
