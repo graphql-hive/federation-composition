@@ -8,7 +8,10 @@ import {
 import { print } from "../graphql/printer.js";
 import { Link, mergeLinks } from "../specifications/link.js";
 import { parseFields } from "../subgraph/helpers.js";
-import { SubgraphState } from "../subgraph/state.js";
+import {
+  isExecutableDirectiveLocation,
+  SubgraphState,
+} from "../subgraph/state.js";
 import { createJoinGraphEnumTypeNode } from "./composition/ast.js";
 import {
   directiveBuilder,
@@ -265,6 +268,12 @@ export function createSupergraphStateBuilder() {
 
         // Remove all executable locations not shared by all subgraphs
         directiveState.locations.forEach((location) => {
+          // if it is not an executable location -> remove
+          if (!isExecutableDirectiveLocation(location)) {
+            directiveState.locations.delete(location);
+            return;
+          }
+
           for (const directiveStateInGraph of directiveState.byGraph.values()) {
             if (directiveStateInGraph.locations.has(location)) {
               continue;

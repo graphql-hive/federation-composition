@@ -2431,6 +2431,12 @@ const executableDirectiveLocations = new Set([
   DirectiveLocation.SUBSCRIPTION,
 ]);
 
+export function isExecutableDirectiveLocation(
+  location: string | DirectiveLocation,
+): boolean {
+  return executableDirectiveLocations.has(location as any);
+}
+
 function getOrCreateDirective(
   state: SubgraphState,
   directiveName: string,
@@ -2453,7 +2459,7 @@ function getOrCreateDirective(
     composed: false,
     get isExecutable() {
       return Array.from(this.locations).some((location) =>
-        executableDirectiveLocations.has(location as any),
+        isExecutableDirectiveLocation(location),
       );
     },
     args: new Map(),
