@@ -270,6 +270,11 @@ export function createSupergraphStateBuilder() {
         directiveState.locations.forEach((location) => {
           // if it is not an executable location -> remove
           if (!isExecutableDirectiveLocation(location)) {
+            // If it is a compose directive we want to retain the schema location.
+            if (directiveState.composed) {
+              return;
+            }
+
             directiveState.locations.delete(location);
             return;
           }

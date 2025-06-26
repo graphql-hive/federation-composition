@@ -29,6 +29,10 @@ export function directiveBuilder(): TypeBuilder<Directive, DirectiveState> {
         directiveState.isExecutable = true;
       }
 
+      if (directive.composed) {
+        directiveState.composed = true;
+      }
+
       for (const arg of directive.args.values()) {
         const argState = getOrCreateArg(
           directiveState,
@@ -94,6 +98,7 @@ export type DirectiveState = {
   name: string;
   byGraph: MapByGraph<DirectiveStateInGraph>;
   isExecutable: boolean;
+  composed: boolean;
   locations: Set<string>;
   repeatable: boolean;
   args: Map<string, DirectiveArgState>;
@@ -143,6 +148,7 @@ function getOrCreateDirective(
     args: new Map(),
     repeatable: false,
     isExecutable: false,
+    composed: false,
   };
 
   state.set(directiveName, def);
