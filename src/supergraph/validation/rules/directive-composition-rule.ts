@@ -123,7 +123,7 @@ export function DirectiveCompositionRule(
 
   return {
     Directive(directiveState) {
-      if (directiveState.byGraph.size === 1) {
+      if (directiveState.byGraph.size === 1 || directiveState.isExecutable) {
         return;
       }
 

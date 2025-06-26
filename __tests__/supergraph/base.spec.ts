@@ -246,4 +246,80 @@ testVersions((api, version) => {
     ]);
     expect(result.supergraphSdl).not.toContain("directive @a(n: Int)");
   });
+
+  test("executable directive only contains locations shared between all subgraphs", () => {
+    const result = api.composeServices([
+      {
+        name: "a",
+        url: "http://a.com",
+        typeDefs: graphql`
+          extend schema
+            @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@key"])
+
+          directive @a(n: Int) on FIELD
+
+          type Query {
+            a: Int
+          }
+        `,
+      },
+      {
+        name: "b",
+        url: "http://b.com",
+        typeDefs: graphql`
+          extend schema
+            @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@key"])
+
+          directive @a(n: Int) on FIELD | FRAGMENT_SPREAD
+
+          type Query {
+            b: Int
+          }
+          `,
+      },
+    ]);
+    expect(result.supergraphSdl).toBeDefined();
+    const line = result.supergraphSdl
+      ?.split("\n")
+      ?.find((line) => line.includes("directive @a(n: Int)"));
+    expect(line).toBeDefined();
+    expect(line).toContain("FIELD");
+    expect(line).not.toContain("FRAGMENT_SPREAD");
+  });
+
+  test("executable directive is removed if no locations are shared between all subgraphs", () => {
+    const result = api.composeServices([
+      {
+        name: "a",
+        url: "http://a.com",
+        typeDefs: graphql`
+          extend schema
+            @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@key"])
+
+          directive @a(n: Int) on FIELD
+
+          type Query {
+            a: Int
+          }
+        `,
+      },
+      {
+        name: "b",
+        url: "http://b.com",
+        typeDefs: graphql`
+          extend schema
+            @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@key"])
+
+          directive @a(n: Int) on FRAGMENT_SPREAD
+
+          type Query {
+            b: Int
+          }
+          `,
+      },
+    ]);
+
+    expect(result.supergraphSdl).toBeDefined();
+    expect(result.supergraphSdl).not.toContain("directive @a(n: Int)");
+  });
 });

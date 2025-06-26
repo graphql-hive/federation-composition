@@ -245,19 +245,37 @@ export function createSupergraphStateBuilder() {
 
       // Strip out all executable directives that are not defined or identical every supergraph
       for (const directiveState of state.directives.values()) {
-        if (directiveState.isExecutable && directiveState.byGraph.size) {
-          const isAllDirectivesIdentical = Array.from(
-            directiveState.args.values(),
-          ).every((directiveArgState) =>
-            isArgumentTypeIdenticalInEverySubgraph(
-              directiveArgState,
-              state.subgraphs.size,
-            ),
-          );
+        if (!directiveState.isExecutable || !directiveState.byGraph.size) {
+          continue;
+        }
 
-          if (!isAllDirectivesIdentical) {
-            state.directives.delete(directiveState.name);
+        const isAllDirectivesIdentical = Array.from(
+          directiveState.args.values(),
+        ).every((directiveArgState) =>
+          isArgumentTypeIdenticalInEverySubgraph(
+            directiveArgState,
+            state.subgraphs.size,
+          ),
+        );
+
+        if (!isAllDirectivesIdentical) {
+          state.directives.delete(directiveState.name);
+          continue;
+        }
+
+        // Remove all executable locations not shared by all subgraphs
+        directiveState.locations.forEach((location) => {
+          for (const directiveStateInGraph of directiveState.byGraph.values()) {
+            if (directiveStateInGraph.locations.has(location)) {
+              continue;
+            }
+            directiveState.locations.delete(location);
           }
+        });
+
+        // If there is no location left, we need to remove this executable directive
+        if (directiveState.locations.size === 0) {
+          state.directives.delete(directiveState.name);
         }
       }
 
