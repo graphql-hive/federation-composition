@@ -282,6 +282,9 @@ testVersions((api, version) => {
     expect(result.supergraphSdl).toContainGraphQL(graphql`
       directive @a(n: Int) on FIELD
     `);
+    expect(result.supergraphSdl).not.toContainGraphQL(graphql`
+      directive @a(n: Int) on FIELD | FRAGMENT_SPREAD
+    `);
   });
 
   test("executable directive is removed if no locations are shared between all subgraphs", () => {
