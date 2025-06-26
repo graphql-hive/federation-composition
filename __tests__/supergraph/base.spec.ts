@@ -279,12 +279,9 @@ testVersions((api, version) => {
       },
     ]);
     expect(result.supergraphSdl).toBeDefined();
-    const line = result.supergraphSdl
-      ?.split("\n")
-      ?.find((line) => line.includes("directive @a(n: Int)"));
-    expect(line).toBeDefined();
-    expect(line).toContain("FIELD");
-    expect(line).not.toContain("FRAGMENT_SPREAD");
+    expect(result.supergraphSdl).toContainGraphQL(graphql`
+      directive @a(n: Int) on FIELD
+    `);
   });
 
   test("executable directive is removed if no locations are shared between all subgraphs", () => {
@@ -356,11 +353,52 @@ testVersions((api, version) => {
     ]);
 
     expect(result.supergraphSdl).toBeDefined();
-    const line = result.supergraphSdl
-      ?.split("\n")
-      ?.find((line) => line.includes("directive @a(n: Int)"));
-    expect(line).toBeDefined();
-    expect(line).toContain("FIELD");
-    expect(line).not.toContain("FIELD_DEFINITION");
+    expect(result.supergraphSdl).toContainGraphQL(graphql`
+      directive @a(n: Int) on FIELD
+    `);
   });
+
+  if (version !== "v2.0") {
+    test("executable directive that is also a compose directive is only included with executable definition locations", () => {
+      const result = api.composeServices([
+        {
+          name: "a",
+          url: "http://a.com",
+          typeDefs: graphql`
+          extend schema
+            @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@composeDirective"])
+            @link(url: "https://a.dev/a/v1.0", import: ["@a"])
+            @composeDirective(name: "@a")
+
+          directive @a(n: Int) on FIELD | FIELD_DEFINITION
+
+          type Query {
+            a: Int
+          }
+        `,
+        },
+        {
+          name: "b",
+          url: "http://b.com",
+          typeDefs: graphql`
+          extend schema
+            @link(url: "https://specs.apollo.dev/federation/${version}", import: [ "@composeDirective"])
+            @link(url: "https://a.dev/a/v1.0", import: ["@a"])
+            @composeDirective(name: "@a")
+
+          directive @a(n: Int) on FIELD | FIELD_DEFINITION
+
+          type Query {
+            b: Int
+          }
+          `,
+        },
+      ]);
+
+      expect(result.supergraphSdl).toBeDefined();
+      expect(result.supergraphSdl).toContainGraphQL(graphql`
+        directive @a(n: Int) on FIELD
+      `);
+    });
+  }
 });
