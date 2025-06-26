@@ -160,4 +160,90 @@ testVersions((api, version) => {
       ]);
     }, "detected exact same urls").not.toThrow();
   });
+
+  test("executable directive definition is retained in supergraph", () => {
+    const result = api.composeServices([
+      {
+        name: "foo",
+        url: "http://foo.com",
+        typeDefs: graphql`
+        extend schema
+          @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@key"])
+
+        directive @a(n: Int) on FIELD
+
+        type Query {
+          a: Int
+        }
+      `,
+      },
+    ]);
+    expect(result.supergraphSdl).toContain("directive @a(n: Int)");
+  });
+
+  test("executable directive definition is retained if defined identical in all subgraphs", () => {
+    const result = api.composeServices([
+      {
+        name: "a",
+        url: "http://a.com",
+        typeDefs: graphql`
+          extend schema
+            @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@key"])
+
+          directive @a(n: Int) on FIELD
+
+          type Query {
+            a: Int
+          }
+      `,
+      },
+      {
+        name: "b",
+        url: "http://b.com",
+        typeDefs: graphql`
+          extend schema
+            @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@key"])
+
+          directive @a(n: Int) on FIELD
+
+          type Query {
+            b: Int
+          }
+        `,
+      },
+    ]);
+    expect(result.supergraphSdl).toContain("directive @a(n: Int)");
+  });
+
+  test("executable directive definition is omitted if only defined within a single subgraph", () => {
+    const result = api.composeServices([
+      {
+        name: "a",
+        url: "http://a.com",
+        typeDefs: graphql`
+        extend schema
+          @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@key"])
+
+          directive @a(n: Int) on FIELD
+
+          type Query {
+            a: Int
+          }
+        `,
+      },
+      {
+        name: "b",
+        url: "http://b.com",
+        typeDefs: graphql`
+          extend schema
+            @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@key"])
+
+          type Query {
+            b: Int
+          }
+        `,
+      },
+    ]);
+    expect(result.supergraphSdl).not.toContain("directive @a(n: Int)");
+  });
 });

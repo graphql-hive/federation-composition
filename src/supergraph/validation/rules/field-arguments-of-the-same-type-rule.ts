@@ -71,5 +71,71 @@ export function FieldArgumentsOfTheSameTypeRule(
         );
       }
     },
+    DirectiveFieldArg(directiveState, argState) {
+      if (directiveState.isExecutable === false) {
+        // We only want to do this validation on executable directives
+        return;
+      }
+
+      if (argState.byGraph.size !== context.subgraphStates.size) {
+        // If the directive is not defined in all subgraphs it will be omitted from the supergraph
+        return;
+      }
+
+      const typesPerSubgraph = new Map<string, Set<string>>();
+
+      function collectSubgraphType(typeName: string, subgraphName: string) {
+        let subgraphNames = typesPerSubgraph.get(typeName);
+        if (subgraphNames === undefined) {
+          subgraphNames = new Set();
+          typesPerSubgraph.set(typeName, subgraphNames);
+        }
+
+        subgraphNames.add(subgraphName);
+      }
+
+      argState.byGraph.forEach((arg, graphName) => {
+        collectSubgraphType(arg.type, graphName);
+      });
+
+      if (typesPerSubgraph.size === 1) {
+        return;
+      }
+
+      const groups = Array.from(typesPerSubgraph.entries()).map(
+        ([outputType, graphs]) => {
+          const plural = graphs.size > 1 ? "s" : "";
+
+          return `type "${outputType}" in subgraph${plural} ${joinItems(
+            Array.from(graphs).map(context.graphIdToName),
+          )}`;
+        },
+      );
+      const [first, second, ...rest] = groups;
+      context.reportError(
+        new GraphQLError(
+          `Type of argument "@${directiveState.name}(${argState.name}:)" is incompatible across subgraphs: it has ${first} but ${second}${
+            rest.length ? ` and ${rest.join(" and ")}` : ""
+          }`,
+          {
+            extensions: {
+              code: "FIELD_ARGUMENT_TYPE_MISMATCH",
+            },
+          },
+        ),
+      );
+    },
   };
+}
+
+function joinItems(items: string[]): string {
+  if (items.length === 0) {
+    return "";
+  } else if (items.length === 1) {
+    return `"${items[0]}"`;
+  } else if (items.length === 2) {
+    return `"${items[0]}" and "${items[1]}"`;
+  } else {
+    return `"${items.slice(0, -1).join(`", "`)}", and "${items[items.length - 1]}"`;
+  }
 }

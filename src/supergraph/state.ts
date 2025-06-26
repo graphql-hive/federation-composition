@@ -10,7 +10,11 @@ import { Link, mergeLinks } from "../specifications/link.js";
 import { parseFields } from "../subgraph/helpers.js";
 import { SubgraphState } from "../subgraph/state.js";
 import { createJoinGraphEnumTypeNode } from "./composition/ast.js";
-import { directiveBuilder, DirectiveState } from "./composition/directive.js";
+import {
+  directiveBuilder,
+  DirectiveState,
+  isArgumentTypeIdenticalInEverySubgraph,
+} from "./composition/directive.js";
 import { enumTypeBuilder, EnumTypeState } from "./composition/enum-type.js";
 import {
   inputObjectTypeBuilder,
@@ -238,6 +242,24 @@ export function createSupergraphStateBuilder() {
         },
         supergraphState: state,
       };
+
+      // Strip out all executable directives that are not defined or identical every supergraph
+      for (const directiveState of state.directives.values()) {
+        if (directiveState.isExecutable && directiveState.byGraph.size) {
+          const isAllDirectivesIdentical = Array.from(
+            directiveState.args.values(),
+          ).every((directiveArgState) =>
+            isArgumentTypeIdenticalInEverySubgraph(
+              directiveArgState,
+              state.subgraphs.size,
+            ),
+          );
+
+          if (!isAllDirectivesIdentical) {
+            state.directives.delete(directiveState.name);
+          }
+        }
+      }
 
       // It's important to keep that number correct.
       const numberOfExpectedNodes =
