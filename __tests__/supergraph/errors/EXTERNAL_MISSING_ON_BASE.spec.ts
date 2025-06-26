@@ -105,7 +105,7 @@ testVersions((api, version) => {
           typeDefs: graphql`
             extend schema
               @link(
-                url: "https://specs.apollo.dev/federation/v2.3"
+                url: "https://specs.apollo.dev/federation/${version}"
                 import: ["@key", "@external", "@requires"]
               )
 
@@ -130,7 +130,7 @@ testVersions((api, version) => {
           typeDefs: graphql`
             extend schema
               @link(
-                url: "https://specs.apollo.dev/federation/v2.3"
+                url: "https://specs.apollo.dev/federation/${version}"
                 import: ["@key"]
               )
 
