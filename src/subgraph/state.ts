@@ -13,6 +13,7 @@ import {
   specifiedDirectives as specifiedDirectiveTypes,
   specifiedScalarTypes,
   TypeNode,
+  DirectiveLocation,
 } from "graphql";
 import { print } from "../graphql/printer.js";
 import { TypeNodeInfo } from "../graphql/type-node-info.js";
@@ -57,6 +58,10 @@ export interface Directive {
    * Marked by @composeDirective directive as a composed directive.
    */
   composed: boolean;
+  /**
+   * Whether it is a executable directive that can be used within GraphQL operation documents.
+   */
+  isExecutable: boolean;
   repeatable: boolean;
   locations: Set<string>;
   args: Map<string, Argument>;
@@ -2415,6 +2420,23 @@ function enumTypeFactory(state: SubgraphState) {
   };
 }
 
+const executableDirectiveLocations = new Set([
+  DirectiveLocation.FIELD,
+  DirectiveLocation.FRAGMENT_DEFINITION,
+  DirectiveLocation.INLINE_FRAGMENT,
+  DirectiveLocation.FRAGMENT_SPREAD,
+  DirectiveLocation.VARIABLE_DEFINITION,
+  DirectiveLocation.QUERY,
+  DirectiveLocation.MUTATION,
+  DirectiveLocation.SUBSCRIPTION,
+]);
+
+export function isExecutableDirectiveLocation(
+  location: string | DirectiveLocation,
+): boolean {
+  return executableDirectiveLocations.has(location as any);
+}
+
 function getOrCreateDirective(
   state: SubgraphState,
   directiveName: string,
@@ -2435,6 +2457,11 @@ function getOrCreateDirective(
     locations: new Set(),
     repeatable: false,
     composed: false,
+    get isExecutable() {
+      return Array.from(this.locations).some((location) =>
+        isExecutableDirectiveLocation(location),
+      );
+    },
     args: new Map(),
   };
 

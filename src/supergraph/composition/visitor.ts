@@ -1,5 +1,5 @@
 import { SupergraphState } from "../state.js";
-import { DirectiveState } from "./directive.js";
+import { DirectiveArgState, DirectiveState } from "./directive.js";
 import { EnumTypeState } from "./enum-type.js";
 import {
   InputObjectTypeFieldState,
@@ -101,6 +101,12 @@ export function visitSupergraphState(
       if (visitor.Directive) {
         visitor.Directive(directiveState);
       }
+
+      if (visitor.DirectiveFieldArg) {
+        for (const directiveArgState of directiveState.args.values()) {
+          visitor.DirectiveFieldArg(directiveState, directiveArgState);
+        }
+      }
     }
   });
 }
@@ -134,4 +140,8 @@ export interface SupergraphVisitorMap {
   InterfaceType?(interfaceState: InterfaceTypeState): void;
   // Directive
   Directive?(directiveState: DirectiveState): void;
+  DirectiveFieldArg?(
+    directiveState: DirectiveState,
+    directiveArgState: DirectiveArgState,
+  ): void;
 }

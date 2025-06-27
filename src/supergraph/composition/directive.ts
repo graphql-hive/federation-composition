@@ -10,7 +10,8 @@ export function directiveBuilder(): TypeBuilder<Directive, DirectiveState> {
       // Because the visitor is called from leaf to root (it's using "leave"),
       // we can assume that @composeDirective was already visited and set the composed flag.
       // If it's not set, we can skip this directive as it shouldn't be included in the supergraph anyway.
-      if (!directive.composed) {
+      // If it is an executable directive, we need to add it as well, but later on check whether it should be included in the supergraph or not (See the `createSupergraphStateBuilder.build` method).
+      if (!directive.composed && !directive.isExecutable) {
         return;
       }
 
@@ -22,6 +23,14 @@ export function directiveBuilder(): TypeBuilder<Directive, DirectiveState> {
 
       if (directive.repeatable) {
         directiveState.repeatable = true;
+      }
+
+      if (directive.isExecutable) {
+        directiveState.isExecutable = true;
+      }
+
+      if (directive.composed) {
+        directiveState.composed = true;
       }
 
       for (const arg of directive.args.values()) {
@@ -88,6 +97,8 @@ export type DirectiveState = {
   kind: "directive";
   name: string;
   byGraph: MapByGraph<DirectiveStateInGraph>;
+  isExecutable: boolean;
+  composed: boolean;
   locations: Set<string>;
   repeatable: boolean;
   args: Map<string, DirectiveArgState>;
@@ -136,6 +147,8 @@ function getOrCreateDirective(
     byGraph: new Map(),
     args: new Map(),
     repeatable: false,
+    isExecutable: false,
+    composed: false,
   };
 
   state.set(directiveName, def);
@@ -170,4 +183,21 @@ function getOrCreateArg(
   directiveState.args.set(argName, def);
 
   return def;
+}
+
+export function isArgumentTypeIdenticalInEverySubgraph(
+  directiveArgState: DirectiveArgState,
+  totalSubgraphSize: number,
+): boolean {
+  if (directiveArgState.byGraph.size !== totalSubgraphSize) {
+    return false;
+  }
+
+  for (const arg of directiveArgState.byGraph.values()) {
+    if (arg.type !== directiveArgState.type) {
+      return false;
+    }
+  }
+
+  return true;
 }
