@@ -111,12 +111,12 @@ export function FieldArgumentsOfTheSameTypeRule(
           )}`;
         },
       );
-      const [first, second, ...rest] = groups;
+      const [first, ...rest] = groups;
       context.reportError(
         new GraphQLError(
-          `Type of argument "@${directiveState.name}(${argState.name}:)" is incompatible across subgraphs: it has ${first} but ${second}${
-            rest.length ? ` and ${rest.join(" and ")}` : ""
-          }`,
+          `Type of argument "@${directiveState.name}(${argState.name}:)" is incompatible across subgraphs: it has ${first} but ${rest.join(
+            " and ",
+          )}`,
           {
             extensions: {
               code: "FIELD_ARGUMENT_TYPE_MISMATCH",
