@@ -1,5 +1,11 @@
 # @theguild/federation-composition
 
+## 0.19.0
+
+### Minor Changes
+
+- [#156](https://github.com/graphql-hive/federation-composition/pull/156) [`46cb6bc`](https://github.com/graphql-hive/federation-composition/commit/46cb6bc1d45c6927e33d012a20c379992e53fdd2) Thanks [@n1ru4l](https://github.com/n1ru4l)! - Support composing executable directive definitions within subgraphs into the supergraph.
+
 ## 0.18.5
 
 ### Patch Changes
