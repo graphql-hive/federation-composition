@@ -1,5 +1,11 @@
 # @theguild/federation-composition
 
+## 0.19.1
+
+### Patch Changes
+
+- [#149](https://github.com/graphql-hive/federation-composition/pull/149) [`9ae49e3`](https://github.com/graphql-hive/federation-composition/commit/9ae49e336eed84c32a810311dd05ab6abe5e7e33) Thanks [@n1ru4l](https://github.com/n1ru4l)! - Fix external key fields on extended object types raising composition errors.
+
 ## 0.19.0
 
 ### Minor Changes
