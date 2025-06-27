@@ -13,7 +13,7 @@ testVersions((api, version) => {
           name: "users",
           typeDefs: graphql`
             extend schema @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@key", "@external", "@requires"])
-            
+
             type Query {
               users: [User]
             }
@@ -51,7 +51,7 @@ testVersions((api, version) => {
           name: "users",
           typeDefs: graphql`
             extend schema @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@key", "@external", "@requires", "@extends"])
-            
+
             type Query {
               users: [User]
             }
@@ -85,7 +85,7 @@ testVersions((api, version) => {
           name: "users",
           typeDefs: graphql`
             extend schema @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@key", "@external", "@extends"])
-            
+
             type Query {
               users: [User]
             }
@@ -175,5 +175,57 @@ testVersions((api, version) => {
         },
       ]),
     );
+  });
+
+  test("Field can be '@external'-only if it is a '@key' and the object type uses 'extend'", () => {
+    const result = api.composeServices([
+      {
+        name: "a",
+        typeDefs: graphql`
+            extend schema
+              @link(
+                url: "https://specs.apollo.dev/federation/${version}"
+                import: ["@key", "@external", "@requires"]
+              )
+
+            extend type SharedType @key(fields: "id") {
+              id: ID! @external
+              dependency: String! @external
+            }
+
+            extend type SharedType @key(fields: "secondId") {
+              secondId: ID! @external
+              someFieldThatRequiresDependency: String
+                @requires(fields: "dependency")
+            }
+
+            type Query {
+              a: String!
+            }
+          `,
+      },
+      {
+        name: "b",
+        typeDefs: graphql`
+            extend schema
+              @link(
+                url: "https://specs.apollo.dev/federation/${version}"
+                import: ["@key"]
+              )
+
+            type SharedType @key(fields: "secondId") {
+              type: String!
+              secondId: ID!
+              dependency: String!
+            }
+
+            type Query {
+              c: String!
+            }
+          `,
+      },
+    ]);
+
+    expect(result.errors).toBeUndefined();
   });
 });

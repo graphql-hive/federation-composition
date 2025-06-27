@@ -40,35 +40,27 @@ export function ExternalMissingOnBaseRule(
     ObjectTypeField(objectState, fieldState) {
       // Check if the field is marked @external on all the subgraphs in which it is listed.
       if (
-        Array.from(fieldState.byGraph).every(([graphId, stateInGraph]) => {
+        Array.from(fieldState.byGraph).every(([graphId, fieldStateInGraph]) => {
           const graphVersion =
             context.subgraphStates.get(graphId)!.federation.version;
 
-          if (stateInGraph.usedAsKey) {
-            if (graphVersion === "v1.0") {
-              return (
-                stateInGraph.external &&
-                !objectState.byGraph.get(graphId)!.extension
-              );
-            }
-
-            // if the field is marked as external on `type Product @extends`, don't treat it as external (I have no idea why this is the case, but it is...)
+          if (fieldStateInGraph.usedAsKey) {
             return (
-              stateInGraph.external === true &&
-              objectState.byGraph.get(graphId)!.extensionType !== "@extends"
+              fieldStateInGraph.external &&
+              !objectState.byGraph.get(graphId)!.extension
             );
           }
 
           if (graphVersion === "v1.0") {
             // In Fed v1: if a field is provided or required but it's not @key field and it's marked as @external, it's an error
-            if (stateInGraph.external === true && stateInGraph.used) {
+            if (fieldStateInGraph.external === true && fieldStateInGraph.used) {
               return true;
             }
 
             return false;
           }
 
-          return stateInGraph.external === true;
+          return fieldStateInGraph.external === true;
         })
       ) {
         const subgraphs =
