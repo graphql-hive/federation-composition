@@ -7349,6 +7349,169 @@ testImplementations((api) => {
         }
       `);
     });
+
+    let result = api.composeServices([
+      {
+        name: "foo",
+        typeDefs: parse(/* GraphQL */ `
+          extend schema
+            @link(
+              url: "https://specs.apollo.dev/federation/v2.3"
+              import: ["@key", "@external", "@provides", "@shareable"]
+            )
+          type Note @key(fields: "id") @shareable {
+            id: ID!
+            name: String @external
+            author: User @external
+          }
+          type User @key(fields: "id", resolvable: false) {
+            id: ID!
+          }
+          type PrivateNote @key(fields: "id") @shareable {
+            id: ID!
+            note: Note @provides(fields: "name author { id }")
+          }
+          type Query {
+            note: Note @shareable
+            privateNote: PrivateNote @shareable
+          }
+        `),
+      },
+      {
+        name: "bar",
+        typeDefs: parse(/* GraphQL */ `
+          extend schema
+            @link(
+            url: "https://specs.apollo.dev/federation/v2.3"
+            import: ["@key", "@shareable"]
+            )
+          type Note @key(fields: "id") @shareable {
+            id: ID!
+            name: String
+            author: User
+          }
+          type User @key(fields: "id") {
+          id: ID!
+          name: String
+          }
+        type PrivateNote @key(fields: "id") @shareable {
+          id: ID!
+          note: Note
+        }
+        type Query {
+          note: Note @shareable
+          privateNote: PrivateNote @shareable
+          }
+        `),
+      },
+    ]);
+
+    assertCompositionSuccess(result);
+
+    expect(result.supergraphSdl).toContainGraphQL(/* GraphQL */ `
+      type Note
+        @join__type(graph: FOO, key: "id")
+        @join__type(graph: BAR, key: "id") {
+        id: ID!
+        name: String
+          @join__field(external: true, graph: FOO)
+          @join__field(graph: BAR)
+        author: User
+          @join__field(external: true, graph: FOO)
+          @join__field(graph: BAR)
+      }
+    `);
+
+    result = api.composeServices([
+      {
+        name: "foo",
+          typeDefs: parse(/* GraphQL */ `
+          extend schema
+              @link(
+              url: "https://specs.apollo.dev/federation/v2.3"
+              import: ["@key", "@external", "@provides", "@shareable"]
+            )
+          type Note @key(fields: "id") @shareable {
+            id: ID!
+            name: String @external
+            author: User @external
+          }
+          type User @key(fields: "id", resolvable: false) {
+            id: ID!
+          }
+          type PrivateNote @key(fields: "id") @shareable {
+            id: ID!
+            note: Note @provides(fields: "name author { id }")
+            }
+            type Query {
+            note: Note @shareable
+            privateNote: PrivateNote @shareable
+          }
+        `),
+      },
+      {
+        name: "bar",
+        typeDefs: parse(/* GraphQL */ `
+          extend schema
+            @link(
+              url: "https://specs.apollo.dev/federation/v2.3"
+              import: ["@key", "@shareable"]
+            )
+          type Note @key(fields: "id") @shareable {
+            id: ID!
+            name: String
+            author: User
+            }
+            type User @key(fields: "id") {
+            id: ID!
+            name: String
+          }
+          type PrivateNote @key(fields: "id") @shareable {
+            id: ID!
+            note: Note
+          }
+          type Query {
+            note: Note @shareable
+            privateNote: PrivateNote @shareable
+          }
+        `),
+      },
+      {
+        name: "baz",
+        typeDefs: parse(/* GraphQL */ `
+          extend schema
+            @link(
+              url: "https://specs.apollo.dev/federation/v2.3"
+              import: ["@key", "@external", "@provides", "@shareable"]
+            )
+          type Query {
+            hello: String
+          }
+          type Note @key(fields: "id") @shareable {
+            id: ID!
+            tag: String
+            }
+        `),
+      },
+    ]);
+
+    assertCompositionSuccess(result);
+
+    expect(result.supergraphSdl).toContainGraphQL(/* GraphQL */ `
+      type Note
+        @join__type(graph: FOO, key: "id")
+        @join__type(graph: BAR, key: "id")
+        @join__type(graph: BAZ, key: "id") {
+        id: ID!
+        name: String
+          @join__field(external: true, graph: FOO)
+          @join__field(graph: BAR)
+        author: User
+          @join__field(external: true, graph: FOO)
+          @join__field(graph: BAR)
+        tag: String @join__field(graph: BAZ)
+        }
+    `);
   });
 
   test("print join__field external the field is required in a deeply nested selection set", () => {
