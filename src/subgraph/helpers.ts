@@ -331,9 +331,13 @@ export function visitFields({
     }
 
     if (!isTypename && (interceptNonExternalField || interceptExternalField)) {
-      const isExternal = selectionFieldDef.directives?.some((d) =>
-        context.isAvailableFederationDirective("external", d),
-      );
+      const isExternal =
+        selectionFieldDef.directives?.some((d) =>
+          context.isAvailableFederationDirective("external", d),
+        ) ||
+        typeDefinition.directives?.some((d) =>
+          context.isAvailableFederationDirective("external", d),
+        );
       const fieldName = selection.name.value;
 
       // ignore if it's not a leaf
