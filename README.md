@@ -2,7 +2,7 @@
 
 Supports all Federation versions. Drop-in replacement for `@apollo/composition`.
 
-🚧 Work in progress, so please check [TODOs](#todos).
+[Learn more about compability](#compatibility).
 
 ## Comparison with `@apollo/composition`
 
@@ -127,8 +127,6 @@ Your feedback and bug reports are welcome and appreciated.
 
 ## Validation
 
-🚧 Work in progress
-
 ### Validation rules
 
 - ✅ `NO_QUERIES`
@@ -193,7 +191,7 @@ Your feedback and bug reports are welcome and appreciated.
 - ✅ `LINK_IMPORT_NAME_MISMATCH`
 - ✅ `IMPLEMENTED_BY_INACCESSIBLE`
 
-### TODOs
+### Not yet covered Validation rules
 
 - [ ] `DISALLOWED_INACCESSIBLE`
 - [ ] `EXTERNAL_ARGUMENT_DEFAULT_MISMATCH`
