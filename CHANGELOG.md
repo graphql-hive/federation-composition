@@ -1,5 +1,58 @@
 # @theguild/federation-composition
 
+## 0.20.0
+
+### Minor Changes
+
+- [#180](https://github.com/graphql-hive/federation-composition/pull/180) [`a208f1c`](https://github.com/graphql-hive/federation-composition/commit/a208f1cd72bb8bff2a350d0e14284c1a00644225) Thanks [@n1ru4l](https://github.com/n1ru4l)! - Add `composeSchemaContract` function for composing schema contracts.
+
+  Running the following script:
+
+  ```ts
+  import { composeSchemaContract } from "@theguild/federation-composition";
+  import { parse } from "graphql";
+
+  const result = composeSchemaContract(
+    [
+      {
+        name: "a",
+        typeDefs: parse(/* GraphQL */ `
+          type Query {
+            a: String @tag(name: "public")
+          }
+        `),
+        url: "a.localhost",
+      },
+      {
+        name: "b",
+        typeDefs: parse(/* GraphQL */ `
+          type Query {
+            b: String
+          }
+        `),
+        url: "b.localhost",
+      },
+    ],
+    /** Tags to include and exclude */
+    {
+      include: new Set(["public"]),
+      exclude: new Set(),
+    },
+    /** Exclude unreachable types */
+    true,
+  );
+
+  console.log(result.publicSdl);
+  ```
+
+  Will result in the output containing only the fields tagged with `public`:
+
+  ```graphql
+  type Query {
+    a: String!
+  }
+  ```
+
 ## 0.19.1
 
 ### Patch Changes
