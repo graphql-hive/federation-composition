@@ -6,3 +6,5 @@ export { transformSupergraphToPublicSchema } from "./graphql/transform-supergrap
 export { containsSupergraphSpec } from "./graphql/contains-supergraph-spec.js";
 export { sortSDL } from "./graphql/sort-sdl.js";
 export { composeSchemaContract } from "./contracts/schema-contract.js";
+export { addInaccessibleToUnreachableTypes } from "./contracts/add-inaccessible-to-unreachable-types.js";
+export { applyTagFilterOnSubgraphs } from "./contracts/tax-extraction.js";

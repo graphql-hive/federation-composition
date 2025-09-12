@@ -7,16 +7,13 @@ import {
 import { transformSupergraphToPublicSchema } from "../graphql/transform-supergraph-to-public-schema.js";
 
 /**
- * Adds inaccessible directive to unreachable types
- *
- * @param resolveName
- * @param compositionResult
- * @param supergraphSDL
- * @returns
+ * Adds inaccessible directive to unreachable types within the supergraph and removes them from the
+ * public GraphQL schema.
  */
-
 export const addInaccessibleToUnreachableTypes = (
+  /** Implementation for resolvinf the federation type names. */
   resolveName: (identity: string, name: string) => string,
+  /** The successful composition result to process. */
   compositionResult: CompositionSuccess,
 ): CompositionSuccess => {
   const inaccessibleDirectiveName = resolveName(

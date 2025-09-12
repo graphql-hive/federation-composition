@@ -617,7 +617,7 @@ export function applyTagFilterToInaccessibleTransformOnSubgraphSchema(
 }
 
 /**
- * Apply a tag filter to a set of subgraphs.
+ * Apply a tag filter to a set of subgraphs, transforming `@tag` to `@inaccessible`
  */
 export function applyTagFilterOnSubgraphs<
   TType extends {
