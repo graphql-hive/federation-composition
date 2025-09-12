@@ -323,7 +323,7 @@ type ObjectLikeNode =
 export function applyTagFilterToInaccessibleTransformOnSubgraphSchema(
   documentNode: DocumentNode,
   tagRegister: SchemaCoordinateToTagsRegistry,
-  filter: Federation2SubgraphDocumentNodeByTagsFilter,
+  filter: SchemaContractFilter,
 ): {
   typeDefs: DocumentNode;
   /** Types within THIS subgraph where all fields are inaccessible */
@@ -622,12 +622,8 @@ export function applyTagFilterToInaccessibleTransformOnSubgraphSchema(
 export function applyTagFilterOnSubgraphs<
   TType extends {
     typeDefs: DocumentNode;
-    name: string;
   },
->(
-  subgraphs: Array<TType>,
-  filter: Federation2SubgraphDocumentNodeByTagsFilter,
-): Array<TType> {
+>(subgraphs: Array<TType>, filter: SchemaContractFilter): Array<TType> {
   // All combined @tag directive in all subgraphs per schema coordinate
   const tagRegister = buildSchemaCoordinateTagRegister(
     subgraphs.map((s) => s.typeDefs),
@@ -704,7 +700,7 @@ export function createTagDirectiveNameExtractionStrategy(
   };
 }
 
-export type Federation2SubgraphDocumentNodeByTagsFilter = {
+export type SchemaContractFilter = {
   include: Set<string>;
   exclude: Set<string>;
 };

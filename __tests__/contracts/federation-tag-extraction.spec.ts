@@ -3,14 +3,14 @@ import {
   applyTagFilterOnSubgraphs,
   applyTagFilterToInaccessibleTransformOnSubgraphSchema,
   buildSchemaCoordinateTagRegister,
-  type Federation2SubgraphDocumentNodeByTagsFilter,
-} from "../../src/contracts/tax-extraction.js";
+  type SchemaContractFilter,
+} from "../../src/contracts/tag-extraction.js";
 import { describe, test, expect } from "vitest";
 
 describe("applyTagFilterToInaccessibleTransformOnSubgraphSchema", () => {
   describe("correct @inaccessible directive usage based on subgraph version/imports", () => {
     test("Federation 1", () => {
-      const filter: Federation2SubgraphDocumentNodeByTagsFilter = {
+      const filter: SchemaContractFilter = {
         include: new Set(["tag1"]),
         exclude: new Set(),
       };
@@ -53,7 +53,7 @@ describe("applyTagFilterToInaccessibleTransformOnSubgraphSchema", () => {
     });
 
     test('Federation 2 without "import" argument', () => {
-      const filter: Federation2SubgraphDocumentNodeByTagsFilter = {
+      const filter: SchemaContractFilter = {
         include: new Set(["tag1"]),
         exclude: new Set(),
       };
@@ -96,7 +96,7 @@ describe("applyTagFilterToInaccessibleTransformOnSubgraphSchema", () => {
     });
 
     test('Federation 2 with "import" argument', () => {
-      const filter: Federation2SubgraphDocumentNodeByTagsFilter = {
+      const filter: SchemaContractFilter = {
         include: new Set(["tag1"]),
         exclude: new Set(),
       };
@@ -143,7 +143,7 @@ describe("applyTagFilterToInaccessibleTransformOnSubgraphSchema", () => {
     });
 
     test('Federation 2 with "import" argument alias', () => {
-      const filter: Federation2SubgraphDocumentNodeByTagsFilter = {
+      const filter: SchemaContractFilter = {
         include: new Set(["tag1"]),
         exclude: new Set(),
       };
@@ -192,7 +192,7 @@ describe("applyTagFilterToInaccessibleTransformOnSubgraphSchema", () => {
 
   describe("object type", () => {
     test("include of object type field via single filter.include value", () => {
-      const filter: Federation2SubgraphDocumentNodeByTagsFilter = {
+      const filter: SchemaContractFilter = {
         include: new Set(["tag1"]),
         exclude: new Set(),
       };
@@ -230,7 +230,7 @@ describe("applyTagFilterToInaccessibleTransformOnSubgraphSchema", () => {
     });
 
     test("include of object type field via complex filter.include value", () => {
-      const filter: Federation2SubgraphDocumentNodeByTagsFilter = {
+      const filter: SchemaContractFilter = {
         include: new Set(["tag1", "tag2"]),
         exclude: new Set(),
       };
@@ -272,7 +272,7 @@ describe("applyTagFilterToInaccessibleTransformOnSubgraphSchema", () => {
     });
 
     test("exclude of object type field via single filter.exclude value", () => {
-      const filter: Federation2SubgraphDocumentNodeByTagsFilter = {
+      const filter: SchemaContractFilter = {
         include: new Set(),
         exclude: new Set(["tag1"]),
       };
@@ -310,7 +310,7 @@ describe("applyTagFilterToInaccessibleTransformOnSubgraphSchema", () => {
     });
 
     test("exclude of object type field via complex filter.exclude value", () => {
-      const filter: Federation2SubgraphDocumentNodeByTagsFilter = {
+      const filter: SchemaContractFilter = {
         include: new Set(),
         exclude: new Set(["tag1", "tag2"]),
       };
@@ -352,7 +352,7 @@ describe("applyTagFilterToInaccessibleTransformOnSubgraphSchema", () => {
     });
 
     test("include and exclude of object type field will result in its removal", () => {
-      const filter: Federation2SubgraphDocumentNodeByTagsFilter = {
+      const filter: SchemaContractFilter = {
         include: new Set(["tag1"]),
         exclude: new Set(["tag2"]),
       };
@@ -396,7 +396,7 @@ describe("applyTagFilterToInaccessibleTransformOnSubgraphSchema", () => {
     });
 
     test("object type is excluded even if one of its fields is included", () => {
-      const filter: Federation2SubgraphDocumentNodeByTagsFilter = {
+      const filter: SchemaContractFilter = {
         include: new Set(["tag1"]),
         exclude: new Set(["tag2"]),
       };
@@ -442,7 +442,7 @@ describe("applyTagFilterToInaccessibleTransformOnSubgraphSchema", () => {
     });
 
     test('mutation object type is returned in "typesWithAllFieldsInaccessible" if all its fields are excluded', () => {
-      const filter: Federation2SubgraphDocumentNodeByTagsFilter = {
+      const filter: SchemaContractFilter = {
         include: new Set(),
         exclude: new Set(["exclude"]),
       };
@@ -494,7 +494,7 @@ describe("applyTagFilterToInaccessibleTransformOnSubgraphSchema", () => {
 
   describe("interface type", () => {
     test("include of interface type field via single filter.include value", () => {
-      const filter: Federation2SubgraphDocumentNodeByTagsFilter = {
+      const filter: SchemaContractFilter = {
         include: new Set(["tag1"]),
         exclude: new Set(),
       };
@@ -540,7 +540,7 @@ describe("applyTagFilterToInaccessibleTransformOnSubgraphSchema", () => {
     });
 
     test("include of interface type field via complex filter.include value", () => {
-      const filter: Federation2SubgraphDocumentNodeByTagsFilter = {
+      const filter: SchemaContractFilter = {
         include: new Set(["tag1", "tag2"]),
         exclude: new Set(),
       };
@@ -590,7 +590,7 @@ describe("applyTagFilterToInaccessibleTransformOnSubgraphSchema", () => {
     });
 
     test("exclude of interface type field via simple filter.exclude value", () => {
-      const filter: Federation2SubgraphDocumentNodeByTagsFilter = {
+      const filter: SchemaContractFilter = {
         include: new Set(),
         exclude: new Set(["tag1"]),
       };
@@ -638,7 +638,7 @@ describe("applyTagFilterToInaccessibleTransformOnSubgraphSchema", () => {
     });
 
     test("exclude of interface type field via complex filter.exclude value", () => {
-      const filter: Federation2SubgraphDocumentNodeByTagsFilter = {
+      const filter: SchemaContractFilter = {
         include: new Set(),
         exclude: new Set(["tag1", "tag2"]),
       };
@@ -688,7 +688,7 @@ describe("applyTagFilterToInaccessibleTransformOnSubgraphSchema", () => {
     });
 
     test("include and exclude of interface type field will result in its removal", () => {
-      const filter: Federation2SubgraphDocumentNodeByTagsFilter = {
+      const filter: SchemaContractFilter = {
         include: new Set(["tag1"]),
         exclude: new Set(["tag2", "tag3"]),
       };
@@ -738,7 +738,7 @@ describe("applyTagFilterToInaccessibleTransformOnSubgraphSchema", () => {
     });
 
     test("include interface type via filter.include value", () => {
-      const filter: Federation2SubgraphDocumentNodeByTagsFilter = {
+      const filter: SchemaContractFilter = {
         include: new Set(["tag1"]),
         exclude: new Set(),
       };
@@ -794,7 +794,7 @@ describe("applyTagFilterToInaccessibleTransformOnSubgraphSchema", () => {
 
   describe("enum type", () => {
     test("include enum value via single filter.include value", () => {
-      const filter: Federation2SubgraphDocumentNodeByTagsFilter = {
+      const filter: SchemaContractFilter = {
         include: new Set(["tag1"]),
         exclude: new Set(),
       };
@@ -841,7 +841,7 @@ describe("applyTagFilterToInaccessibleTransformOnSubgraphSchema", () => {
     });
 
     test("include enum value via complex filter.include value", () => {
-      const filter: Federation2SubgraphDocumentNodeByTagsFilter = {
+      const filter: SchemaContractFilter = {
         include: new Set(["tag1", "tag2"]),
         exclude: new Set(),
       };
@@ -892,7 +892,7 @@ describe("applyTagFilterToInaccessibleTransformOnSubgraphSchema", () => {
     });
 
     test("exclude of enum value via single filter.exclude value", () => {
-      const filter: Federation2SubgraphDocumentNodeByTagsFilter = {
+      const filter: SchemaContractFilter = {
         include: new Set(),
         exclude: new Set(["tag1"]),
       };
@@ -938,7 +938,7 @@ describe("applyTagFilterToInaccessibleTransformOnSubgraphSchema", () => {
     });
 
     test("exclude of enum type value via complex filter.exclude value", () => {
-      const filter: Federation2SubgraphDocumentNodeByTagsFilter = {
+      const filter: SchemaContractFilter = {
         include: new Set(),
         exclude: new Set(["tag1", "tag2"]),
       };
@@ -988,7 +988,7 @@ describe("applyTagFilterToInaccessibleTransformOnSubgraphSchema", () => {
     });
 
     test("include and exclude of enum type value will result in its removal", () => {
-      const filter: Federation2SubgraphDocumentNodeByTagsFilter = {
+      const filter: SchemaContractFilter = {
         include: new Set(["tag1"]),
         exclude: new Set(["tag2"]),
       };
@@ -1042,7 +1042,7 @@ describe("applyTagFilterToInaccessibleTransformOnSubgraphSchema", () => {
 
   describe("input object type", () => {
     test("include input object type field via single filter.include value", () => {
-      const filter: Federation2SubgraphDocumentNodeByTagsFilter = {
+      const filter: SchemaContractFilter = {
         include: new Set(["tag1"]),
         exclude: new Set(),
       };
@@ -1088,7 +1088,7 @@ describe("applyTagFilterToInaccessibleTransformOnSubgraphSchema", () => {
     });
 
     test("include input object value via complex filter.include value", () => {
-      const filter: Federation2SubgraphDocumentNodeByTagsFilter = {
+      const filter: SchemaContractFilter = {
         include: new Set(["tag1", "tag2"]),
         exclude: new Set(),
       };
@@ -1140,7 +1140,7 @@ describe("applyTagFilterToInaccessibleTransformOnSubgraphSchema", () => {
     });
 
     test("exclude of input object type field via single filter.exclude value", () => {
-      const filter: Federation2SubgraphDocumentNodeByTagsFilter = {
+      const filter: SchemaContractFilter = {
         include: new Set(),
         exclude: new Set(["tag1"]),
       };
@@ -1186,7 +1186,7 @@ describe("applyTagFilterToInaccessibleTransformOnSubgraphSchema", () => {
     });
 
     test("exclude of input object type field via complex filter.exclude value", () => {
-      const filter: Federation2SubgraphDocumentNodeByTagsFilter = {
+      const filter: SchemaContractFilter = {
         include: new Set(),
         exclude: new Set(["tag1", "tag2"]),
       };
@@ -1238,7 +1238,7 @@ describe("applyTagFilterToInaccessibleTransformOnSubgraphSchema", () => {
     });
 
     test("include and exclude of input type field will result in its removal", () => {
-      const filter: Federation2SubgraphDocumentNodeByTagsFilter = {
+      const filter: SchemaContractFilter = {
         include: new Set(["tag1"]),
         exclude: new Set(["tag2"]),
       };
@@ -1294,7 +1294,7 @@ describe("applyTagFilterToInaccessibleTransformOnSubgraphSchema", () => {
 
   describe("object type field arguments", () => {
     test("object field arguments are included via single filter.include value", () => {
-      const filter: Federation2SubgraphDocumentNodeByTagsFilter = {
+      const filter: SchemaContractFilter = {
         include: new Set(["tag1"]),
         exclude: new Set(),
       };
@@ -1332,7 +1332,7 @@ describe("applyTagFilterToInaccessibleTransformOnSubgraphSchema", () => {
     });
 
     test("object field arguments are included via complex filter.include value", () => {
-      const filter: Federation2SubgraphDocumentNodeByTagsFilter = {
+      const filter: SchemaContractFilter = {
         include: new Set(["tag1", "tag2"]),
         exclude: new Set(),
       };
@@ -1373,7 +1373,7 @@ describe("applyTagFilterToInaccessibleTransformOnSubgraphSchema", () => {
     });
 
     test("exclude of object field arguments via single filter.exclude value", () => {
-      const filter: Federation2SubgraphDocumentNodeByTagsFilter = {
+      const filter: SchemaContractFilter = {
         include: new Set(),
         exclude: new Set(["tag1"]),
       };
@@ -1411,7 +1411,7 @@ describe("applyTagFilterToInaccessibleTransformOnSubgraphSchema", () => {
     });
 
     test("exclude of object type field arguments via complex filter.exclude value", () => {
-      const filter: Federation2SubgraphDocumentNodeByTagsFilter = {
+      const filter: SchemaContractFilter = {
         include: new Set(),
         exclude: new Set(["tag1", "tag2"]),
       };
@@ -1452,7 +1452,7 @@ describe("applyTagFilterToInaccessibleTransformOnSubgraphSchema", () => {
     });
 
     test("include and exclude of object type field arguments will result in its removal", () => {
-      const filter: Federation2SubgraphDocumentNodeByTagsFilter = {
+      const filter: SchemaContractFilter = {
         include: new Set(["tag1"]),
         exclude: new Set(["tag2"]),
       };
@@ -1495,7 +1495,7 @@ describe("applyTagFilterToInaccessibleTransformOnSubgraphSchema", () => {
 
   describe("scalar type", () => {
     test("include of scalar type field via single filter.include value", () => {
-      const filter: Federation2SubgraphDocumentNodeByTagsFilter = {
+      const filter: SchemaContractFilter = {
         include: new Set(["tag1"]),
         exclude: new Set(),
       };
@@ -1537,7 +1537,7 @@ describe("applyTagFilterToInaccessibleTransformOnSubgraphSchema", () => {
     });
 
     test("include of scalar type via complex filter.include value", () => {
-      const filter: Federation2SubgraphDocumentNodeByTagsFilter = {
+      const filter: SchemaContractFilter = {
         include: new Set(["tag1", "tag2"]),
         exclude: new Set(),
       };
@@ -1581,7 +1581,7 @@ describe("applyTagFilterToInaccessibleTransformOnSubgraphSchema", () => {
     });
 
     test("exclude of scalar type via single filter.exclude value", () => {
-      const filter: Federation2SubgraphDocumentNodeByTagsFilter = {
+      const filter: SchemaContractFilter = {
         include: new Set(),
         exclude: new Set(["tag1"]),
       };
@@ -1625,7 +1625,7 @@ describe("applyTagFilterToInaccessibleTransformOnSubgraphSchema", () => {
     });
 
     test("exclude of scalar type via complex filter.exclude value", () => {
-      const filter: Federation2SubgraphDocumentNodeByTagsFilter = {
+      const filter: SchemaContractFilter = {
         include: new Set(),
         exclude: new Set(["tag1", "tag2"]),
       };
@@ -1669,7 +1669,7 @@ describe("applyTagFilterToInaccessibleTransformOnSubgraphSchema", () => {
     });
 
     test("include and exclude of scalar type will result in its removal", () => {
-      const filter: Federation2SubgraphDocumentNodeByTagsFilter = {
+      const filter: SchemaContractFilter = {
         include: new Set(["tag1"]),
         exclude: new Set(["tag2"]),
       };
@@ -1715,7 +1715,7 @@ describe("applyTagFilterToInaccessibleTransformOnSubgraphSchema", () => {
 
   describe("union type", () => {
     test("include union type via single filter.include value", () => {
-      const filter: Federation2SubgraphDocumentNodeByTagsFilter = {
+      const filter: SchemaContractFilter = {
         include: new Set(["tag1"]),
         exclude: new Set(),
       };
@@ -1771,7 +1771,7 @@ describe("applyTagFilterToInaccessibleTransformOnSubgraphSchema", () => {
     });
 
     test("include union type via complex filter.include value", () => {
-      const filter: Federation2SubgraphDocumentNodeByTagsFilter = {
+      const filter: SchemaContractFilter = {
         include: new Set(["tag1", "tag2"]),
         exclude: new Set(),
       };
@@ -1834,7 +1834,7 @@ describe("applyTagFilterToInaccessibleTransformOnSubgraphSchema", () => {
     });
 
     test("exclude union type via single filter.exclude value", () => {
-      const filter: Federation2SubgraphDocumentNodeByTagsFilter = {
+      const filter: SchemaContractFilter = {
         include: new Set(),
         exclude: new Set(["tag1"]),
       };
@@ -1897,7 +1897,7 @@ describe("applyTagFilterToInaccessibleTransformOnSubgraphSchema", () => {
     });
 
     test("exclude union type via complex filter.exclude value", () => {
-      const filter: Federation2SubgraphDocumentNodeByTagsFilter = {
+      const filter: SchemaContractFilter = {
         include: new Set(),
         exclude: new Set(["tag1", "tag2"]),
       };
@@ -1960,7 +1960,7 @@ describe("applyTagFilterToInaccessibleTransformOnSubgraphSchema", () => {
     });
 
     test("include and exclude of union type will result in its removal", () => {
-      const filter: Federation2SubgraphDocumentNodeByTagsFilter = {
+      const filter: SchemaContractFilter = {
         include: new Set(["tag1"]),
         exclude: new Set(["tag2"]),
       };
@@ -2026,7 +2026,7 @@ describe("applyTagFilterToInaccessibleTransformOnSubgraphSchema", () => {
 
 describe("applyTagFilterOnSubgraphs", () => {
   test("object types are @inaccessible because all fields are @inaccessible", () => {
-    const filter: Federation2SubgraphDocumentNodeByTagsFilter = {
+    const filter: SchemaContractFilter = {
       include: new Set(["tag1"]),
       exclude: new Set(),
     };
@@ -2062,7 +2062,7 @@ describe("applyTagFilterOnSubgraphs", () => {
   });
 
   test("object type that is only defined in one subgraph is inaccessible", () => {
-    const filter: Federation2SubgraphDocumentNodeByTagsFilter = {
+    const filter: SchemaContractFilter = {
       include: new Set(["tag1"]),
       exclude: new Set(),
     };
@@ -2117,7 +2117,7 @@ describe("applyTagFilterOnSubgraphs", () => {
   });
 
   test("object types are accessible because at least one field is accessible in one subgraph, but not in another", () => {
-    const filter: Federation2SubgraphDocumentNodeByTagsFilter = {
+    const filter: SchemaContractFilter = {
       include: new Set(["tag1"]),
       exclude: new Set(),
     };
@@ -2164,7 +2164,7 @@ describe("applyTagFilterOnSubgraphs", () => {
   });
 
   test("object with object extension that has no tag is made @inaccessible", () => {
-    const filter: Federation2SubgraphDocumentNodeByTagsFilter = {
+    const filter: SchemaContractFilter = {
       include: new Set(["tag1"]),
       exclude: new Set(),
     };
@@ -2205,7 +2205,7 @@ describe("applyTagFilterOnSubgraphs", () => {
   });
 
   test("object with object extension that has one tag is not made @inaccessible", () => {
-    const filter: Federation2SubgraphDocumentNodeByTagsFilter = {
+    const filter: SchemaContractFilter = {
       include: new Set(["tag1"]),
       exclude: new Set(),
     };
@@ -2246,7 +2246,7 @@ describe("applyTagFilterOnSubgraphs", () => {
   });
 
   test("interface types are @inaccessible because all fields are @inaccessible", () => {
-    const filter: Federation2SubgraphDocumentNodeByTagsFilter = {
+    const filter: SchemaContractFilter = {
       include: new Set(["tag1"]),
       exclude: new Set(),
     };
@@ -2285,7 +2285,7 @@ describe("applyTagFilterOnSubgraphs", () => {
   });
 
   test("interface types are accessible because at least one field is accessible in one subgraph, but not in another", () => {
-    const filter: Federation2SubgraphDocumentNodeByTagsFilter = {
+    const filter: SchemaContractFilter = {
       include: new Set(["tag1"]),
       exclude: new Set(),
     };
@@ -2356,7 +2356,7 @@ describe("applyTagFilterOnSubgraphs", () => {
   });
 
   test("input types are @inaccessible because all fields are @inaccessible", () => {
-    const filter: Federation2SubgraphDocumentNodeByTagsFilter = {
+    const filter: SchemaContractFilter = {
       include: new Set(["tag1"]),
       exclude: new Set(),
     };
@@ -2387,7 +2387,7 @@ describe("applyTagFilterOnSubgraphs", () => {
   });
 
   test("input types are accessible because at least one field is accessible in one subgraph, but not in another", () => {
-    const filter: Federation2SubgraphDocumentNodeByTagsFilter = {
+    const filter: SchemaContractFilter = {
       include: new Set(["tag1"]),
       exclude: new Set(),
     };
@@ -2440,7 +2440,7 @@ describe("applyTagFilterOnSubgraphs", () => {
   });
 
   test("enum types are @inaccessible because all fields are @inaccessible", () => {
-    const filter: Federation2SubgraphDocumentNodeByTagsFilter = {
+    const filter: SchemaContractFilter = {
       include: new Set(["tag1"]),
       exclude: new Set(),
     };
@@ -2471,7 +2471,7 @@ describe("applyTagFilterOnSubgraphs", () => {
   });
 
   test("enum types are accessible because at least one field is accessible in one subgraph, but not in another", () => {
-    const filter: Federation2SubgraphDocumentNodeByTagsFilter = {
+    const filter: SchemaContractFilter = {
       include: new Set(["tag1"]),
       exclude: new Set(),
     };

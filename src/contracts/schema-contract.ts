@@ -1,7 +1,7 @@
 import {
   applyTagFilterOnSubgraphs,
-  type Federation2SubgraphDocumentNodeByTagsFilter,
-} from "./tax-extraction.js";
+  type SchemaContractFilter,
+} from "./tag-extraction.js";
 import { type ServiceDefinition } from "../types.js";
 import { composeServices } from "../compose.js";
 import { extractLinkImplementations } from "../utils/link/index.js";
@@ -13,7 +13,7 @@ export function composeSchemaContract(
   /** The services that are composed */
   services: ServiceDefinition[],
   /** The filter of tag names to include and/or exclude. */
-  tagFilter: Federation2SubgraphDocumentNodeByTagsFilter,
+  tagFilter: SchemaContractFilter,
   /** Whether types that are not referenced by the schema contracts public schema should be annotated with `@inaccessible`. */
   removeUnreachableTypes = true,
 ) {
