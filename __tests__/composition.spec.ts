@@ -4026,6 +4026,63 @@ testImplementations((api) => {
       `);
     });
 
+    test("@external + @tag", () => {
+      const subgraphs = [
+        {
+          name: "a",
+          typeDefs: parse(/* GraphQL */ `
+            extend schema @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@key", "@tag"])
+
+            type Product @key(fields: "id") {
+              id: ID! @tag(name: "public")
+              name: String! @tag(name: "public")
+              inStock: Int! @tag(name: "public")
+            }
+
+            type Query {
+              products: [Product] @tag(name: "public")
+            }
+          `),
+        },
+        {
+          name: "b",
+          typeDefs: parse(/* GraphQL */ `
+            extend schema
+              @link(
+                url: "https://specs.apollo.dev/federation/${version}"
+                import: ["@key", "@external", "@requires", "@tag"]
+              )
+
+            type Product @key(fields: "id") {
+              id: ID! @tag(name: "public")
+              inStock: Int! @external
+              isAvailable: String! @requires(fields: "inStock") @tag(name: "public")
+            }
+          `),
+        },
+      ];
+
+      const result = composeServices(subgraphs);
+      expect(result.errors).toEqual(undefined);
+      assertCompositionSuccess(result);
+
+      expect(result.supergraphSdl).toContainGraphQL(/* GraphQL */ `
+        type Product
+          @join__type(graph: A, key: "id")
+          @join__type(graph: B, key: "id") {
+          id: ID! @tag(name: "public")
+          name: String! @join__field(graph: A) @tag(name: "public")
+          inStock: Int!
+            @join__field(graph: A)
+            @join__field(graph: B, external: true)
+            @tag(name: "public")
+          isAvailable: String!
+            @join__field(graph: B, requires: "inStock")
+            @tag(name: "public")
+        }
+      `);
+    });
+
     test("@tag", () => {
       const result = composeServices([
         {
@@ -7224,6 +7281,75 @@ testImplementations((api) => {
   });
 
   test("external on non-key field of an entity type", () => {
+    /** "apollo" errors on this schema definition */
+    api.runIf("guild", () => {
+      let result = api.composeServices([
+        {
+          name: "a",
+          typeDefs: parse(/* GraphQL */ `
+            extend schema
+              @link(url: "https://specs.apollo.dev/link/v1.0")
+              @link(
+                url: "https://specs.apollo.dev/federation/v2.8"
+                import: ["@key", "@external", "@requires", "@tag"]
+              )
+
+            type User @key(fields: "id") {
+              id: ID! @tag(name: "public")
+              creditScore: Int @requires(fields: "ssn") @tag(name: "public")
+            }
+
+            extend type User @external {
+              ssn: String
+            }
+          `),
+        },
+        {
+          name: "b",
+          typeDefs: parse(/* GraphQL */ `
+            schema
+              @link(url: "https://specs.apollo.dev/link/v1.0")
+              @link(
+                url: "https://specs.apollo.dev/federation/v2.8"
+                import: ["@key", "@tag"]
+              ) {
+              query: Query
+            }
+
+            type Query {
+              user: User @tag(name: "public")
+            }
+
+            type User @key(fields: "id") {
+              id: ID! @tag(name: "public")
+              ssn: String
+            }
+          `),
+        },
+      ]);
+
+      expect(result.errors).toEqual(undefined);
+      assertCompositionSuccess(result);
+
+      expect(result.supergraphSdl).toContainGraphQL(/* GraphQL */ `
+        type Query @join__type(graph: A) @join__type(graph: B) {
+          user: User @join__field(graph: B) @tag(name: "public")
+        }
+
+        type User
+          @join__type(graph: A, key: "id")
+          @join__type(graph: B, key: "id") {
+          id: ID! @tag(name: "public")
+          creditScore: Int
+            @join__field(graph: A, requires: "ssn")
+            @tag(name: "public")
+          ssn: String
+            @join__field(external: true, graph: A)
+            @join__field(graph: B)
+        }
+      `);
+    });
+
     let result = api.composeServices([
       {
         name: "foo",
@@ -7233,22 +7359,18 @@ testImplementations((api) => {
               url: "https://specs.apollo.dev/federation/v2.3"
               import: ["@key", "@external", "@provides", "@shareable"]
             )
-
           type Note @key(fields: "id") @shareable {
             id: ID!
             name: String @external
             author: User @external
           }
-
           type User @key(fields: "id", resolvable: false) {
             id: ID!
           }
-
           type PrivateNote @key(fields: "id") @shareable {
             id: ID!
             note: Note @provides(fields: "name author { id }")
           }
-
           type Query {
             note: Note @shareable
             privateNote: PrivateNote @shareable
@@ -7260,29 +7382,25 @@ testImplementations((api) => {
         typeDefs: parse(/* GraphQL */ `
           extend schema
             @link(
-              url: "https://specs.apollo.dev/federation/v2.3"
-              import: ["@key", "@shareable"]
+            url: "https://specs.apollo.dev/federation/v2.3"
+            import: ["@key", "@shareable"]
             )
-
           type Note @key(fields: "id") @shareable {
             id: ID!
             name: String
             author: User
           }
-
           type User @key(fields: "id") {
-            id: ID!
-            name: String
+          id: ID!
+          name: String
           }
-
-          type PrivateNote @key(fields: "id") @shareable {
-            id: ID!
-            note: Note
-          }
-
-          type Query {
-            note: Note @shareable
-            privateNote: PrivateNote @shareable
+        type PrivateNote @key(fields: "id") @shareable {
+          id: ID!
+          note: Note
+        }
+        type Query {
+          note: Note @shareable
+          privateNote: PrivateNote @shareable
           }
         `),
       },
@@ -7307,29 +7425,25 @@ testImplementations((api) => {
     result = api.composeServices([
       {
         name: "foo",
-        typeDefs: parse(/* GraphQL */ `
+          typeDefs: parse(/* GraphQL */ `
           extend schema
-            @link(
+              @link(
               url: "https://specs.apollo.dev/federation/v2.3"
               import: ["@key", "@external", "@provides", "@shareable"]
             )
-
           type Note @key(fields: "id") @shareable {
             id: ID!
             name: String @external
             author: User @external
           }
-
           type User @key(fields: "id", resolvable: false) {
             id: ID!
           }
-
           type PrivateNote @key(fields: "id") @shareable {
             id: ID!
             note: Note @provides(fields: "name author { id }")
-          }
-
-          type Query {
+            }
+            type Query {
             note: Note @shareable
             privateNote: PrivateNote @shareable
           }
@@ -7343,23 +7457,19 @@ testImplementations((api) => {
               url: "https://specs.apollo.dev/federation/v2.3"
               import: ["@key", "@shareable"]
             )
-
           type Note @key(fields: "id") @shareable {
             id: ID!
             name: String
             author: User
-          }
-
-          type User @key(fields: "id") {
+            }
+            type User @key(fields: "id") {
             id: ID!
             name: String
           }
-
           type PrivateNote @key(fields: "id") @shareable {
             id: ID!
             note: Note
           }
-
           type Query {
             note: Note @shareable
             privateNote: PrivateNote @shareable
@@ -7374,15 +7484,13 @@ testImplementations((api) => {
               url: "https://specs.apollo.dev/federation/v2.3"
               import: ["@key", "@external", "@provides", "@shareable"]
             )
-
           type Query {
             hello: String
           }
-
           type Note @key(fields: "id") @shareable {
             id: ID!
             tag: String
-          }
+            }
         `),
       },
     ]);
@@ -7402,7 +7510,7 @@ testImplementations((api) => {
           @join__field(external: true, graph: FOO)
           @join__field(graph: BAR)
         tag: String @join__field(graph: BAZ)
-      }
+        }
     `);
   });
 
