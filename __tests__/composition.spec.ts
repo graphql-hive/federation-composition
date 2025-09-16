@@ -248,6 +248,73 @@ testImplementations((api) => {
     `);
   });
 
+  test("@override(from:) no usedOverridden in case the overriden field is @external", () => {
+    const result = composeServices([
+      {
+        name: "a",
+        typeDefs: parse(/* GraphQL */ `
+          extend schema
+            @link(url: "https://specs.apollo.dev/link/v1.0")
+            @link(
+              url: "https://specs.apollo.dev/federation/v2.3"
+              import: ["@tag", "@external", "@shareable", "@key", "@override"]
+            )
+
+          type Query {
+            ping: String
+          }
+
+          interface Base {
+            id: String!
+            items: [String]
+          }
+
+          type Object implements Base @key(fields: "id") @shareable {
+            id: String!
+            items: [String] @override(from: "b")
+          }
+        `),
+      },
+      {
+        name: "b",
+        typeDefs: parse(/* GraphQL */ `
+          extend schema
+            @link(url: "https://specs.apollo.dev/link/v1.0")
+            @link(
+              url: "https://specs.apollo.dev/federation/v2.0"
+              import: ["@tag", "@external", "@shareable", "@key"]
+            )
+
+          type Query {
+            pong: String
+          }
+
+          interface Base {
+            id: String!
+            items: [String]
+          }
+
+          type Object implements Base @key(fields: "id") @shareable {
+            id: String!
+            items: [String] @external
+          }
+        `),
+      },
+    ]);
+
+    expect(result.errors).toEqual(undefined);
+    const line = result
+      .supergraphSdl!.split("\n")
+      .find((line) => line.includes("items: [String] @join__field"));
+
+    expect(line).toContain('@join__field(graph: A, override: "b")');
+    expect(line).toContain("@join__field(graph: B, external: true)");
+    // The usedOverridden should not appear
+    expect(line).not.toContain(
+      "@join__field(graph: B, usedOverridden: true, external: true)",
+    );
+  });
+
   test("@join__field(external: true) when field is overridden", () => {
     let result = composeServices([
       {
@@ -7382,8 +7449,8 @@ testImplementations((api) => {
         typeDefs: parse(/* GraphQL */ `
           extend schema
             @link(
-            url: "https://specs.apollo.dev/federation/v2.3"
-            import: ["@key", "@shareable"]
+              url: "https://specs.apollo.dev/federation/v2.3"
+              import: ["@key", "@shareable"]
             )
           type Note @key(fields: "id") @shareable {
             id: ID!
@@ -7391,16 +7458,16 @@ testImplementations((api) => {
             author: User
           }
           type User @key(fields: "id") {
-          id: ID!
-          name: String
+            id: ID!
+            name: String
           }
-        type PrivateNote @key(fields: "id") @shareable {
-          id: ID!
-          note: Note
-        }
-        type Query {
-          note: Note @shareable
-          privateNote: PrivateNote @shareable
+          type PrivateNote @key(fields: "id") @shareable {
+            id: ID!
+            note: Note
+          }
+          type Query {
+            note: Note @shareable
+            privateNote: PrivateNote @shareable
           }
         `),
       },
@@ -7425,9 +7492,9 @@ testImplementations((api) => {
     result = api.composeServices([
       {
         name: "foo",
-          typeDefs: parse(/* GraphQL */ `
+        typeDefs: parse(/* GraphQL */ `
           extend schema
-              @link(
+            @link(
               url: "https://specs.apollo.dev/federation/v2.3"
               import: ["@key", "@external", "@provides", "@shareable"]
             )
@@ -7442,8 +7509,8 @@ testImplementations((api) => {
           type PrivateNote @key(fields: "id") @shareable {
             id: ID!
             note: Note @provides(fields: "name author { id }")
-            }
-            type Query {
+          }
+          type Query {
             note: Note @shareable
             privateNote: PrivateNote @shareable
           }
@@ -7461,8 +7528,8 @@ testImplementations((api) => {
             id: ID!
             name: String
             author: User
-            }
-            type User @key(fields: "id") {
+          }
+          type User @key(fields: "id") {
             id: ID!
             name: String
           }
@@ -7490,7 +7557,7 @@ testImplementations((api) => {
           type Note @key(fields: "id") @shareable {
             id: ID!
             tag: String
-            }
+          }
         `),
       },
     ]);
@@ -7510,7 +7577,7 @@ testImplementations((api) => {
           @join__field(external: true, graph: FOO)
           @join__field(graph: BAR)
         tag: String @join__field(graph: BAZ)
-        }
+      }
     `);
   });
 
