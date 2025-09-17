@@ -18,7 +18,6 @@ import { createObjectTypeNode, JoinFieldAST } from "./ast.js";
 import type { Key, MapByGraph, TypeBuilder } from "./common.js";
 import { convertToConst } from "./common.js";
 import { InterfaceTypeFieldState } from "./interface-type.js";
-import { isExternal } from "node:util/types";
 
 export function isRealExtension(
   meta: ObjectTypeStateInGraph,
