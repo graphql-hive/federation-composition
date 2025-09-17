@@ -7382,8 +7382,8 @@ testImplementations((api) => {
         typeDefs: parse(/* GraphQL */ `
           extend schema
             @link(
-            url: "https://specs.apollo.dev/federation/v2.3"
-            import: ["@key", "@shareable"]
+              url: "https://specs.apollo.dev/federation/v2.3"
+              import: ["@key", "@shareable"]
             )
           type Note @key(fields: "id") @shareable {
             id: ID!
@@ -7391,16 +7391,16 @@ testImplementations((api) => {
             author: User
           }
           type User @key(fields: "id") {
-          id: ID!
-          name: String
+            id: ID!
+            name: String
           }
-        type PrivateNote @key(fields: "id") @shareable {
-          id: ID!
-          note: Note
-        }
-        type Query {
-          note: Note @shareable
-          privateNote: PrivateNote @shareable
+          type PrivateNote @key(fields: "id") @shareable {
+            id: ID!
+            note: Note
+          }
+          type Query {
+            note: Note @shareable
+            privateNote: PrivateNote @shareable
           }
         `),
       },
@@ -7425,9 +7425,9 @@ testImplementations((api) => {
     result = api.composeServices([
       {
         name: "foo",
-          typeDefs: parse(/* GraphQL */ `
+        typeDefs: parse(/* GraphQL */ `
           extend schema
-              @link(
+            @link(
               url: "https://specs.apollo.dev/federation/v2.3"
               import: ["@key", "@external", "@provides", "@shareable"]
             )
@@ -7442,8 +7442,8 @@ testImplementations((api) => {
           type PrivateNote @key(fields: "id") @shareable {
             id: ID!
             note: Note @provides(fields: "name author { id }")
-            }
-            type Query {
+          }
+          type Query {
             note: Note @shareable
             privateNote: PrivateNote @shareable
           }
@@ -7461,8 +7461,8 @@ testImplementations((api) => {
             id: ID!
             name: String
             author: User
-            }
-            type User @key(fields: "id") {
+          }
+          type User @key(fields: "id") {
             id: ID!
             name: String
           }
@@ -7490,7 +7490,7 @@ testImplementations((api) => {
           type Note @key(fields: "id") @shareable {
             id: ID!
             tag: String
-            }
+          }
         `),
       },
     ]);
@@ -7510,7 +7510,7 @@ testImplementations((api) => {
           @join__field(external: true, graph: FOO)
           @join__field(graph: BAR)
         tag: String @join__field(graph: BAZ)
-        }
+      }
     `);
   });
 

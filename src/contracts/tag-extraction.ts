@@ -458,7 +458,8 @@ export function applyTagFilterToInaccessibleTransformOnSubgraphSchema(
           if (
             fieldNode.directives?.find(
               (d) => d.name.value === externalDirectiveName,
-            ) || node.directives?.find(d => d.name.value === externalDirectiveName)
+            ) ||
+            node.directives?.find((d) => d.name.value === externalDirectiveName)
           ) {
             return fieldNode;
           }
