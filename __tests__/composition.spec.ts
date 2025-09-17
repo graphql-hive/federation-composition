@@ -248,7 +248,7 @@ testImplementations((api) => {
     `);
   });
 
-  test("@override(from:) no usedOverridden in case the overriden field is @external", () => {
+  test("@override(from:) no usedOverridden in case the overriden field is @external but has matching interface fields", () => {
     const result = composeServices([
       {
         name: "a",
