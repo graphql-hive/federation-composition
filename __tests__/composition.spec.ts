@@ -248,6 +248,120 @@ testImplementations((api) => {
     `);
   });
 
+  test(`extend type causes additional @join__type(extension: true)`, () => {
+    const result = composeServices([
+      {
+        name: "a",
+        typeDefs: parse(/* GraphQL */ `
+          extend schema
+            @link(url: "https://specs.apollo.dev/link/v1.0")
+            @link(
+              url: "https://specs.apollo.dev/federation/v2.3"
+              import: ["@key"]
+            )
+
+          type Query {
+            a: String
+          }
+
+          type MediaReference @key(fields: "assetId") {
+            assetId: String!
+          }
+        `),
+      },
+      {
+        name: "b",
+        typeDefs: parse(/* GraphQL */ `
+          extend schema
+            @link(url: "https://specs.apollo.dev/link/v1.0")
+            @link(
+              url: "https://specs.apollo.dev/federation/v2.3"
+              import: ["@key"]
+            )
+
+          type Query {
+            b: String
+          }
+
+          type MediaReference @key(fields: "assetId") {
+            assetId: String!
+          }
+          extend type MediaReference @key(fields: "assetId") {
+            media: String
+          }
+        `),
+      },
+    ]);
+
+    expect(result.errors).toEqual(undefined);
+    expect(result.supergraphSdl).toContain(
+      `@join__type(graph: B, key: "assetId", extension: true)`,
+    );
+  });
+
+  test(`@join__field(external: true) missing because of ???`, () => {
+    let result = composeServices([
+      {
+        name: "a",
+        typeDefs: parse(/* GraphQL */ `
+          extend schema
+            @link(
+              url: "https://specs.apollo.dev/federation/v2.3"
+              import: [
+                "@key"
+                "@requires"
+                "@external"
+                "@shareable"
+                "@extends"
+              ]
+            )
+
+          type Query {
+            a: String
+          }
+
+          type Order @extends @shareable @key(fields: "id") {
+            id: ID! @external
+            id2: ID @external
+            orderProgress: String! @requires(fields: "id2")
+          }
+        `),
+      },
+      {
+        name: "b",
+        typeDefs: parse(/* GraphQL */ `
+          extend schema
+            @link(
+              url: "https://specs.apollo.dev/federation/v2.3"
+              import: ["@key", "@shareable"]
+            )
+
+          type Query {
+            b: String
+          }
+
+          type Order @key(fields: "id") @key(fields: "id2") @shareable {
+            id: ID!
+            id2: ID
+            countryCode: String!
+          }
+        `),
+      },
+    ]);
+
+    assertCompositionSuccess(result);
+
+    console.log(result.supergraphSdl);
+
+    const line = result.supergraphSdl
+      .split("\n")
+      .find((line) => line.includes("id2: ID"));
+    const [, remainder] = line!.split("id2: ID");
+
+    expect(remainder).toContain("@join__field(graph: A, external: true)");
+    expect(remainder).toContain("@join__field(graph: B)");
+  });
+
   test("@join__field(external: true) when field is overridden", () => {
     let result = composeServices([
       {
@@ -7382,8 +7496,8 @@ testImplementations((api) => {
         typeDefs: parse(/* GraphQL */ `
           extend schema
             @link(
-            url: "https://specs.apollo.dev/federation/v2.3"
-            import: ["@key", "@shareable"]
+              url: "https://specs.apollo.dev/federation/v2.3"
+              import: ["@key", "@shareable"]
             )
           type Note @key(fields: "id") @shareable {
             id: ID!
@@ -7391,16 +7505,16 @@ testImplementations((api) => {
             author: User
           }
           type User @key(fields: "id") {
-          id: ID!
-          name: String
+            id: ID!
+            name: String
           }
-        type PrivateNote @key(fields: "id") @shareable {
-          id: ID!
-          note: Note
-        }
-        type Query {
-          note: Note @shareable
-          privateNote: PrivateNote @shareable
+          type PrivateNote @key(fields: "id") @shareable {
+            id: ID!
+            note: Note
+          }
+          type Query {
+            note: Note @shareable
+            privateNote: PrivateNote @shareable
           }
         `),
       },
@@ -7425,9 +7539,9 @@ testImplementations((api) => {
     result = api.composeServices([
       {
         name: "foo",
-          typeDefs: parse(/* GraphQL */ `
+        typeDefs: parse(/* GraphQL */ `
           extend schema
-              @link(
+            @link(
               url: "https://specs.apollo.dev/federation/v2.3"
               import: ["@key", "@external", "@provides", "@shareable"]
             )
@@ -7442,8 +7556,8 @@ testImplementations((api) => {
           type PrivateNote @key(fields: "id") @shareable {
             id: ID!
             note: Note @provides(fields: "name author { id }")
-            }
-            type Query {
+          }
+          type Query {
             note: Note @shareable
             privateNote: PrivateNote @shareable
           }
@@ -7461,8 +7575,8 @@ testImplementations((api) => {
             id: ID!
             name: String
             author: User
-            }
-            type User @key(fields: "id") {
+          }
+          type User @key(fields: "id") {
             id: ID!
             name: String
           }
@@ -7490,7 +7604,7 @@ testImplementations((api) => {
           type Note @key(fields: "id") @shareable {
             id: ID!
             tag: String
-            }
+          }
         `),
       },
     ]);
@@ -7510,7 +7624,7 @@ testImplementations((api) => {
           @join__field(external: true, graph: FOO)
           @join__field(graph: BAR)
         tag: String @join__field(graph: BAZ)
-        }
+      }
     `);
   });
 
