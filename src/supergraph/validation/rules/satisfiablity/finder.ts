@@ -255,7 +255,7 @@ export class PathFinder {
       return;
     }
 
-    if (resolvedGraphs.includes(edge.tail.graphName + ":" + typeName)) {
+    if (resolvedGraphs.includes(edge.tail.graphName)) {
       this.logger.groupEnd(() => "Ignore: already resolved this graph");
       return;
     }
@@ -374,7 +374,7 @@ export class PathFinder {
       return;
     }
 
-    if (resolvedGraphs.includes(edge.tail.graphName + ":" + typeName)) {
+    if (resolvedGraphs.includes(edge.tail.graphName)) {
       this.logger.groupEnd(() => "Already resolved the graph");
       return;
     }
@@ -391,7 +391,7 @@ export class PathFinder {
 
     // If the target is the tail of this edge, we have found a path
     if (edge.tail.typeName === typeName) {
-      resolvedGraphs.push(edge.tail.graphName + ":" + typeName);
+      resolvedGraphs.push(edge.tail.graphName);
       finalPaths.push(newPath);
     } else {
       // Otherwise, we need to continue searching for the target
@@ -429,7 +429,6 @@ export class PathFinder {
       [visitedGraphs, visitedFields, path],
     ];
     const finalPaths: OperationPath[] = [];
-    /** Contains IDs in the format `<graph_name>:<type_name>` */
     const resolvedGraphs: string[] = [];
 
     while (queue.length > 0) {
@@ -449,6 +448,20 @@ export class PathFinder {
       for (const edge of edges) {
         this.logger.group(() => "Checking #" + i++ + " " + edge);
         this.logger.log(() => "Visited graphs: " + visitedGraphs.join(","));
+
+        // We can skip the edge in case the the graph interface implementation does not provide the field.
+        if (fieldName && edge.tail.typeState?.kind === "interface") {
+          if ("fields" in edge.tail.typeState) {
+            const fieldInEdge = edge.tail.typeState.fields
+              .get(fieldName)
+              ?.byGraph.get(edge.tail.graphId);
+
+            if (!fieldInEdge) {
+              this.logger.log(() => "Ignore edge: field is not in edge type");
+              continue;
+            }
+          }
+        }
 
         if (visitedGraphs.includes(edge.tail.graphName)) {
           this.logger.groupEnd(() => "Ignore: already visited graph");
