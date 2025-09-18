@@ -255,7 +255,8 @@ export class PathFinder {
       return;
     }
 
-    if (resolvedGraphs.includes(edge.tail.graphName)) {
+    // commenting this out fixes the satisfiability error
+    if (resolvedGraphs.includes(edge.tail.graphName + ":" + typeName)) {
       this.logger.groupEnd(() => "Ignore: already resolved this graph");
       return;
     }
@@ -374,7 +375,7 @@ export class PathFinder {
       return;
     }
 
-    if (resolvedGraphs.includes(edge.tail.graphName)) {
+    if (resolvedGraphs.includes(edge.tail.graphName + ":" + typeName)) {
       this.logger.groupEnd(() => "Already resolved the graph");
       return;
     }
@@ -391,7 +392,7 @@ export class PathFinder {
 
     // If the target is the tail of this edge, we have found a path
     if (edge.tail.typeName === typeName) {
-      resolvedGraphs.push(edge.tail.graphName);
+      resolvedGraphs.push(edge.tail.graphName + ":" + typeName);
       finalPaths.push(newPath);
     } else {
       // Otherwise, we need to continue searching for the target
@@ -429,6 +430,7 @@ export class PathFinder {
       [visitedGraphs, visitedFields, path],
     ];
     const finalPaths: OperationPath[] = [];
+    /** Contains IDs in the format `<graph_name>:<type_name>` */
     const resolvedGraphs: string[] = [];
 
     while (queue.length > 0) {
