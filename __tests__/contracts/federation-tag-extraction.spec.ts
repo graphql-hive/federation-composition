@@ -395,6 +395,88 @@ describe("applyTagFilterToInaccessibleTransformOnSubgraphSchema", () => {
       `);
     });
 
+    test("include of object type field if @external is applied to field", () => {
+      const filter: SchemaContractFilter = {
+        include: new Set(["tag1"]),
+        exclude: new Set(),
+      };
+      const sdl = parse(/* GraphQL */ `
+        schema
+          @link(
+            url: "https://specs.apollo.dev/federation/v2.0"
+            import: ["@tag", "@external"]
+          ) {
+          query: Query
+        }
+
+        type Query {
+          field1: String! @tag(name: "tag1") @requires(fields: "field2")
+          field2: String! @external
+        }
+      `);
+
+      const output = applyTagFilterToInaccessibleTransformOnSubgraphSchema(
+        sdl,
+        buildSchemaCoordinateTagRegister([sdl]),
+        filter,
+      );
+
+      expect(print(output.typeDefs)).toMatchInlineSnapshot(`
+        "schema @link(url: "https://specs.apollo.dev/federation/v2.0", import: ["@tag", "@external"]) {
+          query: Query
+        }
+
+        type Query {
+          field1: String! @requires(fields: "field2")
+          field2: String! @external
+        }"
+      `);
+    });
+
+    test("include of object type field if @external is applied to object", () => {
+      const filter: SchemaContractFilter = {
+        include: new Set(["tag1"]),
+        exclude: new Set(),
+      };
+      const sdl = parse(/* GraphQL */ `
+        schema
+          @link(
+            url: "https://specs.apollo.dev/federation/v2.0"
+            import: ["@tag", "@external"]
+          ) {
+          query: Query
+        }
+
+        extend type Query @external {
+          field2: String!
+        }
+
+        type Query {
+          field1: String! @tag(name: "tag1") @requires(fields: "field2")
+        }
+      `);
+
+      const output = applyTagFilterToInaccessibleTransformOnSubgraphSchema(
+        sdl,
+        buildSchemaCoordinateTagRegister([sdl]),
+        filter,
+      );
+
+      expect(print(output.typeDefs)).toMatchInlineSnapshot(`
+        "schema @link(url: "https://specs.apollo.dev/federation/v2.0", import: ["@tag", "@external"]) {
+          query: Query
+        }
+
+        extend type Query @external {
+          field2: String!
+        }
+
+        type Query {
+          field1: String! @requires(fields: "field2")
+        }"
+      `);
+    });
+
     test("object type is excluded even if one of its fields is included", () => {
       const filter: SchemaContractFilter = {
         include: new Set(["tag1"]),
