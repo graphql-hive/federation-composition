@@ -255,7 +255,6 @@ export class PathFinder {
       return;
     }
 
-    // commenting this out fixes the satisfiability error
     if (resolvedGraphs.includes(edge.tail.graphName + ":" + typeName)) {
       this.logger.groupEnd(() => "Ignore: already resolved this graph");
       return;
