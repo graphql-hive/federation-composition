@@ -685,5 +685,72 @@ testImplementations((api) => {
         test.skip(`several interfaces and several interface objects. Should succeed`, () => {});
       });
     });
+
+    test("satisfiability with @interfaceObject", () => {
+      const result = api.composeServices([
+        {
+          name: "a",
+          typeDefs: parse(/* GraphQL */ `
+            type Query {
+              book: Book!
+            }
+
+            interface Media @key(fields: "id") {
+              id: ID!
+            }
+
+            type Book implements Media @key(fields: "id") {
+              id: ID!
+              isbn: String!
+            }
+
+            extend schema
+              @link(
+                url: "https://specs.apollo.dev/federation/v2.3"
+                import: ["@key"]
+              )
+          `),
+        },
+        {
+          name: "b",
+          typeDefs: parse(/* GraphQL */ `
+            type Media @key(fields: "id") @interfaceObject {
+              id: ID!
+            }
+
+            type Query {
+              topRatedMedia: [Media!]!
+            }
+
+            extend schema
+              @link(
+                url: "https://specs.apollo.dev/federation/v2.3"
+                import: ["@key", "@interfaceObject"]
+              )
+          `),
+        },
+        {
+          name: "c",
+          typeDefs: parse(/* GraphQL */ `
+            type Query {
+              cBook: Book
+            }
+
+            type Book @key(fields: "id") {
+              id: ID!
+            }
+
+            extend schema
+              @link(
+                url: "https://specs.apollo.dev/federation/v2.3"
+                import: ["@key"]
+              )
+          `),
+        },
+      ]);
+
+      // console.log(api.library, result.errors);
+      expect(result.errors).toBe(undefined);
+    });
   });
 });
