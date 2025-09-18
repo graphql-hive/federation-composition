@@ -260,6 +260,20 @@ export class PathFinder {
       return;
     }
 
+    // We can skip the edge in case the the graph interface implementation does not provide the field.
+    if (edge.tail.typeState?.kind === "interface") {
+      const fieldInEdge = edge.tail.typeState.fields
+        .get(fieldName)
+        ?.byGraph.get(edge.tail.graphId);
+
+      if (fieldInEdge === undefined) {
+        this.logger.groupEnd(
+          () => "Ignore edge: tail type does not have this field",
+        );
+        return;
+      }
+    }
+
     // A huge win for performance, is when you do less work :D
     // We can ignore an edge that has already been visited with the same key fields / requirements.
     // The way entity-move edges are created, where every graph points to every other graph:
@@ -448,20 +462,6 @@ export class PathFinder {
       for (const edge of edges) {
         this.logger.group(() => "Checking #" + i++ + " " + edge);
         this.logger.log(() => "Visited graphs: " + visitedGraphs.join(","));
-
-        // We can skip the edge in case the the graph interface implementation does not provide the field.
-        if (fieldName && edge.tail.typeState?.kind === "interface") {
-          if ("fields" in edge.tail.typeState) {
-            const fieldInEdge = edge.tail.typeState.fields
-              .get(fieldName)
-              ?.byGraph.get(edge.tail.graphId);
-
-            if (!fieldInEdge) {
-              this.logger.log(() => "Ignore edge: field is not in edge type");
-              continue;
-            }
-          }
-        }
 
         if (visitedGraphs.includes(edge.tail.graphName)) {
           this.logger.groupEnd(() => "Ignore: already visited graph");
