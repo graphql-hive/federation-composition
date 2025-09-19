@@ -1,5 +1,15 @@
 # @theguild/federation-composition
 
+## 0.20.1
+
+### Patch Changes
+
+- [#185](https://github.com/graphql-hive/federation-composition/pull/185) [`5e3cb1a`](https://github.com/graphql-hive/federation-composition/commit/5e3cb1aa96f42bb6719c31e2dc8205afcdaba389) Thanks [@jdolle](https://github.com/jdolle)! - tag extraction respects @external on parent
+
+- [#186](https://github.com/graphql-hive/federation-composition/pull/186) [`2a1475f`](https://github.com/graphql-hive/federation-composition/commit/2a1475f8bb1c0711108965b6173212ca288e9229) Thanks [@n1ru4l](https://github.com/n1ru4l)! - Fix failing satisfiability check for interface types.
+
+- [#167](https://github.com/graphql-hive/federation-composition/pull/167) [`3e224c8`](https://github.com/graphql-hive/federation-composition/commit/3e224c860e5edc6ef0fe73449f10895972472a18) Thanks [@jdolle](https://github.com/jdolle)! - Respect @external on parent type
+
 ## 0.20.0
 
 ### Minor Changes
