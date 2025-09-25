@@ -687,6 +687,16 @@ export function objectTypeBuilder(): TypeBuilder<ObjectType, ObjectTypeState> {
                   );
                   const isRequired = f.required === true;
 
+                  const inGraphs =
+                    fieldNamesOfImplementedInterfaces[field.name];
+                  const hasMatchingInterfaceFieldInGraph: boolean =
+                    inGraphs && inGraphs.has(graphId);
+
+                  // Apparently we need to keep it if it has a interface definition...
+                  if (hasMatchingInterfaceFieldInGraph) {
+                    return true;
+                  }
+
                   return (
                     (isExternal && isRequired) ||
                     needsToPrintOverrideLabel ||
@@ -1013,6 +1023,10 @@ function provideUsedOverriddenValue(
     fieldStateInGraph.usedAsKey && !fieldStateInGraph.external;
   const isOverridden =
     field.override && graphNameToId(field.override) === graphId;
+
+  if (isOverridden && fieldStateInGraph.external) {
+    return false;
+  }
 
   if (
     isOverridden &&
