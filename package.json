@@ -82,7 +82,7 @@
     "prettier": "3.6.2",
     "rimraf": "5.0.10",
     "strip-indent": "4.1.0",
-    "tsx": "4.20.3",
+    "tsx": "4.20.6",
     "typescript": "5.9.3",
     "vitest": "3.2.4"
   },
