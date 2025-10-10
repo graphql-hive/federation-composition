@@ -81,7 +81,7 @@
     "mitata": "1.0.34",
     "prettier": "3.6.2",
     "rimraf": "5.0.10",
-    "strip-indent": "4.0.0",
+    "strip-indent": "4.1.0",
     "tsx": "4.20.3",
     "typescript": "5.8.3",
     "vitest": "3.2.4"
