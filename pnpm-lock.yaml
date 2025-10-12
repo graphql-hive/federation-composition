@@ -61,8 +61,8 @@ importers:
         specifier: 5.0.10
         version: 5.0.10
       strip-indent:
-        specifier: 4.1.0
-        version: 4.1.0
+        specifier: 4.1.1
+        version: 4.1.1
       tsx:
         specifier: 4.20.6
         version: 4.20.6
@@ -1382,8 +1382,8 @@ packages:
     resolution: {integrity: sha512-dOESqjYr96iWYylGObzd39EuNTa5VJxyvVAEm5Jnh7KGo75V43Hk1odPQkNDyXNmUR6k+gEiDVXnjB8HJ3crXw==}
     engines: {node: '>=12'}
 
-  strip-indent@4.1.0:
-    resolution: {integrity: sha512-OA95x+JPmL7kc7zCu+e+TeYxEiaIyndRx0OrBcK2QPPH09oAndr2ALvymxWA+Lx1PYYvFUm4O63pRkdJAaW96w==}
+  strip-indent@4.1.1:
+    resolution: {integrity: sha512-SlyRoSkdh1dYP0PzclLE7r0M9sgbFKKMFXpFRUMNuKhQSbC6VQIGzq3E0qsfvGJaUFJPGv6Ws1NZ/haTAjfbMA==}
     engines: {node: '>=12'}
 
   strip-literal@3.1.0:
@@ -2931,7 +2931,7 @@ snapshots:
 
   strip-final-newline@3.0.0: {}
 
-  strip-indent@4.1.0: {}
+  strip-indent@4.1.1: {}
 
   strip-literal@3.1.0:
     dependencies:
