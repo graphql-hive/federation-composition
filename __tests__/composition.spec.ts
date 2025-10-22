@@ -7925,4 +7925,132 @@ testImplementations((api) => {
       `Invalid value for "@tag(name:)" of type "String!" in application of "@tag" to "Query.foo".`,
     );
   });
+
+  test("inaccessible interface implemented by accessible types", () => {
+    const sdl = /* GraphQL */ `
+      schema
+        @link(
+          url: "https://specs.apollo.dev/federation/v2.3"
+          import: ["@inaccessible"]
+        ) {
+        query: Query
+      }
+
+      type Query {
+        public: PublicAccessTokenConnection!
+        private: PrivateAccessTokenConnection! @inaccessible
+      }
+
+      interface AccessToken @inaccessible {
+        id: ID!
+      }
+
+      interface AccessTokenEdge @inaccessible {
+        node: AccessToken!
+      }
+
+      interface AccessTokenConnection @inaccessible {
+        edges: [AccessTokenEdge!]!
+      }
+
+      type PrivateAccessToken implements AccessToken @inaccessible {
+        id: ID!
+      }
+
+      type PrivateAccessTokenEdge implements AccessTokenEdge @inaccessible {
+        node: PrivateAccessToken!
+      }
+
+      type PrivateAccessTokenConnection implements AccessTokenConnection
+        @inaccessible {
+        edges: [PrivateAccessTokenEdge!]!
+      }
+
+      type PublicAccessToken implements AccessToken {
+        id: ID!
+      }
+
+      type PublicAccessTokenEdge implements AccessTokenEdge {
+        node: PublicAccessToken!
+      }
+
+      type PublicAccessTokenConnection implements AccessTokenConnection {
+        edges: [PublicAccessTokenEdge!]!
+      }
+    `;
+
+    const result = api.composeServices([
+      {
+        typeDefs: parse(sdl),
+        name: "FOO_GRAPHQL",
+        url: "https://lol.de",
+      },
+    ]);
+
+    expect(result.errors).toEqual(undefined);
+    expect(result.supergraphSdl).toContainGraphQL(/* GraphQL */ `
+      type PrivateAccessToken implements AccessToken
+        @join__implements(graph: FOO_GRAPHQL, interface: "AccessToken")
+        @join__type(graph: FOO_GRAPHQL)
+        @inaccessible {
+        id: ID!
+      }
+
+      type PrivateAccessTokenConnection implements AccessTokenConnection
+        @join__implements(
+          graph: FOO_GRAPHQL
+          interface: "AccessTokenConnection"
+        )
+        @join__type(graph: FOO_GRAPHQL)
+        @inaccessible {
+        edges: [PrivateAccessTokenEdge!]!
+      }
+
+      type PrivateAccessTokenEdge implements AccessTokenEdge
+        @join__implements(graph: FOO_GRAPHQL, interface: "AccessTokenEdge")
+        @join__type(graph: FOO_GRAPHQL)
+        @inaccessible {
+        node: PrivateAccessToken!
+      }
+
+      type PublicAccessToken implements AccessToken
+        @join__implements(graph: FOO_GRAPHQL, interface: "AccessToken")
+        @join__type(graph: FOO_GRAPHQL) {
+        id: ID!
+      }
+
+      type PublicAccessTokenConnection implements AccessTokenConnection
+        @join__implements(
+          graph: FOO_GRAPHQL
+          interface: "AccessTokenConnection"
+        )
+        @join__type(graph: FOO_GRAPHQL) {
+        edges: [PublicAccessTokenEdge!]!
+      }
+
+      type PublicAccessTokenEdge implements AccessTokenEdge
+        @join__implements(graph: FOO_GRAPHQL, interface: "AccessTokenEdge")
+        @join__type(graph: FOO_GRAPHQL) {
+        node: PublicAccessToken!
+      }
+    `);
+    assertCompositionSuccess(result);
+    expect(result.publicSdl).toContainGraphQL(`
+      type Query {
+        public: PublicAccessTokenConnection!
+      }
+
+      type PublicAccessToken {
+        id: ID!
+      }
+
+      type PublicAccessTokenEdge {
+        node: PublicAccessToken!
+      }
+
+      type PublicAccessTokenConnection {
+        edges: [PublicAccessTokenEdge!]!
+      }
+    `);
+  });
 });
