@@ -1,5 +1,48 @@
 # @theguild/federation-composition
 
+## 0.20.2
+
+### Patch Changes
+
+- [#198](https://github.com/graphql-hive/federation-composition/pull/198) [`1b98c17`](https://github.com/graphql-hive/federation-composition/commit/1b98c17d0e572fbcccbc150eeca8c4fe66f4d719) Thanks [@User!](https://github.com/User!), [@User!](https://github.com/User!)! - Fix public schema SDL in case a object type implements an inaccessible interface.
+
+  Composing the following subgraph:
+
+  ```graphql
+  schema
+    @link(
+      url: "https://specs.apollo.dev/federation/v2.3"
+      import: ["@inaccessible"]
+    ) {
+    query: Query
+  }
+
+  type Query {
+
+  }
+
+  interface Node @inaccessible {
+    id: ID!
+  }
+
+  type User implements Node {
+    id: ID!
+  }
+  ```
+
+  now result in the following valid public SDL:
+
+  ```diff
+    type Query {
+
+    }
+
+  - type User implements Node {
+  + type User {
+      id: ID!
+    }
+  ```
+
 ## 0.20.1
 
 ### Patch Changes
