@@ -20,7 +20,7 @@ type Query {
   user: User!
 }
 
-type Node @inaccessible {
+interface Node @inaccessible {
   id: ID!
 }
 
