@@ -1,5 +1,6 @@
 import {
   Kind,
+  type NamedTypeNode,
   specifiedDirectives as specifiedDirectivesArray,
   visit,
   type ConstDirectiveNode,
@@ -157,18 +158,24 @@ export function transformSupergraphToPublicSchema(
     );
   }
 
+  const inaccessibleInterfaceTypes = new Set<string>();
+
   function removeInaccessibleNode(node: {
+    kind: Kind;
     directives?: readonly ConstDirectiveNode[];
     name: {
       value: string;
     };
   }) {
     if (hasInaccessibleDirective(node) || belongsToLinkedSpec(node)) {
+      if (node.kind === Kind.INTERFACE_TYPE_DEFINITION) {
+        inaccessibleInterfaceTypes.add(node.name.value);
+      }
       return null;
     }
   }
 
-  return visit(documentNode, {
+  const newDocumentNode = visit(documentNode, {
     [Kind.DIRECTIVE_DEFINITION]: removeFederationOrSpecifiedDirectives,
     [Kind.DIRECTIVE]: removeFederationOrSpecifiedDirectives,
     [Kind.SCHEMA_EXTENSION]: () => null,
@@ -211,5 +218,41 @@ export function transformSupergraphToPublicSchema(
       }
     },
     [Kind.INPUT_VALUE_DEFINITION]: removeInaccessibleNode,
+  });
+
+  if (!inaccessibleInterfaceTypes.size) {
+    return newDocumentNode;
+  }
+
+  // If there are inaccessible interface types we need to visit the document a second time and filter these out.
+
+  function removeInaccessibleInterfaces(node: {
+    directives?: readonly ConstDirectiveNode[];
+    name: {
+      value: string;
+    };
+    interfaces?: readonly NamedTypeNode[] | undefined;
+  }) {
+    if (!node.interfaces) {
+      return;
+    }
+
+    const newInterfaces = node.interfaces.filter(
+      (value) => !inaccessibleInterfaceTypes.has(value.name.value),
+    );
+
+    if (newInterfaces.length === node.interfaces.length) {
+      return;
+    }
+
+    return {
+      ...node,
+      interfaces: newInterfaces,
+    };
+  }
+
+  return visit(newDocumentNode, {
+    [Kind.OBJECT_TYPE_DEFINITION]: removeInaccessibleInterfaces,
+    [Kind.INTERFACE_TYPE_DEFINITION]: removeInaccessibleInterfaces,
   });
 }
