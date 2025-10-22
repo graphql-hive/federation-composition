@@ -7988,6 +7988,52 @@ testImplementations((api) => {
     ]);
 
     expect(result.errors).toEqual(undefined);
+    expect(result.supergraphSdl).toContainGraphQL(/* GraphQL */ `
+      type PrivateAccessToken implements AccessToken
+        @join__implements(graph: FOO_GRAPHQL, interface: "AccessToken")
+        @join__type(graph: FOO_GRAPHQL)
+        @inaccessible {
+        id: ID!
+      }
+
+      type PrivateAccessTokenConnection implements AccessTokenConnection
+        @join__implements(
+          graph: FOO_GRAPHQL
+          interface: "AccessTokenConnection"
+        )
+        @join__type(graph: FOO_GRAPHQL)
+        @inaccessible {
+        edges: [PrivateAccessTokenEdge!]!
+      }
+
+      type PrivateAccessTokenEdge implements AccessTokenEdge
+        @join__implements(graph: FOO_GRAPHQL, interface: "AccessTokenEdge")
+        @join__type(graph: FOO_GRAPHQL)
+        @inaccessible {
+        node: PrivateAccessToken!
+      }
+
+      type PublicAccessToken implements AccessToken
+        @join__implements(graph: FOO_GRAPHQL, interface: "AccessToken")
+        @join__type(graph: FOO_GRAPHQL) {
+        id: ID!
+      }
+
+      type PublicAccessTokenConnection implements AccessTokenConnection
+        @join__implements(
+          graph: FOO_GRAPHQL
+          interface: "AccessTokenConnection"
+        )
+        @join__type(graph: FOO_GRAPHQL) {
+        edges: [PublicAccessTokenEdge!]!
+      }
+
+      type PublicAccessTokenEdge implements AccessTokenEdge
+        @join__implements(graph: FOO_GRAPHQL, interface: "AccessTokenEdge")
+        @join__type(graph: FOO_GRAPHQL) {
+        node: PublicAccessToken!
+      }
+    `);
     assertCompositionSuccess(result);
     expect(result.publicSdl).toContainGraphQL(`
       type Query {
