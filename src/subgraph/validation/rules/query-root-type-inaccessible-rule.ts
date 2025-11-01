@@ -1,4 +1,4 @@
-import { ASTVisitor, GraphQLError, OperationTypeNode } from "graphql";
+import { ASTVisitor, GraphQLError, type OperationTypeNode } from "graphql";
 import type { SubgraphValidationContext } from "../validation-context.js";
 
 export function QueryRootTypeInaccessibleRule(
@@ -10,7 +10,7 @@ export function QueryRootTypeInaccessibleRule(
     SchemaDefinition(node) {
       const nonQueryType = node.operationTypes?.find(
         (operationType) =>
-          operationType.operation === OperationTypeNode.QUERY &&
+          operationType.operation === 'query' &&
           operationType.type.name.value !== "Query",
       );
 
@@ -21,7 +21,7 @@ export function QueryRootTypeInaccessibleRule(
     SchemaExtension(node) {
       const nonQueryType = node.operationTypes?.find(
         (operationType) =>
-          operationType.operation === OperationTypeNode.QUERY &&
+          operationType.operation === 'query' &&
           operationType.type.name.value !== "Query",
       );
 

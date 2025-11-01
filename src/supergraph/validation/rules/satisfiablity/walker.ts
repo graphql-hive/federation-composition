@@ -1,4 +1,4 @@
-import { OperationTypeNode } from "graphql";
+import type { OperationTypeNode } from "graphql";
 import type { Logger } from "../../../../utils/logger.js";
 import { isAbstractEdge, isFieldEdge, type Edge } from "./edge.js";
 import { LazyErrors, SatisfiabilityError } from "./errors.js";
@@ -119,9 +119,9 @@ export class Walker {
     }
 
     const rootNode = this.supergraph.nodeOf(
-      operationType === OperationTypeNode.QUERY
+      operationType === 'query'
         ? "Query"
-        : operationType === OperationTypeNode.MUTATION
+        : operationType === 'mutation'
           ? "Mutation"
           : "Subscription",
       false,
