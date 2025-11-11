@@ -8,7 +8,7 @@ import {
   Kind,
   ObjectTypeDefinitionNode,
   ObjectTypeExtensionNode,
-  OperationTypeNode,
+  type OperationTypeNode,
   SchemaDefinitionNode,
   specifiedDirectives as specifiedDirectiveTypes,
   specifiedScalarTypes,
@@ -398,17 +398,17 @@ export function createSubgraphStateBuilder(
 
   const expectedQueryTypeName = decideOnRootTypeName(
     schemaDef,
-    OperationTypeNode.QUERY,
+    'query' as OperationTypeNode,
     "Query",
   );
   const expectedMutationTypeName = decideOnRootTypeName(
     schemaDef,
-    OperationTypeNode.MUTATION,
+    'mutation' as OperationTypeNode,
     "Mutation",
   );
   const expectedSubscriptionTypeName = decideOnRootTypeName(
     schemaDef,
-    OperationTypeNode.SUBSCRIPTION,
+    'subscription' as OperationTypeNode,
     "Subscription",
   );
 
