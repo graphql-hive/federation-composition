@@ -120,6 +120,7 @@ export function interfaceTypeBuilder(): TypeBuilder<
 
         if (field.listSize !== null) {
           fieldState.listSize = {
+            printRequireOneSlicingArgument: false,
             assumedSize: mathMaxNullable(
               fieldState.listSize?.assumedSize,
               field.listSize.assumedSize,

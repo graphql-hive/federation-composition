@@ -185,6 +185,7 @@ export function objectTypeBuilder(): TypeBuilder<ObjectType, ObjectTypeState> {
 
         if (field.listSize !== null) {
           fieldState.listSize = {
+            printRequireOneSlicingArgument: false,
             assumedSize: mathMaxNullable(
               fieldState.listSize?.assumedSize,
               field.listSize.assumedSize,

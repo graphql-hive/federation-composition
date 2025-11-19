@@ -265,6 +265,7 @@ export interface Deprecated {
 }
 
 export type ListSize = {
+  printRequireOneSlicingArgument: boolean;
   assumedSize: number | null;
   slicingArguments: string[] | null;
   sizedFields: string[] | null;

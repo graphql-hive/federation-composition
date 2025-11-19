@@ -1034,11 +1034,15 @@ function createListSizeDirectiveNode(input: {
   slicingArguments: string[] | null;
   sizedFields: string[] | null;
   requireOneSlicingArgument: boolean;
+  printRequireOneSlicingArgument: boolean;
   directiveName: string;
 }): ConstDirectiveNode {
   const args: ConstArgumentNode[] = [];
 
-  if (input.requireOneSlicingArgument === false) {
+  if (
+    input.requireOneSlicingArgument === false ||
+    input.printRequireOneSlicingArgument === true
+  ) {
     args.push({
       kind: Kind.ARGUMENT,
       name: {
@@ -1047,7 +1051,7 @@ function createListSizeDirectiveNode(input: {
       },
       value: {
         kind: Kind.BOOLEAN,
-        value: false,
+        value: input.requireOneSlicingArgument === true,
       },
     });
   }
