@@ -23,6 +23,7 @@ import {
 } from "../specifications/federation.js";
 import { Link, LinkImport } from "../specifications/link.js";
 import { printOutputType } from "./helpers.js";
+import { mergeScopePolicies } from "../utils/auth.js";
 
 export type SubgraphType =
   | ObjectType
@@ -116,9 +117,6 @@ export interface InterfaceType {
   extension: boolean;
   keys: Key[];
   inaccessible: boolean;
-  authenticated: boolean;
-  policies: string[][];
-  scopes: string[][];
   tags: Set<string>;
   interfaces: Set<string>;
   isDefinition: boolean;
@@ -1289,10 +1287,12 @@ function scalarTypeFactory(state: SubgraphState) {
       getOrCreateScalarType(state, typeName).authenticated = true;
     },
     setPolicies(typeName: string, policies: string[][]) {
-      getOrCreateScalarType(state, typeName).policies.push(...policies);
+      const existing = getOrCreateScalarType(state, typeName);
+      existing.policies = mergeScopePolicies(existing.policies, policies);
     },
     setScopes(typeName: string, scopes: string[][]) {
-      getOrCreateScalarType(state, typeName).scopes.push(...scopes);
+      const existing = getOrCreateScalarType(state, typeName);
+      existing.scopes = mergeScopePolicies(existing.scopes, scopes);
     },
     setCost(typeName: string, cost: number) {
       getOrCreateScalarType(state, typeName).cost = cost;
@@ -1402,30 +1402,26 @@ function objectTypeFactory(
       // }
     },
     setAuthenticated(typeName: string) {
-      if (isInterfaceObject(typeName)) {
-        return interfaceTypeBuilder.setAuthenticated(typeName);
-      }
+      // if (isInterfaceObject(typeName)) {
+      //   return interfaceTypeBuilder.setAuthenticated(typeName);
+      // }
 
       const objectType = getOrCreateObjectType(state, renameObject, typeName);
       objectType.authenticated = true;
     },
     setPolicies(typeName: string, policies: string[][]) {
-      if (isInterfaceObject(typeName)) {
-        return interfaceTypeBuilder.setPolicies(typeName, policies);
-      }
-
-      getOrCreateObjectType(state, renameObject, typeName).policies.push(
-        ...policies,
-      );
+      // if (isInterfaceObject(typeName)) {
+      //   return interfaceTypeBuilder.setPolicies(typeName, policies);
+      // }
+      const existing = getOrCreateObjectType(state, renameObject, typeName);
+      existing.policies = mergeScopePolicies(existing.policies, policies);
     },
     setScopes(typeName: string, scopes: string[][]) {
-      if (isInterfaceObject(typeName)) {
-        return interfaceTypeBuilder.setScopes(typeName, scopes);
-      }
-
-      getOrCreateObjectType(state, renameObject, typeName).scopes.push(
-        ...scopes,
-      );
+      // if (isInterfaceObject(typeName)) {
+      //   return interfaceTypeBuilder.setScopes(typeName, scopes);
+      // }
+      const existing = getOrCreateObjectType(state, renameObject, typeName);
+      existing.scopes = mergeScopePolicies(existing.scopes, scopes);
     },
     setCost(typeName: string, cost: number) {
       if (isInterfaceObject(typeName)) {
@@ -1580,12 +1576,14 @@ function objectTypeFactory(
           );
         }
 
-        getOrCreateObjectField(
+        let existing = getOrCreateObjectField(
           state,
           renameObject,
           typeName,
           fieldName,
-        ).policies.push(...policies);
+        );
+
+        existing.policies = mergeScopePolicies(existing.policies, policies);
       },
       setScopes(typeName: string, fieldName: string, scopes: string[][]) {
         if (isInterfaceObject(typeName)) {
@@ -1596,12 +1594,14 @@ function objectTypeFactory(
           );
         }
 
-        getOrCreateObjectField(
+        let existing = getOrCreateObjectField(
           state,
           renameObject,
           typeName,
           fieldName,
-        ).scopes.push(...scopes);
+        );
+
+        existing.scopes = mergeScopePolicies(existing.scopes, scopes);
       },
       setCost(typeName: string, fieldName: string, cost: number) {
         if (isInterfaceObject(typeName)) {
@@ -2014,16 +2014,6 @@ function interfaceTypeFactory(state: SubgraphState) {
       //   field.inaccessible = true;
       // }
     },
-    setAuthenticated(typeName: string) {
-      const t = getOrCreateInterfaceType(state, typeName);
-      t.authenticated = true;
-    },
-    setPolicies(typeName: string, policies: string[][]) {
-      getOrCreateInterfaceType(state, typeName).policies.push(...policies);
-    },
-    setScopes(typeName: string, scopes: string[][]) {
-      getOrCreateInterfaceType(state, typeName).scopes.push(...scopes);
-    },
     setTag(typeName: string, tag: string) {
       getOrCreateInterfaceType(state, typeName).tags.add(tag);
     },
@@ -2052,14 +2042,12 @@ function interfaceTypeFactory(state: SubgraphState) {
           true;
       },
       setPolicies(typeName: string, fieldName: string, policies: string[][]) {
-        getOrCreateInterfaceField(state, typeName, fieldName).policies.push(
-          ...policies,
-        );
+        const existing = getOrCreateInterfaceField(state, typeName, fieldName);
+        existing.policies = mergeScopePolicies(existing.policies, policies);
       },
       setScopes(typeName: string, fieldName: string, scopes: string[][]) {
-        getOrCreateInterfaceField(state, typeName, fieldName).scopes.push(
-          ...scopes,
-        );
+        const existing = getOrCreateInterfaceField(state, typeName, fieldName);
+        existing.scopes = mergeScopePolicies(existing.scopes, scopes);
       },
       setCost(typeName: string, fieldName: string, cost: number) {
         getOrCreateInterfaceField(state, typeName, fieldName).cost = cost;
@@ -2355,10 +2343,12 @@ function enumTypeFactory(state: SubgraphState) {
       getOrCreateEnumType(state, typeName).authenticated = true;
     },
     setPolicies(typeName: string, policies: string[][]) {
-      getOrCreateEnumType(state, typeName).policies.push(...policies);
+      const existing = getOrCreateEnumType(state, typeName);
+      existing.policies = mergeScopePolicies(existing.policies, policies);
     },
     setScopes(typeName: string, scopes: string[][]) {
-      getOrCreateEnumType(state, typeName).scopes.push(...scopes);
+      const existing = getOrCreateEnumType(state, typeName);
+      existing.scopes = mergeScopePolicies(existing.scopes, scopes);
     },
     setCost(typeName: string, cost: number) {
       getOrCreateEnumType(state, typeName).cost = cost;
@@ -2598,9 +2588,6 @@ function getOrCreateInterfaceType(
     extension: false,
     keys: [],
     inaccessible: false,
-    authenticated: false,
-    policies: [],
-    scopes: [],
     tags: new Set(),
     interfaces: new Set(),
     implementedBy: new Set(),

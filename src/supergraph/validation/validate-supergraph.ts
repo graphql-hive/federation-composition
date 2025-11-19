@@ -1,6 +1,7 @@
 import type { SubgraphState } from "../../subgraph/state.js";
 import { visitSupergraphState } from "../composition/visitor.js";
 import type { SupergraphStateBuilder } from "../state.js";
+import { AuthOnRequiresRule } from "./rules/auth-on-requires-rule.js";
 import { DefaultValueUsesInaccessibleRule } from "./rules/default-value-uses-inaccessible-rule.js";
 import { DirectiveCompositionRule } from "./rules/directive-composition-rule.js";
 import { EnumValuesRule } from "./rules/enum-values-rule.js";
@@ -63,6 +64,8 @@ export function validateSupergraph(
     state.visitSubgraphState(subgraphState);
   }
 
+  state.composeSupergraphState();
+
   const postSupergraphRules = [
     InterfaceFieldNoImplementationRule,
     ExtensionWithBaseRule,
@@ -91,6 +94,7 @@ export function validateSupergraph(
     InterfaceSubtypeRule,
     NoInaccessibleOnImplementedInterfaceFieldsRule,
     ListSizeSlicingArgumentsRule,
+    AuthOnRequiresRule,
   ];
 
   const supergraph = state.getSupergraphState();

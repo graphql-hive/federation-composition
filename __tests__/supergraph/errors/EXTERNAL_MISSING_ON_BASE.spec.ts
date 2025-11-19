@@ -2,6 +2,7 @@ import { expect, test } from "vitest";
 import {
   assertCompositionSuccess,
   graphql,
+  satisfiesVersionRange,
   testVersions,
 } from "../../shared/testkit.js";
 
@@ -227,5 +228,67 @@ testVersions((api, version) => {
     ]);
 
     expect(result.errors).toBeUndefined();
+  });
+
+  test("@external in types, defined by @interfaceObject", () => {
+    if (satisfiesVersionRange("< v2.3", version)) {
+      // @interfaceObject is not supported before v2.3
+      return;
+    }
+
+    const result = api.composeServices(
+      [
+        {
+          name: "a",
+          typeDefs: graphql`
+          extend schema
+            @link(
+              url: "https://specs.apollo.dev/federation/${version}"
+              import: ["@key", "@interfaceObject"]
+            )
+
+          type Query {
+            animal: Animal
+          }
+
+          type Animal @interfaceObject @key(fields: "id") {
+            id: ID!
+            age: Int
+          }
+        `,
+        },
+        {
+          name: "b",
+          typeDefs: graphql`
+          extend schema
+            @link(
+              url: "https://specs.apollo.dev/federation/${version}"
+              import: ["@key", "@external"]
+            )
+
+          interface Mammal {
+            id: ID!
+            age: Int
+          }
+
+          interface Animal implements Mammal @key(fields: "id") {
+            id: ID!
+            origin: String
+            age: Int
+          }
+
+          type Dog implements Mammal & Animal @key(fields: "id") {
+            id: ID!
+            origin: String
+            age: Int @external
+          }
+        `,
+        },
+      ],
+      {},
+      true,
+    );
+
+    assertCompositionSuccess(result);
   });
 });
