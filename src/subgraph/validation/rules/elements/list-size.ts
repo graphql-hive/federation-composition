@@ -380,6 +380,7 @@ export function ListSizeRule(context: SubgraphValidationContext): ASTVisitor {
               typeDef.name.value,
               parent.name.value,
               {
+                printRequireOneSlicingArgument: false,
                 assumedSize,
                 slicingArguments,
                 sizedFields,
@@ -396,6 +397,7 @@ export function ListSizeRule(context: SubgraphValidationContext): ASTVisitor {
               typeDef.name.value,
               parent.name.value,
               {
+                printRequireOneSlicingArgument: false,
                 assumedSize,
                 slicingArguments,
                 sizedFields,
