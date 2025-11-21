@@ -4,6 +4,7 @@ import { Description, ScalarType } from "../../subgraph/state.js";
 import { ensureValue, mathMax } from "../../utils/helpers.js";
 import { createScalarTypeNode } from "./ast.js";
 import { convertToConst, MapByGraph, TypeBuilder } from "./common.js";
+import { mergeScopePolicies } from "../../utils/auth.js";
 
 export function scalarTypeBuilder(): TypeBuilder<ScalarType, ScalarTypeState> {
   return {
@@ -21,11 +22,17 @@ export function scalarTypeBuilder(): TypeBuilder<ScalarType, ScalarTypeState> {
       }
 
       if (type.policies) {
-        scalarTypeState.policies.push(...type.policies);
+        scalarTypeState.policies = mergeScopePolicies(
+          scalarTypeState.policies,
+          type.policies,
+        );
       }
 
       if (type.scopes) {
-        scalarTypeState.scopes.push(...type.scopes);
+        scalarTypeState.scopes = mergeScopePolicies(
+          scalarTypeState.scopes,
+          type.scopes,
+        );
       }
 
       if (type.cost !== null) {

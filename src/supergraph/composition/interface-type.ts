@@ -9,6 +9,7 @@ import {
 } from "../../subgraph/state.js";
 import {
   ensureValue,
+  isDefined,
   mathMax,
   mathMaxNullable,
   nullableArrayUnion,
@@ -16,6 +17,7 @@ import {
 import { createInterfaceTypeNode, JoinFieldAST } from "./ast.js";
 import { convertToConst } from "./common.js";
 import type { Key, MapByGraph, TypeBuilder } from "./common.js";
+import { mergeScopePolicies } from "../../utils/auth.js";
 
 export function interfaceTypeBuilder(): TypeBuilder<
   InterfaceType,
@@ -29,18 +31,6 @@ export function interfaceTypeBuilder(): TypeBuilder<
 
       if (type.inaccessible) {
         interfaceTypeState.inaccessible = true;
-      }
-
-      if (type.authenticated) {
-        interfaceTypeState.authenticated = true;
-      }
-
-      if (type.policies) {
-        interfaceTypeState.policies.push(...type.policies);
-      }
-
-      if (type.scopes) {
-        interfaceTypeState.scopes.push(...type.scopes);
       }
 
       if (type.isDefinition) {
@@ -107,11 +97,17 @@ export function interfaceTypeBuilder(): TypeBuilder<
         }
 
         if (field.policies) {
-          fieldState.policies.push(...field.policies);
+          fieldState.policies = mergeScopePolicies(
+            fieldState.policies,
+            field.policies,
+          );
         }
 
         if (field.scopes) {
-          fieldState.scopes.push(...field.scopes);
+          fieldState.scopes = mergeScopePolicies(
+            fieldState.scopes,
+            field.scopes,
+          );
         }
 
         if (field.cost !== null) {
@@ -120,6 +116,7 @@ export function interfaceTypeBuilder(): TypeBuilder<
 
         if (field.listSize !== null) {
           fieldState.listSize = {
+            printRequireOneSlicingArgument: false,
             assumedSize: mathMaxNullable(
               fieldState.listSize?.assumedSize,
               field.listSize.assumedSize,
@@ -168,6 +165,9 @@ export function interfaceTypeBuilder(): TypeBuilder<
           version: graph.version,
           external: field.external,
           shareable: field.shareable,
+          authenticated: field.authenticated,
+          policies: field.policies,
+          scopes: field.scopes,
           usedAsKey,
         });
 
@@ -217,12 +217,50 @@ export function interfaceTypeBuilder(): TypeBuilder<
         }
       }
     },
+    composeSupergraphState(interfaceType, graphs, { supergraphState }) {
+      // Collect @requiresScopes and @policy from object types implementing this interface
+      const implementors = Array.from(interfaceType.implementedBy)
+        .map((typeName) => supergraphState.objectTypes.get(typeName))
+        .filter(isDefined);
+      for (const implementor of implementors) {
+        interfaceType.scopes = mergeScopePolicies(
+          interfaceType.scopes,
+          implementor.scopes,
+        );
+        interfaceType.policies = mergeScopePolicies(
+          interfaceType.policies,
+          implementor.policies,
+        );
+        if (implementor.authenticated) {
+          interfaceType.authenticated = true;
+        }
+      }
+      for (const field of interfaceType.fields.values()) {
+        for (const implementor of implementors) {
+          let implementorField = implementor.fields.get(field.name);
+          if (!implementorField) {
+            continue;
+          }
+          // When a field comes from an interface object, we need to look for the implementation
+          field.scopes = mergeScopePolicies(
+            field.scopes,
+            implementorField.scopes,
+          );
+          field.policies = mergeScopePolicies(
+            field.policies,
+            implementorField.policies,
+          );
+          if (implementorField.authenticated) {
+            field.authenticated = true;
+          }
+        }
+      }
+    },
     composeSupergraphNode(interfaceType, graphs, { supergraphState }) {
       return createInterfaceTypeNode({
         name: interfaceType.name,
         fields: Array.from(interfaceType.fields.values()).map((field) => {
           let nonEmptyJoinField = false;
-
           const joinFields: JoinFieldAST[] = [];
 
           if (field.byGraph.size !== interfaceType.byGraph.size) {
@@ -449,6 +487,9 @@ type FieldStateInGraph = {
   external: boolean;
   requires: string | null;
   version: FederationVersion;
+  authenticated: boolean;
+  policies: string[][];
+  scopes: string[][];
 };
 
 type ArgStateInGraph = {

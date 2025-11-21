@@ -109,6 +109,13 @@ export function createSupergraphStateBuilder() {
 
   const graphNameToIdMap: Record<string, string | undefined> = {};
 
+  const helpers = {
+    graphNameToId(graphName: string) {
+      return graphNameToIdMap[graphName] ?? null;
+    },
+    supergraphState: state,
+  };
+
   return {
     addSubgraph(subgraph: SubgraphState) {
       if (state.subgraphs.has(subgraph.graph.id)) {
@@ -120,6 +127,50 @@ export function createSupergraphStateBuilder() {
     },
     getGraph(id: string) {
       return state.subgraphs.get(id);
+    },
+    composeSupergraphState() {
+      // Directive
+      if (directive.composeSupergraphState) {
+        state.directives.forEach((s) => {
+          directive.composeSupergraphState!(s, state.subgraphs, helpers);
+        });
+      }
+      // Scalar
+      if (scalarType.composeSupergraphState) {
+        state.scalarTypes.forEach((s) => {
+          scalarType.composeSupergraphState!(s, state.subgraphs, helpers);
+        });
+      }
+      // Enum
+      if (enumType.composeSupergraphState) {
+        state.enumTypes.forEach((s) => {
+          enumType.composeSupergraphState!(s, state.subgraphs, helpers);
+        });
+      }
+      // InputObject
+      if (inputObjectType.composeSupergraphState) {
+        state.inputObjectTypes.forEach((s) => {
+          inputObjectType.composeSupergraphState!(s, state.subgraphs, helpers);
+        });
+      }
+      // Object
+      if (objectType.composeSupergraphState) {
+        state.objectTypes.forEach((s) => {
+          objectType.composeSupergraphState!(s, state.subgraphs, helpers);
+        });
+      }
+      // Interface
+      if (interfaceType.composeSupergraphState) {
+        state.interfaceTypes.forEach((s) => {
+          interfaceType.composeSupergraphState!(s, state.subgraphs, helpers);
+        });
+      }
+      // Union
+      if (unionType.composeSupergraphState) {
+        state.unionTypes.forEach((s) => {
+          unionType.composeSupergraphState!(s, state.subgraphs, helpers);
+        });
+      }
     },
     visitSubgraphState(subgraphState: SubgraphState) {
       subgraphStates.set(subgraphState.graph.id, subgraphState);
@@ -239,12 +290,6 @@ export function createSupergraphStateBuilder() {
     },
     build() {
       const transformFields = createFieldsTransformer(state);
-      const helpers = {
-        graphNameToId(graphName: string) {
-          return graphNameToIdMap[graphName] ?? null;
-        },
-        supergraphState: state,
-      };
 
       // Strip out all executable directives that are not defined or identical every supergraph
       for (const directiveState of state.directives.values()) {

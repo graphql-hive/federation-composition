@@ -82,9 +82,25 @@ export function PolicyRule(context: SubgraphValidationContext): ASTVisitor {
           }
 
           if (
-            (typeDef.kind === Kind.OBJECT_TYPE_DEFINITION ||
-              typeDef.kind === Kind.OBJECT_TYPE_EXTENSION) &&
-            !context.stateBuilder.isInterfaceObject(typeDef.name.value)
+            typeDef.kind === Kind.INTERFACE_TYPE_DEFINITION ||
+            typeDef.kind === Kind.INTERFACE_TYPE_EXTENSION
+          ) {
+            context.reportError(
+              new GraphQLError(
+                `Invalid use of @policy on field "${typeDef.name.value}.${parent.name.value}": @policy cannot be applied on interfaces, interface fields and interface objects`,
+                {
+                  extensions: {
+                    code: "AUTH_REQUIREMENTS_APPLIED_ON_INTERFACE",
+                  },
+                },
+              ),
+            );
+            return;
+          }
+
+          if (
+            typeDef.kind === Kind.OBJECT_TYPE_DEFINITION ||
+            typeDef.kind === Kind.OBJECT_TYPE_EXTENSION
           ) {
             context.stateBuilder.objectType.field.setPolicies(
               typeDef.name.value,
@@ -96,6 +112,19 @@ export function PolicyRule(context: SubgraphValidationContext): ASTVisitor {
         }
         case Kind.OBJECT_TYPE_DEFINITION:
         case Kind.OBJECT_TYPE_EXTENSION:
+          if (context.stateBuilder.isInterfaceObject(parent.name.value)) {
+            context.reportError(
+              new GraphQLError(
+                `Invalid use of @policy on interface object "${parent.name.value}": @policy cannot be applied on interfaces, interface fields and interface objects`,
+                {
+                  extensions: {
+                    code: "AUTH_REQUIREMENTS_APPLIED_ON_INTERFACE",
+                  },
+                },
+              ),
+            );
+            return;
+          }
           context.stateBuilder.objectType.setPolicies(
             parent.name.value,
             policies,
@@ -103,11 +132,17 @@ export function PolicyRule(context: SubgraphValidationContext): ASTVisitor {
           break;
         case Kind.INTERFACE_TYPE_DEFINITION:
         case Kind.INTERFACE_TYPE_DEFINITION:
-          context.stateBuilder.interfaceType.setPolicies(
-            parent.name.value,
-            policies,
+          context.reportError(
+            new GraphQLError(
+              `Invalid use of @policy on interface "${parent.name.value}": @policy cannot be applied on interfaces, interface fields and interface objects`,
+              {
+                extensions: {
+                  code: "AUTH_REQUIREMENTS_APPLIED_ON_INTERFACE",
+                },
+              },
+            ),
           );
-          break;
+          return;
         case Kind.SCALAR_TYPE_DEFINITION:
         case Kind.SCALAR_TYPE_EXTENSION:
           context.stateBuilder.scalarType.setPolicies(

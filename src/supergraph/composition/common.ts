@@ -29,6 +29,14 @@ export interface TypeBuilder<T, S> {
     typeName: string,
     type: T,
   ): void;
+  composeSupergraphState?(
+    type: S,
+    graphMap: Map<string, SubgraphState>,
+    helpers: {
+      graphNameToId(graphName: string): string | null;
+      supergraphState: SupergraphState;
+    },
+  ): void;
   composeSupergraphNode(
     type: S,
     graphMap: Map<string, SubgraphState>,

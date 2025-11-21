@@ -709,18 +709,10 @@ testImplementations((api) => {
       }
     `);
 
-    const policies =
-      api.library === "apollo"
-        ? // The top-level array means "OR".
-          // The inner arrays mean "AND".
-          // So this means "read_post_comments OR read_posts".
-          `[["read_post_comments"], ["read_post_comments"], ["read_posts"]]`
-        : // we do deduplication as it does not change the behavior of a gateway and feels like a bug in Apollo
-          `[["read_post_comments"], ["read_posts"]]`;
     expect(result.supergraphSdl).toContainGraphQL(/* GraphQL */ `
       type Query @join__type(graph: COMMENTS) @join__type(graph: FEED) {
         feed: [Post!]!
-          @policy(policies: ${policies})
+          @policy(policies: [["read_post_comments", "read_posts"]])
           @requiresScopes(scopes: [["read:posts"]])
       }
     `);

@@ -1,4 +1,4 @@
-import { ASTVisitor, Kind } from "graphql";
+import { ASTVisitor, GraphQLError, Kind } from "graphql";
 import { validateDirectiveAgainstOriginal } from "../../../helpers.js";
 import type { SubgraphValidationContext } from "../../validation-context.js";
 
@@ -51,6 +51,23 @@ export function AuthenticatedRule(
           }
 
           if (
+            typeDef.kind === Kind.INTERFACE_TYPE_DEFINITION ||
+            typeDef.kind === Kind.INTERFACE_TYPE_EXTENSION
+          ) {
+            context.reportError(
+              new GraphQLError(
+                `Invalid use of @authenticated on field "${typeDef.name.value}.${parent.name.value}": @authenticated cannot be applied on interfaces, interface fields and interface objects`,
+                {
+                  extensions: {
+                    code: "AUTH_REQUIREMENTS_APPLIED_ON_INTERFACE",
+                  },
+                },
+              ),
+            );
+            return;
+          }
+
+          if (
             typeDef.kind === Kind.OBJECT_TYPE_DEFINITION ||
             typeDef.kind === Kind.OBJECT_TYPE_EXTENSION
           ) {
@@ -63,14 +80,34 @@ export function AuthenticatedRule(
         }
         case Kind.OBJECT_TYPE_DEFINITION:
         case Kind.OBJECT_TYPE_EXTENSION:
+          if (context.stateBuilder.isInterfaceObject(parent.name.value)) {
+            context.reportError(
+              new GraphQLError(
+                `Invalid use of @authenticated on interface object "${parent.name.value}": @authenticated cannot be applied on interfaces, interface fields and interface objects`,
+                {
+                  extensions: {
+                    code: "AUTH_REQUIREMENTS_APPLIED_ON_INTERFACE",
+                  },
+                },
+              ),
+            );
+            return;
+          }
           context.stateBuilder.objectType.setAuthenticated(parent.name.value);
           break;
         case Kind.INTERFACE_TYPE_DEFINITION:
         case Kind.INTERFACE_TYPE_DEFINITION:
-          context.stateBuilder.interfaceType.setAuthenticated(
-            parent.name.value,
+          context.reportError(
+            new GraphQLError(
+              `Invalid use of @authenticated on interface "${parent.name.value}": @authenticated cannot be applied on interfaces, interface fields and interface objects`,
+              {
+                extensions: {
+                  code: "AUTH_REQUIREMENTS_APPLIED_ON_INTERFACE",
+                },
+              },
+            ),
           );
-          break;
+          return;
         case Kind.SCALAR_TYPE_DEFINITION:
         case Kind.SCALAR_TYPE_EXTENSION:
           context.stateBuilder.scalarType.setAuthenticated(parent.name.value);

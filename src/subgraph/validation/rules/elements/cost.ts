@@ -89,11 +89,17 @@ export function CostRule(context: SubgraphValidationContext): ASTVisitor {
             typeDef.kind === Kind.INTERFACE_TYPE_DEFINITION ||
             typeDef.kind === Kind.INTERFACE_TYPE_EXTENSION
           ) {
-            context.stateBuilder.interfaceType.field.setCost(
-              typeDef.name.value,
-              parent.name.value,
-              weight,
+            context.reportError(
+              new GraphQLError(
+                `@cost cannot be applied to interface "${typeDef.name.value}.${parent.name.value}"`,
+                {
+                  extensions: {
+                    code: "COST_APPLIED_TO_INTERFACE_FIELD",
+                  },
+                },
+              ),
             );
+            return;
           }
           break;
         }
@@ -156,12 +162,17 @@ export function CostRule(context: SubgraphValidationContext): ASTVisitor {
               );
             }
 
-            context.stateBuilder.interfaceType.field.arg.setCost(
-              typeDef.name.value,
-              fieldDef.name.value,
-              argDef.name.value,
-              weight,
+            context.reportError(
+              new GraphQLError(
+                `@cost cannot be applied to interface "${typeDef.name.value}.${fieldDef.name.value}" argument "${argDef.name.value}"`,
+                {
+                  extensions: {
+                    code: "COST_APPLIED_TO_INTERFACE_FIELD",
+                  },
+                },
+              ),
             );
+            return;
           }
 
           break;

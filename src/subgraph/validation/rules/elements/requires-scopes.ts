@@ -1,4 +1,4 @@
-import { ASTVisitor, Kind } from "graphql";
+import { ASTVisitor, GraphQLError, Kind } from "graphql";
 import { print } from "../../../../graphql/printer.js";
 import { validateDirectiveAgainstOriginal } from "../../../helpers.js";
 import type { SubgraphValidationContext } from "../../validation-context.js";
@@ -86,6 +86,23 @@ export function RequiresScopesRule(
           }
 
           if (
+            typeDef.kind === Kind.INTERFACE_TYPE_DEFINITION ||
+            typeDef.kind === Kind.INTERFACE_TYPE_EXTENSION
+          ) {
+            context.reportError(
+              new GraphQLError(
+                `Invalid use of @requiresScopes on field "${typeDef.name.value}.${parent.name.value}": @requiresScopes cannot be applied on interfaces, interface fields and interface objects`,
+                {
+                  extensions: {
+                    code: "AUTH_REQUIREMENTS_APPLIED_ON_INTERFACE",
+                  },
+                },
+              ),
+            );
+            return;
+          }
+
+          if (
             typeDef.kind === Kind.OBJECT_TYPE_DEFINITION ||
             typeDef.kind === Kind.OBJECT_TYPE_EXTENSION
           ) {
@@ -99,15 +116,35 @@ export function RequiresScopesRule(
         }
         case Kind.OBJECT_TYPE_DEFINITION:
         case Kind.OBJECT_TYPE_EXTENSION:
+          if (context.stateBuilder.isInterfaceObject(parent.name.value)) {
+            context.reportError(
+              new GraphQLError(
+                `Invalid use of @requiresScopes on interface object "${parent.name.value}": @requiresScopes cannot be applied on interfaces, interface fields and interface objects`,
+                {
+                  extensions: {
+                    code: "AUTH_REQUIREMENTS_APPLIED_ON_INTERFACE",
+                  },
+                },
+              ),
+            );
+            return;
+          }
+
           context.stateBuilder.objectType.setScopes(parent.name.value, scopes);
           break;
         case Kind.INTERFACE_TYPE_DEFINITION:
         case Kind.INTERFACE_TYPE_DEFINITION:
-          context.stateBuilder.interfaceType.setScopes(
-            parent.name.value,
-            scopes,
+          context.reportError(
+            new GraphQLError(
+              `Invalid use of @requiresScopes on interface "${parent.name.value}": @requiresScopes cannot be applied on interfaces, interface fields and interface objects`,
+              {
+                extensions: {
+                  code: "AUTH_REQUIREMENTS_APPLIED_ON_INTERFACE",
+                },
+              },
+            ),
           );
-          break;
+          return;
         case Kind.SCALAR_TYPE_DEFINITION:
         case Kind.SCALAR_TYPE_EXTENSION:
           context.stateBuilder.scalarType.setScopes(parent.name.value, scopes);
