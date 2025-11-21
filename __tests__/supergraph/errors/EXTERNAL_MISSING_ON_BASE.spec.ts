@@ -236,11 +236,10 @@ testVersions((api, version) => {
       return;
     }
 
-    const result = api.composeServices(
-      [
-        {
-          name: "a",
-          typeDefs: graphql`
+    const result = api.composeServices([
+      {
+        name: "a",
+        typeDefs: graphql`
           extend schema
             @link(
               url: "https://specs.apollo.dev/federation/${version}"
@@ -256,10 +255,10 @@ testVersions((api, version) => {
             age: Int
           }
         `,
-        },
-        {
-          name: "b",
-          typeDefs: graphql`
+      },
+      {
+        name: "b",
+        typeDefs: graphql`
           extend schema
             @link(
               url: "https://specs.apollo.dev/federation/${version}"
@@ -283,11 +282,8 @@ testVersions((api, version) => {
             age: Int @external
           }
         `,
-        },
-      ],
-      {},
-      true,
-    );
+      },
+    ]);
 
     assertCompositionSuccess(result);
   });
