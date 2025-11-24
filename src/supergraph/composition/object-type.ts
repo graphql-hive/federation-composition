@@ -18,6 +18,7 @@ import { createObjectTypeNode, JoinFieldAST } from "./ast.js";
 import type { Key, MapByGraph, TypeBuilder } from "./common.js";
 import { convertToConst } from "./common.js";
 import { InterfaceTypeFieldState } from "./interface-type.js";
+import { mergeScopePolicies } from "../../utils/auth.js";
 
 export function isRealExtension(
   meta: ObjectTypeStateInGraph,
@@ -60,11 +61,17 @@ export function objectTypeBuilder(): TypeBuilder<ObjectType, ObjectTypeState> {
       }
 
       if (type.policies) {
-        objectTypeState.policies.push(...type.policies);
+        objectTypeState.policies = mergeScopePolicies(
+          objectTypeState.policies,
+          type.policies,
+        );
       }
 
       if (type.scopes) {
-        objectTypeState.scopes.push(...type.scopes);
+        objectTypeState.scopes = mergeScopePolicies(
+          objectTypeState.scopes,
+          type.scopes,
+        );
       }
 
       if (type.cost !== null) {
@@ -107,6 +114,9 @@ export function objectTypeBuilder(): TypeBuilder<ObjectType, ObjectTypeState> {
         shareable: type.shareable,
         interfaces: type.interfaces,
         version: graph.version,
+        authenticated: type.authenticated,
+        policies: type.policies.slice(),
+        scopes: type.scopes.slice(),
       });
       const typeInGraph = objectTypeState.byGraph.get(graph.id)!;
 
@@ -172,11 +182,17 @@ export function objectTypeBuilder(): TypeBuilder<ObjectType, ObjectTypeState> {
         }
 
         if (field.policies) {
-          fieldState.policies.push(...field.policies);
+          fieldState.policies = mergeScopePolicies(
+            fieldState.policies,
+            field.policies,
+          );
         }
 
         if (field.scopes) {
-          fieldState.scopes.push(...field.scopes);
+          fieldState.scopes = mergeScopePolicies(
+            fieldState.scopes,
+            field.scopes,
+          );
         }
 
         if (field.cost !== null) {
@@ -185,6 +201,7 @@ export function objectTypeBuilder(): TypeBuilder<ObjectType, ObjectTypeState> {
 
         if (field.listSize !== null) {
           fieldState.listSize = {
+            printRequireOneSlicingArgument: false,
             assumedSize: mathMaxNullable(
               fieldState.listSize?.assumedSize,
               field.listSize.assumedSize,
@@ -239,6 +256,9 @@ export function objectTypeBuilder(): TypeBuilder<ObjectType, ObjectTypeState> {
           required: field.required,
           shareable: field.shareable,
           extension: field.extension,
+          authenticated: field.authenticated,
+          policies: field.policies,
+          scopes: field.scopes,
           used: field.used,
           usedAsKey,
           version: graph.version,
@@ -296,6 +316,44 @@ export function objectTypeBuilder(): TypeBuilder<ObjectType, ObjectTypeState> {
             defaultValue: arg.defaultValue,
             version: graph.version,
           });
+        }
+      }
+    },
+    composeSupergraphState(objectType, _graphs, { supergraphState }) {
+      for (const interfaceName of objectType.interfaces) {
+        const interfaceState =
+          supergraphState.interfaceTypes.get(interfaceName);
+
+        if (!interfaceState) {
+          throw new Error(
+            `Interface "${interfaceName}" not found in Supergraph state`,
+          );
+        }
+
+        for (const [
+          interfaceFieldName,
+          interfaceField,
+        ] of interfaceState.fields) {
+          if (!interfaceState.hasInterfaceObject) {
+            continue;
+          }
+
+          // Merge auth directives from interface object field with the object field
+          // Check REF_AUTH_INTERFACE_OBJECT_SHAREABLE in tests
+          const fieldState = objectType.fields.get(interfaceFieldName);
+          if (fieldState) {
+            fieldState.scopes = mergeScopePolicies(
+              fieldState.scopes,
+              interfaceField.scopes,
+            );
+            fieldState.policies = mergeScopePolicies(
+              fieldState.policies,
+              interfaceField.policies,
+            );
+            if (interfaceField.authenticated) {
+              fieldState.authenticated = true;
+            }
+          }
         }
       }
     },
@@ -893,13 +951,28 @@ export function objectTypeBuilder(): TypeBuilder<ObjectType, ObjectTypeState> {
             resolvableFieldsFromInterfaceObjects
               .filter((f) => !objectType.fields.has(f.name))
               .map((field) => {
+                let scopes: string[][] = [];
+                let policies: string[][] = [];
+                let authenticated = false;
+
+                for (const fieldInGraph of field.byGraph.values()) {
+                  scopes = mergeScopePolicies(scopes, fieldInGraph.scopes);
+                  policies = mergeScopePolicies(
+                    policies,
+                    fieldInGraph.policies,
+                  );
+                  if (fieldInGraph.authenticated) {
+                    authenticated = true;
+                  }
+                }
+
                 return {
                   name: field.name,
                   type: field.type,
                   inaccessible: field.inaccessible,
-                  authenticated: field.authenticated,
-                  policies: field.policies,
-                  scopes: field.scopes,
+                  authenticated,
+                  policies,
+                  scopes,
                   cost:
                     field.cost !== null
                       ? {
@@ -1091,6 +1164,9 @@ export type ObjectTypeStateInGraph = {
   extension: boolean;
   extensionType?: "@extends" | "extend";
   external: boolean;
+  authenticated: boolean;
+  policies: string[][];
+  scopes: string[][];
   keys: Key[];
   interfaces: Set<string>;
   inaccessible: boolean;
@@ -1110,6 +1186,9 @@ type FieldStateInGraph = {
   requires: string | null;
   provided: boolean;
   required: boolean;
+  authenticated: boolean;
+  policies: string[][];
+  scopes: string[][];
   shareable: boolean;
   usedAsKey: boolean;
   extension: boolean;

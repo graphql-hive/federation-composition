@@ -1,6 +1,7 @@
 import type { SubgraphState } from "../../subgraph/state.js";
 import { visitSupergraphState } from "../composition/visitor.js";
 import type { SupergraphStateBuilder } from "../state.js";
+import { AuthOnRequiresRule } from "./rules/auth-on-requires-rule.js";
 import { DefaultValueUsesInaccessibleRule } from "./rules/default-value-uses-inaccessible-rule.js";
 import { DirectiveCompositionRule } from "./rules/directive-composition-rule.js";
 import { EnumValuesRule } from "./rules/enum-values-rule.js";
@@ -19,6 +20,7 @@ import { InterfaceObjectUsageErrorRule } from "./rules/interface-object-usage-er
 import { InterfaceSubtypeRule } from "./rules/interface-subtype-rule.js";
 import { InvalidFieldSharingRule } from "./rules/invalid-field-sharing-rule.js";
 import { LinkImportNameMismatchRule } from "./rules/link-import-name-mismatch-rule.js";
+import { ListSizeSlicingArgumentsRule } from "./rules/list-size-slicing-arguments-rule.js";
 import { NoInaccessibleOnImplementedInterfaceFieldsRule } from "./rules/no-inaccessible-on-implemented-interface-fields-rule.js";
 import { OnlyInaccessibleChildrenRule } from "./rules/only-inaccessible-children-rule.js";
 import { OverrideSourceHasOverrideRule } from "./rules/override-source-has-override.js";
@@ -62,6 +64,8 @@ export function validateSupergraph(
     state.visitSubgraphState(subgraphState);
   }
 
+  state.composeSupergraphState();
+
   const postSupergraphRules = [
     InterfaceFieldNoImplementationRule,
     ExtensionWithBaseRule,
@@ -89,6 +93,8 @@ export function validateSupergraph(
     RequiredArgumentOrFieldIsNotInaccessibleRule,
     InterfaceSubtypeRule,
     NoInaccessibleOnImplementedInterfaceFieldsRule,
+    ListSizeSlicingArgumentsRule,
+    AuthOnRequiresRule,
   ];
 
   const supergraph = state.getSupergraphState();

@@ -268,7 +268,7 @@ export function ListSizeRule(context: SubgraphValidationContext): ASTVisitor {
             if (!targetType) {
               context.reportError(
                 new GraphQLError(
-                  `${coordinate} has @listSize(sizedFields:) applied, but the output type is not an object`,
+                  `${coordinate} has @listSize(sizedFields:) applied, but the output type is not a composite type`,
                   {
                     extensions: {
                       code: "LIST_SIZE_INVALID_SIZED_FIELD",
@@ -279,7 +279,7 @@ export function ListSizeRule(context: SubgraphValidationContext): ASTVisitor {
               return;
             }
 
-            const nonIntFields: string[] = [];
+            const nonListFields: string[] = [];
             const nonExistingFields: string[] = [];
 
             for (const sizedField of sizedFields) {
@@ -289,19 +289,19 @@ export function ListSizeRule(context: SubgraphValidationContext): ASTVisitor {
 
               if (!targetField) {
                 nonExistingFields.push(sizedField);
-              } else if (!isIntTypeOrNullableIntType(targetField.type)) {
-                nonIntFields.push(sizedField);
+              } else if (!isListType(targetField.type)) {
+                nonListFields.push(sizedField);
               }
             }
 
-            if (nonIntFields.length || nonExistingFields.length) {
-              nonIntFields.forEach((fieldName) => {
+            if (nonListFields.length || nonExistingFields.length) {
+              nonListFields.forEach((fieldName) => {
                 context.reportError(
                   new GraphQLError(
-                    `${coordinate} references "${fieldName}" field in @listSize(sizedFields:) argument that is not an integer.`,
+                    `${coordinate} references "${fieldName}" field in @listSize(sizedFields:) argument that is not a list.`,
                     {
                       extensions: {
-                        code: "LIST_SIZE_INVALID_SIZED_FIELD",
+                        code: "LIST_SIZE_APPLIED_TO_NON_LIST",
                       },
                     },
                   ),
@@ -380,6 +380,7 @@ export function ListSizeRule(context: SubgraphValidationContext): ASTVisitor {
               typeDef.name.value,
               parent.name.value,
               {
+                printRequireOneSlicingArgument: false,
                 assumedSize,
                 slicingArguments,
                 sizedFields,
@@ -396,6 +397,7 @@ export function ListSizeRule(context: SubgraphValidationContext): ASTVisitor {
               typeDef.name.value,
               parent.name.value,
               {
+                printRequireOneSlicingArgument: false,
                 assumedSize,
                 slicingArguments,
                 sizedFields,

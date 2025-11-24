@@ -629,7 +629,7 @@ testVersions((api, version) => {
       );
     });
 
-    test("@cost on interface field", () => {
+    test("@cost on interface field is not allowed", () => {
       const result = composeServices([
         {
           name: "foo",
@@ -657,30 +657,99 @@ testVersions((api, version) => {
         },
       ]);
 
-      assertCompositionSuccess(result);
+      assertCompositionFailure(result);
 
-      expect(result.supergraphSdl).toContainGraphQL(/* GraphQL */ `
-        interface Node @join__type(graph: FOO) {
-          id: ID! @cost(weight: 5)
-          name(substring: Int @cost(weight: 10)): String
-        }
-      `);
+      expect(result.errors).toContainEqual(
+        expect.objectContaining({
+          message: `[foo] @cost cannot be applied to interface "Node.id"`,
+          extensions: expect.objectContaining({
+            code: "COST_APPLIED_TO_INTERFACE_FIELD",
+          }),
+        }),
+      );
+    });
 
-      expect(result.supergraphSdl).toContainGraphQL(/* GraphQL */ `
-        type User implements Node
-          @join__implements(graph: FOO, interface: "Node")
-          @join__type(graph: FOO, key: "id")
-          @cost(weight: 25) {
-          id: ID!
-          name(substring: Int @cost(weight: 15)): String
-        }
-      `);
+    test("@cost on interface field argument is not allowed", () => {
+      const result = composeServices([
+        {
+          name: "foo",
+          typeDefs: parse(/* GraphQL */ `
+            extend schema
+              @link(
+                url: "https://specs.apollo.dev/federation/${version}"
+                import: ["@key", "@cost", "@shareable"]
+              )
 
-      expect(result.supergraphSdl).toContainGraphQL(/* GraphQL */ `
-        type Query @join__type(graph: FOO) {
-          node(id: ID): Node
-        }
-      `);
+            interface Node {
+              id: ID!
+              name(substring: Int @cost(weight: 10)): String
+            }
+
+            type User implements Node @cost(weight: 25) @key(fields: "id") {
+              id: ID!
+              name(substring: Int @cost(weight: 15)): String
+            }
+
+            type Query {
+              node(id: ID): Node
+            }
+          `),
+        },
+      ]);
+
+      if (api.library === "apollo") {
+        assertCompositionSuccess(result);
+        return;
+      }
+
+      assertCompositionFailure(result);
+
+      expect(result.errors).toContainEqual(
+        expect.objectContaining({
+          message: `[foo] @cost cannot be applied to interface "Node.name" argument "substring"`,
+          extensions: expect.objectContaining({
+            code: "COST_APPLIED_TO_INTERFACE_FIELD",
+          }),
+        }),
+      );
+    });
+
+    test("@cost on interface type is not allowed", () => {
+      const result = composeServices([
+        {
+          name: "foo",
+          typeDefs: parse(/* GraphQL */ `
+            extend schema
+              @link(
+                url: "https://specs.apollo.dev/federation/${version}"
+                import: ["@key", "@cost", "@shareable"]
+              )
+
+            interface Node @cost(weight: 5) {
+              id: ID!
+            }
+
+            type User implements Node @cost(weight: 25) @key(fields: "id") {
+              id: ID!
+            }
+
+            type Query {
+              node(id: ID): Node
+            }
+          `),
+        },
+      ]);
+
+      assertCompositionFailure(result);
+
+      expect(result.errors).toContainEqual(
+        expect.objectContaining({
+          message: `[foo] Directive "@cost" may not be used on INTERFACE.`,
+          extensions: expect.objectContaining({
+            code: "INVALID_GRAPHQL",
+          }),
+        }),
+      );
     });
 
     test("@cost on interfaceObject field", () => {
@@ -724,37 +793,287 @@ testVersions((api, version) => {
         },
       ]);
 
+      assertCompositionFailure(result);
+
+      expect(result.errors).toContainEqual(
+        expect.objectContaining({
+          message: `[foo] @cost cannot be applied to interface "Node.id"`,
+          extensions: expect.objectContaining({
+            code: "COST_APPLIED_TO_INTERFACE_FIELD",
+          }),
+        }),
+      );
+    });
+
+    test("@cost on object type implementing interface", () => {
+      const result = composeServices([
+        {
+          name: "foo",
+          typeDefs: parse(/* GraphQL */ `
+            extend schema
+              @link(
+                url: "https://specs.apollo.dev/federation/${version}"
+                import: ["@key", "@cost", "@shareable"]
+              )
+
+            interface Node @key(fields: "id") {
+              id: ID!
+            }
+
+            type User implements Node @key(fields: "id") @cost(weight: 5) {
+              id: ID!
+            }
+
+            type Bot implements Node @key(fields: "id") @cost(weight: 10) {
+              id: ID!
+            }
+
+            type Query {
+              node(id: ID): Node
+            }
+          `),
+        },
+        {
+          name: "bar",
+          typeDefs: parse(/* GraphQL */ `
+            extend schema
+              @link(
+                url: "https://specs.apollo.dev/federation/${version}"
+                import: ["@key", "@cost"]
+              )
+
+              type User @key(fields: "id") @cost(weight: 7) {
+                id: ID!
+              }
+          `),
+        },
+      ]);
+
       assertCompositionSuccess(result);
 
-      expect(result.supergraphSdl).toContainGraphQL(/* GraphQL */ `
-        interface Node
-          @join__type(graph: BAR, key: "id", isInterfaceObject: true)
-          @join__type(graph: FOO, key: "id") {
-          id: ID! @cost(weight: 10)
-          name(substring: Int @cost(weight: 10)): String
-            @join__field(graph: BAR)
-        }
-      `);
-
+      // Should use highest cost among field implementations
       expect(result.supergraphSdl).toContainGraphQL(/* GraphQL */ `
         type User implements Node
           @join__implements(graph: FOO, interface: "Node")
+          @join__type(graph: BAR, key: "id")
           @join__type(graph: FOO, key: "id")
-          @cost(weight: 25) {
+          @cost(weight: 7) {
           id: ID!
-          name(substring: Int @cost(weight: 10)): String @join__field
         }
       `);
 
+      // shouldn't propagate to interface
       expect(result.supergraphSdl).toContainGraphQL(/* GraphQL */ `
-        type Query @join__type(graph: BAR) @join__type(graph: FOO) {
-          node(id: ID): Node @join__field(graph: FOO)
+        interface Node @join__type(graph: FOO, key: "id") {
+          id: ID!
+        }
+      `);
+    });
+
+    test("@cost on object type fields implementing interface", () => {
+      const result = composeServices([
+        {
+          name: "foo",
+          typeDefs: parse(/* GraphQL */ `
+            extend schema
+              @link(
+                url: "https://specs.apollo.dev/federation/${version}"
+                import: ["@key", "@cost", "@shareable"]
+              )
+
+            interface Node @key(fields: "id") {
+              id: ID!
+            }
+
+            type User implements Node @key(fields: "id") {
+              id: ID! @cost(weight: 5)
+            }
+
+            type Bot implements Node @key(fields: "id") {
+              id: ID! @cost(weight: 10)
+            }
+
+            type Query {
+              node(id: ID): Node
+            }
+          `),
+        },
+        {
+          name: "bar",
+          typeDefs: parse(/* GraphQL */ `
+            extend schema
+              @link(
+                url: "https://specs.apollo.dev/federation/${version}"
+                import: ["@key", "@cost"]
+              )
+
+              type User @key(fields: "id") {
+                id: ID! @cost(weight: 7)
+              }
+          `),
+        },
+      ]);
+
+      assertCompositionSuccess(result);
+
+      // Should use highest cost among field implementations
+      expect(result.supergraphSdl).toContainGraphQL(/* GraphQL */ `
+        type User implements Node
+          @join__implements(graph: FOO, interface: "Node")
+          @join__type(graph: BAR, key: "id")
+          @join__type(graph: FOO, key: "id") {
+          id: ID! @cost(weight: 7)
+        }
+      `);
+
+      // shouldn't propagate to interface
+      expect(result.supergraphSdl).toContainGraphQL(/* GraphQL */ `
+        interface Node @join__type(graph: FOO, key: "id") {
+          id: ID!
+        }
+      `);
+    });
+
+    test("@cost on object type field arguments implementing interface", () => {
+      const result = composeServices([
+        {
+          name: "foo",
+          typeDefs: parse(/* GraphQL */ `
+            extend schema
+              @link(
+                url: "https://specs.apollo.dev/federation/${version}"
+                import: ["@key", "@cost", "@shareable"]
+              )
+
+            interface Node @key(fields: "id") {
+              id: ID!
+              name(substring: Int): String
+            }
+
+            type User implements Node @key(fields: "id") {
+              id: ID!
+              name(substring: Int @cost(weight: 5)): String @shareable
+            }
+
+            type Bot implements Node @key(fields: "id") {
+              id: ID!
+              name(substring: Int @cost(weight: 10)): String
+            }
+
+            type Query {
+              node(id: ID): Node
+            }
+          `),
+        },
+        {
+          name: "bar",
+          typeDefs: parse(/* GraphQL */ `
+            extend schema
+              @link(
+                url: "https://specs.apollo.dev/federation/${version}"
+                import: ["@key", "@cost", "@shareable"]
+              )
+
+              type User @key(fields: "id") {
+                id: ID!
+                name(substring: Int @cost(weight: 7)): String @shareable
+              }
+          `),
+        },
+      ]);
+
+      assertCompositionSuccess(result);
+
+      // Should use highest cost among field implementations
+      expect(result.supergraphSdl).toContainGraphQL(/* GraphQL */ `
+        type User implements Node
+          @join__implements(graph: FOO, interface: "Node")
+          @join__type(graph: BAR, key: "id")
+          @join__type(graph: FOO, key: "id") {
+          id: ID!
+          name(substring: Int @cost(weight: 7)): String
+        }
+      `);
+
+      // shouldn't propagate to interface
+      expect(result.supergraphSdl).toContainGraphQL(/* GraphQL */ `
+        interface Node @join__type(graph: FOO, key: "id") {
+          id: ID!
+          name(substring: Int): String
         }
       `);
     });
   });
 
   describe("@listSize", () => {
+    test("@listSize on interface field", () => {
+      const result = composeServices([
+        {
+          name: "bar",
+          typeDefs: parse(/* GraphQL */ `
+            extend schema
+              @link(
+                url: "https://specs.apollo.dev/federation/${version}"
+                import: ["@key", "@listSize", "@shareable"]
+              )
+
+            interface Node {
+              id: ID!
+              nodes(limit: Int!): [Node] @listSize(slicingArguments: ["limit"], sizedFields: ["nodes"], assumedSize: 21)
+            }
+
+            type User implements Node @key(fields: "id") {
+              id: ID!
+              nodes(limit: Int!): [Node] @listSize(slicingArguments: ["limit"], sizedFields: ["nodes"], assumedSize: 11) @shareable
+            }
+
+            type Query {
+              node(id: ID): Node  @shareable
+            }
+          `),
+        },
+        {
+          name: "baz",
+          typeDefs: parse(/* GraphQL */ `
+            extend schema
+              @link(
+                url: "https://specs.apollo.dev/federation/${version}"
+                import: ["@key", "@listSize", "@shareable"]
+              )
+
+            interface Node {
+              id: ID!
+              nodes(limit: Int!): [Node] @listSize(slicingArguments: ["limit"], sizedFields: ["nodes"], assumedSize: 20)
+            }
+
+            type User implements Node @key(fields: "id") {
+              id: ID!
+              nodes(limit: Int!): [Node] @listSize(slicingArguments: ["limit"], sizedFields: ["nodes"], assumedSize: 10) @shareable
+            }
+
+            type Query {
+              node(id: ID): Node @shareable
+            }
+          `),
+        },
+      ]);
+
+      assertCompositionSuccess(result);
+
+      expect(result.supergraphSdl).toContainGraphQL(/* GraphQL */ `
+        interface Node @join__type(graph: BAR) @join__type(graph: BAZ) {
+          id: ID!
+          nodes(limit: Int!): [Node]
+            @listSize(
+              assumedSize: 21
+              requireOneSlicingArgument: true
+              sizedFields: ["nodes"]
+              slicingArguments: ["limit"]
+            )
+        }
+      `);
+    });
+
     test("in supergraph", () => {
       const result = composeServices([
         {
@@ -775,7 +1094,7 @@ testVersions((api, version) => {
 
             type Query {
               users(first: Int): UserConnection
-                @listSize(slicingArguments: ["first"], sizedFields: ["count"])
+                @listSize(slicingArguments: ["first"], sizedFields: ["edges"])
               allUsers: [User] @listSize(assumedSize: 1, requireOneSlicingArgument: false)
             }
           `),
@@ -812,7 +1131,7 @@ testVersions((api, version) => {
           allUsers: [User]
             @listSize(assumedSize: 1, requireOneSlicingArgument: false)
           users(first: Int): UserConnection
-            @listSize(sizedFields: ["count"], slicingArguments: ["first"])
+            @listSize(sizedFields: ["edges"], slicingArguments: ["first"])
         }
       `);
     });
@@ -840,7 +1159,7 @@ testVersions((api, version) => {
 
             type Query {
               users(first: Int): UserConnection
-                @cartSize(slicingArguments: ["first"], sizedFields: ["count"])
+                @cartSize(slicingArguments: ["first"], sizedFields: ["edges"])
               allUsers: [User] @cartSize(assumedSize: 1, requireOneSlicingArgument: false)
             }
           `),
@@ -878,7 +1197,7 @@ testVersions((api, version) => {
           allUsers: [User]
             @cartSize(assumedSize: 1, requireOneSlicingArgument: false)
           users(first: Int): UserConnection
-            @cartSize(sizedFields: ["count"], slicingArguments: ["first"])
+            @cartSize(sizedFields: ["edges"], slicingArguments: ["first"])
         }
       `);
     });
@@ -906,7 +1225,7 @@ testVersions((api, version) => {
 
             type Query {
               users(first: Int): UserConnection
-                @cartSize(slicingArguments: ["first"], sizedFields: ["count"])
+                @cartSize(slicingArguments: ["first"], sizedFields: ["edges"])
               allUsers: [User] @cartSize(assumedSize: 1, requireOneSlicingArgument: false)
             }
           `),
@@ -954,7 +1273,7 @@ testVersions((api, version) => {
 
             type Query {
               strings(first: Int): StringConnection
-                @listSize(slicingArguments: ["first"], sizedFields: ["count"], assumedSize: 1000)
+                @listSize(slicingArguments: ["first"], sizedFields: ["edges"], assumedSize: 1000)
             }
           `),
         },
@@ -967,15 +1286,15 @@ testVersions((api, version) => {
           strings(first: Int): StringConnection
             @listSize(
               slicingArguments: ["first"]
-              sizedFields: ["count"]
+              sizedFields: ["edges"]
               assumedSize: 1000
             )
         }
       `);
     });
 
-    test("@shareable", () => {
-      const result = composeServices([
+    test("non-shared slicing argument", () => {
+      const services = [
         {
           name: "foo",
           typeDefs: parse(/* GraphQL */ `
@@ -989,7 +1308,7 @@ testVersions((api, version) => {
 
             type Query {
               strings(first: Int): StringConnection @shareable
-                @listSize(slicingArguments: ["first"], sizedFields: ["count"], assumedSize: 1000, requireOneSlicingArgument: true)
+                @listSize(slicingArguments: ["first"], sizedFields: ["edges"], assumedSize: 1000, requireOneSlicingArgument: true)
             }
           `),
         },
@@ -1002,25 +1321,33 @@ testVersions((api, version) => {
             type StringConnection {
               edges: [String] @shareable
               count: Int! @shareable
-              total: Int!
             }
 
             type Query {
               strings(first: Int, limit: Int): StringConnection @shareable
-                @listSize(slicingArguments: ["limit"], sizedFields: ["total"], assumedSize: 2000, requireOneSlicingArgument: false)
+                @listSize(slicingArguments: ["limit"], sizedFields: ["edges"], assumedSize: 2000, requireOneSlicingArgument: false)
             }
           `),
         },
-      ]);
+      ];
 
+      // Slicing argument "limit" is not available in all subgraphs
+      if (api.library === "apollo") {
+        // Apollo composition throws an exception
+        expect(() => composeServices(services)).toThrow();
+        return;
+      }
+
+      // Our composition allows it and strips out the non-shared slicing argument
+      const result = composeServices(services);
       assertCompositionSuccess(result);
 
       expect(result.supergraphSdl).toContainGraphQL(/* GraphQL */ `
         type Query @join__type(graph: BAR) @join__type(graph: FOO) {
           strings(first: Int): StringConnection
             @listSize(
-              slicingArguments: ["limit", "first"]
-              sizedFields: ["total", "count"]
+              slicingArguments: ["first"]
+              sizedFields: ["edges"]
               assumedSize: 2000
               requireOneSlicingArgument: false
             )
@@ -1057,7 +1384,7 @@ testVersions((api, version) => {
 
             type Query {
               nodes(first: Int): NodeConnection
-                @listSize(slicingArguments: ["first"], sizedFields: ["count"])
+                @listSize(slicingArguments: ["first"], sizedFields: ["edges"])
               allNodes: [Node] @listSize(assumedSize: 1, requireOneSlicingArgument: false)
             }
           `),
@@ -1068,8 +1395,8 @@ testVersions((api, version) => {
 
       expect(result.supergraphSdl).toContainGraphQL(/* GraphQL */ `
         interface NodeConnection @join__type(graph: FOO) {
-          edges: [Node] @listSize(assumedSize: 2)
           count: Int!
+          edges: [Node] @listSize(assumedSize: 2)
         }
       `);
 
@@ -1085,7 +1412,7 @@ testVersions((api, version) => {
       expect(result.supergraphSdl).toContainGraphQL(/* GraphQL */ `
         type Query @join__type(graph: FOO) {
           nodes(first: Int): NodeConnection
-            @listSize(slicingArguments: ["first"], sizedFields: ["count"])
+            @listSize(slicingArguments: ["first"], sizedFields: ["edges"])
           allNodes: [Node]
             @listSize(assumedSize: 1, requireOneSlicingArgument: false)
         }
@@ -1171,23 +1498,20 @@ testVersions((api, version) => {
 
             type Query {
               strings(first: Int): StringConnection
-                @listSize(assumedSize: -1, sizedFields: ["count"])
+                @listSize(assumedSize: -1, sizedFields: ["edges"])
             }
           `),
         },
       ]);
-
-      if (api.library === "apollo") {
-        assertCompositionSuccess(result);
-        return;
-      }
 
       assertCompositionFailure(result);
 
       expect(result.errors).toContainEqual(
         expect.objectContaining({
           message:
-            '[foo] "Query.strings" has negative @listSize(assumedSize:) value',
+            api.library === "apollo"
+              ? `[foo] Assumed size of "Query.strings" cannot be negative`
+              : '[foo] "Query.strings" has negative @listSize(assumedSize:) value',
           extensions: expect.objectContaining({
             code: "LIST_SIZE_INVALID_ASSUMED_SIZE",
           }),
@@ -1210,7 +1534,7 @@ testVersions((api, version) => {
 
             type Query {
               strings(first: Int): StringConnection
-                @listSize(assumedSize: 0, sizedFields: ["count"])
+                @listSize(assumedSize: 0, sizedFields: ["edges"])
             }
           `),
         },
@@ -1240,7 +1564,19 @@ testVersions((api, version) => {
         },
       ]);
 
-      assertCompositionSuccess(result);
+      assertCompositionFailure(result);
+
+      expect(result.errors).toContainEqual(
+        expect.objectContaining({
+          message:
+            api.library === "apollo"
+              ? `[foo] Sized field "StringConnection.count" is not a list`
+              : `[foo] "Query.strings" references "count" field in @listSize(sizedFields:) argument that is not a list.`,
+          extensions: expect.objectContaining({
+            code: "LIST_SIZE_APPLIED_TO_NON_LIST",
+          }),
+        }),
+      );
     });
 
     test("non-list field without the sizedFields argument", () => {
@@ -1263,21 +1599,35 @@ testVersions((api, version) => {
         },
       ]);
 
-      if (api.library === "apollo") {
-        assertCompositionSuccess(result);
-        return;
-      }
-
       assertCompositionFailure(result);
 
-      expect(result.errors).toContainEqual(
-        expect.objectContaining({
-          message: `[foo] "Query.strings" is not a list. Try to add @listSize(sizedFields:) argument.`,
-          extensions: expect.objectContaining({
-            code: "LIST_SIZE_INVALID_SIZED_FIELD",
+      if (api.library === "apollo") {
+        expect(result.errors).toContainEqual(
+          expect.objectContaining({
+            message: `[foo] "Query.strings" is not a list`,
+            extensions: expect.objectContaining({
+              code: "LIST_SIZE_APPLIED_TO_NON_LIST",
+            }),
           }),
-        }),
-      );
+        );
+        expect(result.errors).toContainEqual(
+          expect.objectContaining({
+            message: `[foo] Slicing argument "Query.strings(first:)" must be Int or Int!`,
+            extensions: expect.objectContaining({
+              code: "LIST_SIZE_INVALID_SLICING_ARGUMENT",
+            }),
+          }),
+        );
+      } else {
+        expect(result.errors).toContainEqual(
+          expect.objectContaining({
+            message: `[foo] "Query.strings" is not a list. Try to add @listSize(sizedFields:) argument.`,
+            extensions: expect.objectContaining({
+              code: "LIST_SIZE_INVALID_SIZED_FIELD",
+            }),
+          }),
+        );
+      }
     });
 
     test("sizedFields on non-object output", () => {
@@ -1290,22 +1640,20 @@ testVersions((api, version) => {
 
             type Query {
               strings(first: Int): [String]
-                @listSize(slicingArguments: ["first"], sizedFields: ["count"])
+                @listSize(slicingArguments: ["first"], sizedFields: ["edges"])
             }
           `),
         },
       ]);
 
-      if (api.library === "apollo") {
-        assertCompositionSuccess(result);
-        return;
-      }
-
       assertCompositionFailure(result);
 
       expect(result.errors).toContainEqual(
         expect.objectContaining({
-          message: `[foo] "Query.strings" has @listSize(sizedFields:) applied, but the output type is not an object`,
+          message:
+            api.library === "apollo"
+              ? `[foo] Sized fields cannot be used because "[String]" is not a composite type`
+              : `[foo] "Query.strings" has @listSize(sizedFields:) applied, but the output type is not a composite type`,
           extensions: expect.objectContaining({
             code: "LIST_SIZE_INVALID_SIZED_FIELD",
           }),
@@ -1313,7 +1661,7 @@ testVersions((api, version) => {
       );
     });
 
-    test("sizedField should be Int or Int!", () => {
+    test("sizedField should be a list", () => {
       const result = composeServices([
         {
           name: "foo",
@@ -1334,18 +1682,16 @@ testVersions((api, version) => {
         },
       ]);
 
-      if (api.library === "apollo") {
-        assertCompositionSuccess(result);
-        return;
-      }
-
       assertCompositionFailure(result);
 
       expect(result.errors).toContainEqual(
         expect.objectContaining({
-          message: `[foo] "Query.strings" references "count" field in @listSize(sizedFields:) argument that is not an integer.`,
+          message:
+            api.library === "apollo"
+              ? `[foo] Sized field "StringConnection.count" is not a list`
+              : `[foo] "Query.strings" references "count" field in @listSize(sizedFields:) argument that is not a list.`,
           extensions: expect.objectContaining({
-            code: "LIST_SIZE_INVALID_SIZED_FIELD",
+            code: "LIST_SIZE_APPLIED_TO_NON_LIST",
           }),
         }),
       );
@@ -1372,16 +1718,14 @@ testVersions((api, version) => {
         },
       ]);
 
-      if (api.library === "apollo") {
-        assertCompositionSuccess(result);
-        return;
-      }
-
       assertCompositionFailure(result);
 
       expect(result.errors).toContainEqual(
         expect.objectContaining({
-          message: `[foo] "Query.strings" references "discount" field in @listSize(sizedFields:) argument that does not exist.`,
+          message:
+            api.library === "apollo"
+              ? `[foo] Sized field "discount" is not a field on type "StringConnection"`
+              : `[foo] "Query.strings" references "discount" field in @listSize(sizedFields:) argument that does not exist.`,
           extensions: expect.objectContaining({
             code: "LIST_SIZE_INVALID_SIZED_FIELD",
           }),
@@ -1404,22 +1748,20 @@ testVersions((api, version) => {
 
             type Query {
               strings(first: String): StringConnection
-                @listSize(slicingArguments: ["first"], sizedFields: ["count"])
+                @listSize(slicingArguments: ["first"], sizedFields: ["edges"])
             }
           `),
         },
       ]);
 
-      if (api.library === "apollo") {
-        assertCompositionSuccess(result);
-        return;
-      }
-
       assertCompositionFailure(result);
 
       expect(result.errors).toContainEqual(
         expect.objectContaining({
-          message: `[foo] "Query.strings" references "first" argument in @listSize(slicingArguments:) that is not an integer.`,
+          message:
+            api.library === "apollo"
+              ? `[foo] Slicing argument "Query.strings(first:)" must be Int or Int!`
+              : `[foo] "Query.strings" references "first" argument in @listSize(slicingArguments:) that is not an integer.`,
           extensions: expect.objectContaining({
             code: "LIST_SIZE_INVALID_SLICING_ARGUMENT",
           }),
@@ -1442,22 +1784,20 @@ testVersions((api, version) => {
 
             type Query {
               strings(first: Int): StringConnection
-                @listSize(slicingArguments: ["last"], sizedFields: ["count"])
+                @listSize(slicingArguments: ["last"], sizedFields: ["edges"])
             }
           `),
         },
       ]);
 
-      if (api.library === "apollo") {
-        assertCompositionSuccess(result);
-        return;
-      }
-
       assertCompositionFailure(result);
 
       expect(result.errors).toContainEqual(
         expect.objectContaining({
-          message: `[foo] "Query.strings" references "last" argument in @listSize(slicingArguments:) that does not exist.`,
+          message:
+            api.library === "apollo"
+              ? `[foo] Slicing argument "last" is not an argument of "Query.strings"`
+              : `[foo] "Query.strings" references "last" argument in @listSize(slicingArguments:) that does not exist.`,
           extensions: expect.objectContaining({
             code: "LIST_SIZE_INVALID_SLICING_ARGUMENT",
           }),
@@ -1484,7 +1824,7 @@ testVersions((api, version) => {
               strings(first: Int): StringConnection
                 @listSize(
                   slicingArguments: []
-                  sizedFields: ["count"]
+                  sizedFields: ["edges"]
                   requireOneSlicingArgument: true
                 )
             }
@@ -1513,7 +1853,7 @@ testVersions((api, version) => {
 
             type Query {
               strings(first: Int): StringConnection
-                @listSize(sizedFields: ["count"], requireOneSlicingArgument: true)
+                @listSize(sizedFields: ["edges"], requireOneSlicingArgument: true)
             }
           `),
           },

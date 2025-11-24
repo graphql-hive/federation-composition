@@ -2,9 +2,11 @@ import { GraphQLError } from "graphql";
 import { andList } from "../../../utils/format.js";
 import { SupergraphVisitorMap } from "../../composition/visitor.js";
 import { SupergraphValidationContext } from "../validation-context.js";
+import { SupergraphState } from "../../state.js";
 
 export function ExternalMissingOnBaseRule(
   context: SupergraphValidationContext,
+  supergraph: SupergraphState,
 ): SupergraphVisitorMap {
   return {
     ObjectType(objectTypeState) {
@@ -63,6 +65,42 @@ export function ExternalMissingOnBaseRule(
           return fieldStateInGraph.external === true;
         })
       ) {
+        // check if interfaceObject defines the field
+        for (let interfaceName of objectState.interfaces) {
+          let interfaceState = supergraph.interfaceTypes.get(interfaceName);
+          if (!interfaceState) {
+            continue;
+          }
+
+          if (!interfaceState.hasInterfaceObject) {
+            continue;
+          }
+
+          for (let [graphId, interfaceStateInGraph] of interfaceState.byGraph) {
+            if (!interfaceStateInGraph.isInterfaceObject) {
+              continue;
+            }
+
+            let interfaceFieldState = interfaceState.fields.get(
+              fieldState.name,
+            );
+            if (!interfaceFieldState) {
+              continue;
+            }
+
+            let interfaceFieldInGraph =
+              interfaceFieldState.byGraph.get(graphId);
+            if (!interfaceFieldInGraph) {
+              continue;
+            }
+
+            if (interfaceFieldInGraph.external !== true) {
+              // interface object defines the field so it's not external in all subgraphs
+              return;
+            }
+          }
+        }
+
         const subgraphs =
           fieldState.byGraph.size > 1 ? "subgraphs" : "subgraph";
         context.reportError(
