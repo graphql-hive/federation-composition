@@ -1,5 +1,25 @@
 # @theguild/federation-composition
 
+## 0.21.0
+
+### Minor Changes
+
+- [#215](https://github.com/graphql-hive/federation-composition/pull/215) [`5edf421`](https://github.com/graphql-hive/federation-composition/commit/5edf421e0a249653ac47c801b4873dc4ba08a673) Thanks [@kamilkisiela](https://github.com/kamilkisiela)! - **Enforce correct placement of auth directives.** A new validation rule (`AUTH_REQUIREMENTS_APPLIED_ON_INTERFACE`) rejects any attempt to put these directives on interfaces, interface fields or interface objects.
+
+  **Add transitive-auth requirements checking.** A new rule verifies that any field using `@requires` specifies at least the auth requirements of the fields it selects. If a field doesn't carry forward the `@authenticated`, `@requiresScopes` or `@policy` requirements of its dependencies, composition fails with a `MISSING_TRANSITIVE_AUTH_REQUIREMENTS` error.
+
+  **Propagate auth requirements through interface hierarchies.** Interface types and fields now inherit `@authenticated`, `@requiresScopes` and `@policy` from the object types that implement them.
+
+- [#215](https://github.com/graphql-hive/federation-composition/pull/215) [`5edf421`](https://github.com/graphql-hive/federation-composition/commit/5edf421e0a249653ac47c801b4873dc4ba08a673) Thanks [@kamilkisiela](https://github.com/kamilkisiela)! - Disallowed using `@cost` on interfaces - you can no longer place `@cost` on an interface type, its fields, or field arguments. Composition now fails with a clear error instead of accepting it silently.
+
+  The `@listSize` directive now validates that `sizedFields` point to list fields, not integer counters (e.g., use `edges` instead of `count`).
+
+  Added validation for `slicingArguments` in `@listSize`. Only arguments that exist in all subgraphs are kept, invalid ones trigger an error.
+
+### Patch Changes
+
+- [#215](https://github.com/graphql-hive/federation-composition/pull/215) [`5edf421`](https://github.com/graphql-hive/federation-composition/commit/5edf421e0a249653ac47c801b4873dc4ba08a673) Thanks [@kamilkisiela](https://github.com/kamilkisiela)! - The `EXTERNAL_MISSING_ON_BASE` rule has been updated to handle `@interfaceObject` corner‑cases, like `@external` fields on object types, but provided by interface objects, were triggering false positives.
+
 ## 0.20.2
 
 ### Patch Changes
