@@ -9,7 +9,7 @@ function printBlockString(string: string) {
 }
 
 const nodes: {
-  [NodeT in ASTNode as NodeT["kind"]]: (node: NodeT) => string;
+  [NodeT in ASTNode as NodeT["kind"]]?: (node: NodeT) => string;
 } = {
   Document(node) {
     return node.definitions?.length > 0
