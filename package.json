@@ -59,7 +59,7 @@
     "typecheck": "tsc --noEmit --project tsconfig.build.json"
   },
   "peerDependencies": {
-    "graphql": "^16.0.0"
+    "graphql": "^14.0.0 || ^15.0.0 || ^16.0.0"
   },
   "dependencies": {
     "constant-case": "^3.0.4",
