@@ -529,7 +529,7 @@ testImplementations((api) => {
         typeDefs: parse(/* GraphQL */ `
           type User @key(fields: "id") {
             id: ID!
-            "it should not be in supergraph"
+
             name: String! @external
           }
 
@@ -8052,5 +8052,67 @@ testImplementations((api) => {
         edges: [PublicAccessTokenEdge!]!
       }
     `);
+  });
+
+  test("FieldSet does not leak as external type onto supergraph if defined in subgraph", () => {
+    const result = api.composeServices([
+      {
+        typeDefs: parse(/* GraphQL */ `
+          schema
+            @link(
+              url: "https://specs.apollo.dev/federation/v2.5"
+              import: ["@key", "FieldSet"]
+            ) {
+            query: Query
+            mutation: Mutation
+          }
+
+          interface Node {
+            id: ID!
+          }
+
+          type Mutation {
+            _: String
+          }
+
+          type Query {
+            node(id: ID!): Node
+            _service: _Service!
+            _entities(representations: [_Any!]!): [_Entity]!
+          }
+
+          type User implements Node
+            @key(fields: "id")
+            @key(fields: "username") {
+            id: ID!
+            username: String
+          }
+
+          type _Service {
+            sdl: String!
+          }
+
+          union _Entity = User
+
+          directive @key(
+            fields: FieldSet!
+            resolvable: Boolean = true
+          ) repeatable on OBJECT | INTERFACE
+
+          directive @link(url: String!, import: [String!]) repeatable on SCHEMA
+
+          scalar FieldSet
+
+          scalar Long
+
+          scalar _Any
+        `),
+        name: "a",
+        url: "a",
+      },
+    ]);
+
+    assertCompositionSuccess(result);
+    expect(result.supergraphSdl).not.includes("scalar FieldSet");
   });
 });

@@ -211,7 +211,17 @@ export function createSupergraphStateBuilder() {
         }
       }
 
+      const allFederationImports = new Set<string>(
+        subgraphState.federation.imports.map((i) => i.alias ?? i.name),
+      );
+
       for (const [typeName, type] of subgraphState.types) {
+        // Federation Types that are imported, but also declared within th subgraph (most-likely for IDE support)
+        // should not be added to the supergraph.
+        if (allFederationImports.has(typeName)) {
+          continue;
+        }
+
         switch (type.kind) {
           case "OBJECT": {
             objectType.visitSubgraphState(
