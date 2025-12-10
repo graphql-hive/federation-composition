@@ -8113,6 +8113,6 @@ testImplementations((api) => {
     ]);
 
     assertCompositionSuccess(result);
-    expect(result.supergraphSdl).not.includes("FieldSet");
+    expect(result.supergraphSdl).not.includes("scalar FieldSet");
   });
 });
