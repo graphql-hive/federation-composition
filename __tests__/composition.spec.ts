@@ -8071,24 +8071,12 @@ testImplementations((api) => {
             id: ID!
           }
 
-          type Identity2Group implements Node @key(fields: "id") {
-            id: ID!
-            parentId: ID
-          }
-
-          type Identity2Role implements Node @key(fields: "id") {
-            id: ID!
-            name: String
-            description: String
-          }
-
           type Mutation {
             _: String
           }
 
           type Query {
             node(id: ID!): Node
-
             _service: _Service!
             _entities(representations: [_Any!]!): [_Entity]!
           }
@@ -8104,7 +8092,7 @@ testImplementations((api) => {
             sdl: String!
           }
 
-          union _Entity = Node | User | Identity2Group
+          union _Entity = User
 
           directive @key(
             fields: FieldSet!
@@ -8124,6 +8112,7 @@ testImplementations((api) => {
       },
     ]);
 
+    assertCompositionSuccess(result);
     expect(result.supergraphSdl).not.toContainGraphQL(/* GraphQL */ `
       scalar FieldSet @join__type(graph: A)
     `);
