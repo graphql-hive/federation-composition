@@ -8054,7 +8054,7 @@ testImplementations((api) => {
     `);
   });
 
-  test("FieldSet does not leak as external type onto supergrap if defined in subgraph", () => {
+  test("FieldSet does not leak as external type onto supergraph if defined in subgraph", () => {
     const result = api.composeServices([
       {
         typeDefs: parse(/* GraphQL */ `
