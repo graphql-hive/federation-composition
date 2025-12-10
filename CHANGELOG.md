@@ -1,5 +1,11 @@
 # @theguild/federation-composition
 
+## 0.21.1
+
+### Patch Changes
+
+- [#230](https://github.com/graphql-hive/federation-composition/pull/230) [`2b34f17`](https://github.com/graphql-hive/federation-composition/commit/2b34f1779895590f298dbfc3d745feef24a5dc28) Thanks [@n1ru4l](https://github.com/n1ru4l)! - Prevent subgraph-specific federation types and scalars being re-declared within the subgraph leaking into the supergraph.
+
 ## 0.21.0
 
 ### Minor Changes
