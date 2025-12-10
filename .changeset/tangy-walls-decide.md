@@ -2,4 +2,4 @@
 "@theguild/federation-composition": patch
 ---
 
-Prevent federation types and scalars re-declared within the subgraph leaking into the supergraph.
+Prevent subgraph-specific federation types and scalars being re-declared within the subgraph leaking into the supergraph.
