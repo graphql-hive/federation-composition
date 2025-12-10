@@ -8113,8 +8113,6 @@ testImplementations((api) => {
     ]);
 
     assertCompositionSuccess(result);
-    expect(result.supergraphSdl).not.toContainGraphQL(/* GraphQL */ `
-      scalar FieldSet @join__type(graph: A)
-    `);
+    expect(result.supergraphSdl).not.includes("FieldSet");
   });
 });
