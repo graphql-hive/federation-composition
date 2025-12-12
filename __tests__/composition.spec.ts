@@ -104,6 +104,113 @@ testImplementations((api) => {
     assertCompositionFailure(result);
   });
 
+    test("Using both @requires and @override", () => {
+        // const result = composeServices([
+        //     {
+        //         name: "a",
+        //         typeDefs: parse(/* GraphQL */ `
+        //             extend schema
+        //               @link(url: "https://specs.apollo.dev/federation/v2.3"
+        //                 import: ["@key"]
+        //               )
+        //
+        //             type Query {
+        //                 product(id:ID!): Product
+        //             }
+        //
+        //             type Product @key(fields: "id"){
+        //                 id: ID!
+        //                 title: String!
+        //                 description: String!
+        //             }
+        //         `),
+        //     },
+        //     {
+        //         name: "b",
+        //         typeDefs: parse(/* GraphQL */ `
+        //             extend schema
+        //               @link(url: "https://specs.apollo.dev/federation/v2.3"
+        //                   import: ["@key", "@external", "@requires"]
+        //               )
+        //
+        //             type Product @key(fields: "id"){
+        //                 id: ID!
+        //                 description: String! @external
+        //                 calculatedField: String! @requires(fields: "description")
+        //             }
+        //         `),
+        //     },
+        //     {
+        //         name: "c",
+        //         typeDefs: parse(/* GraphQL */ `
+        //             extend schema
+        //               @link(url: "https://specs.apollo.dev/federation/v2.3"
+        //                 import: ["@key", "@override", "@requires"]
+        //               )
+        //
+        //             type Product @key(fields: "id"){
+        //                 id: ID!
+        //                 description: String! @external
+        //                 calculatedField: String! @requires(fields: "description") @override(from: "b")
+        //             }
+        //         `),
+        //     },
+        // ]);
+        let result = composeServices([
+            {
+                name: "a",
+                typeDefs: parse(/* GraphQL */ `
+                    extend schema
+                      @link(url: "https://specs.apollo.dev/federation/v2.3"
+                        import: ["@key"]
+                      )
+
+                    type Query {
+                        product(id:ID!): Product
+                    }
+
+                    type Product @key(fields: "id"){
+                        id: ID!
+                        title: String!
+                        description: String!
+                    }
+                `),
+            },
+            {
+                name: "b",
+                typeDefs: parse(/* GraphQL */ `
+                    extend schema
+                      @link(url: "https://specs.apollo.dev/federation/v2.3"
+                          import: ["@key", "@external", "@requires"]
+                      )
+
+                    type Product @key(fields: "id"){
+                        id: ID!
+                        description: String! @external
+                        calculatedField: String! @requires(fields: "description")
+                    }
+                `),
+            },
+            {
+                name: "c",
+                typeDefs: parse(/* GraphQL */ `
+                    extend schema
+                      @link(url: "https://specs.apollo.dev/federation/v2.3"
+                        import: ["@key", "@override", "@requires", "@external"]
+                      )
+
+                    type Product @key(fields: "id"){
+                        id: ID!
+                        description: String! @external
+                        calculatedField: String! @requires(fields: "description") @override(from: "b")
+                    }
+                `),
+            },
+        ]);
+
+        assertCompositionSuccess(result);
+    });
+
   test("@join__field(usedOverridden: true) when field is overridden but defined in an interface", () => {
     let result = composeServices([
       {
