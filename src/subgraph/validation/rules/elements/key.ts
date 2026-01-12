@@ -242,7 +242,12 @@ export function KeyRules(context: SubgraphValidationContext): ASTVisitor {
         // TODO: It's a poor's man implementation of the check, we should compare the selected fields, but just a string
         const expectedFieldsValue = normalizedFieldsArgValue.value;
         knownObjectsAndInterfaces.forEach((def) => {
+          const defIsObjectType =
+            def.kind === Kind.OBJECT_TYPE_DEFINITION ||
+            def.kind === Kind.OBJECT_TYPE_EXTENSION;
+
           if (
+            defIsObjectType &&
             def.interfaces?.some((i) => i.name.value === typeDef.name.value)
           ) {
             let shouldError = true;
