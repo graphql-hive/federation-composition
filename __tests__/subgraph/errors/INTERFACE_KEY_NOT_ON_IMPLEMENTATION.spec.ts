@@ -1,5 +1,6 @@
 import { expect, test } from "vitest";
 import {
+  assertCompositionSuccess,
   graphql,
   satisfiesVersionRange,
   testVersions,
@@ -55,5 +56,42 @@ testVersions((api, version) => {
         ]),
       }),
     );
+  });
+
+  test("No INTERFACE_KEY_NOT_ON_IMPLEMENTATION on interfaces", () => {
+    if (satisfiesVersionRange("< v2.3", version)) {
+      return;
+    }
+
+    let result = api.composeServices([
+      {
+        name: "users",
+        typeDefs: graphql`
+          extend schema @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@key"])
+
+          type Query {
+            users: [User]
+          }
+
+          type RegisteredUser implements User & Node @key(fields: "id") {
+            id: ID!
+            name: String!
+            email: String
+          }
+
+          interface User implements Node {
+            id: ID!
+            name: String!
+            email: String
+          }
+
+          interface Node @key(fields: "id") {
+            id: ID!
+          }
+        `,
+      },
+    ]);
+
+    assertCompositionSuccess(result);
   });
 });
