@@ -1,5 +1,11 @@
 # @theguild/federation-composition
 
+## 0.21.2
+
+### Patch Changes
+
+- [#241](https://github.com/graphql-hive/federation-composition/pull/241) [`c6e26ed`](https://github.com/graphql-hive/federation-composition/commit/c6e26ed001fb5116cabac08a55e5ed97654e129f) Thanks [@kamilkisiela](https://github.com/kamilkisiela)! - Fixes a bug in `@key` directive validation where an error was incorrectly reported for interfaces implementing another interface with a `@key`. The validation now correctly applies only to object types implementing the interface.
+
 ## 0.21.1
 
 ### Patch Changes
