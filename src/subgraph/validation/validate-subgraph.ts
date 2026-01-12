@@ -69,6 +69,7 @@ import { UniqueFieldDefinitionNamesRule } from "./rules/unique-field-definition-
 import { UniqueInputFieldNamesRule } from "./rules/unique-input-field-names-rule.js";
 import { UniqueOperationTypesRule } from "./rules/unique-operation-types-rule.js";
 import { UniqueTypeNamesRule } from "./rules/unique-type-names-rule.js";
+import { LinkSpecReservedTypeNamesRule } from "./rules/link-spec-reserved-type-names-rule.js";
 import { validateSubgraphState } from "./validate-state.js";
 import {
   createSimpleValidationContext,
@@ -155,6 +156,7 @@ export function validateSubgraph(
 
   const federationRules = [
     ReservedSubgraphNameRule,
+    LinkSpecReservedTypeNamesRule,
     KnownFederationDirectivesRule,
     FieldSetRules,
     InaccessibleRules,

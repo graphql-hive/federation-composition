@@ -8115,4 +8115,268 @@ testImplementations((api) => {
     assertCompositionSuccess(result);
     expect(result.supergraphSdl).not.includes("scalar FieldSet");
   });
+
+  test("should fail when user defines enum named Purpose (link spec reserved)", () => {
+    const result = composeServices([
+      {
+        name: "products",
+        typeDefs: parse(/* GraphQL */ `
+          extend schema
+            @link(
+              url: "https://specs.apollo.dev/federation/v2.3"
+              import: ["@key"]
+            )
+
+          enum Purpose {
+            FOO
+            BAR
+          }
+
+          type Product @key(fields: "id") {
+            id: ID!
+            purpose: Purpose
+          }
+
+          type Query {
+            products: [Product]
+          }
+        `),
+      },
+    ]);
+
+    if (api.library === "apollo") {
+      assertCompositionSuccess(result);
+    } else {
+      assertCompositionFailure(result);
+      expect(result.errors[0].message).toContain("Purpose");
+      expect(result.errors[0].message).toContain("reserved");
+      expect(result.errors[0].extensions?.code).toBe(
+        "LINK_SPEC_RESERVED_TYPE_NAME",
+      );
+    }
+  });
+
+  test("should fail when user defines scalar named Import (link spec reserved)", () => {
+    const result = composeServices([
+      {
+        name: "products",
+        typeDefs: parse(/* GraphQL */ `
+          extend schema
+            @link(
+              url: "https://specs.apollo.dev/federation/v2.3"
+              import: ["@key"]
+            )
+
+          scalar Import
+
+          type Product @key(fields: "id") {
+            id: ID!
+          }
+
+          type Query {
+            products: [Product]
+          }
+        `),
+      },
+    ]);
+
+    if (api.library === "apollo") {
+      assertCompositionSuccess(result);
+    } else {
+      assertCompositionFailure(result);
+      expect(result.errors[0].message).toContain("Import");
+      expect(result.errors[0].message).toContain("reserved");
+      expect(result.errors[0].extensions?.code).toBe(
+        "LINK_SPEC_RESERVED_TYPE_NAME",
+      );
+    }
+  });
+
+  test("should fail when user defines object type named Purpose (link spec reserved)", () => {
+    const result = composeServices([
+      {
+        name: "products",
+        typeDefs: parse(/* GraphQL */ `
+          extend schema
+            @link(
+              url: "https://specs.apollo.dev/federation/v2.3"
+              import: ["@key"]
+            )
+
+          type Purpose {
+            value: String
+          }
+
+          type Product @key(fields: "id") {
+            id: ID!
+            purpose: Purpose
+          }
+
+          type Query {
+            products: [Product]
+          }
+        `),
+      },
+    ]);
+
+    if (api.library === "apollo") {
+      assertCompositionSuccess(result);
+    } else {
+      assertCompositionFailure(result);
+      expect(result.errors[0].message).toContain("Purpose");
+      expect(result.errors[0].message).toContain("reserved");
+      expect(result.errors[0].extensions?.code).toBe(
+        "LINK_SPEC_RESERVED_TYPE_NAME",
+      );
+    }
+  });
+
+  test("should fail when user defines interface named Import (link spec reserved)", () => {
+    const result = composeServices([
+      {
+        name: "products",
+        typeDefs: parse(/* GraphQL */ `
+          extend schema
+            @link(
+              url: "https://specs.apollo.dev/federation/v2.3"
+              import: ["@key"]
+            )
+
+          interface Import {
+            id: ID!
+          }
+
+          type Product @key(fields: "id") {
+            id: ID!
+          }
+
+          type Query {
+            products: [Product]
+          }
+        `),
+      },
+    ]);
+
+    if (api.library === "apollo") {
+      assertCompositionSuccess(result);
+    } else {
+      assertCompositionFailure(result);
+      expect(result.errors[0].message).toContain("Import");
+      expect(result.errors[0].message).toContain("reserved");
+      expect(result.errors[0].extensions?.code).toBe(
+        "LINK_SPEC_RESERVED_TYPE_NAME",
+      );
+    }
+  });
+
+  test("should fail when user defines union named Purpose (link spec reserved)", () => {
+    const result = composeServices([
+      {
+        name: "products",
+        typeDefs: parse(/* GraphQL */ `
+          extend schema
+            @link(
+              url: "https://specs.apollo.dev/federation/v2.3"
+              import: ["@key"]
+            )
+
+          type A {
+            id: ID!
+          }
+
+          type B {
+            id: ID!
+          }
+
+          union Purpose = A | B
+
+          type Product @key(fields: "id") {
+            id: ID!
+          }
+
+          type Query {
+            products: [Product]
+          }
+        `),
+      },
+    ]);
+
+    if (api.library === "apollo") {
+      assertCompositionSuccess(result);
+    } else {
+      assertCompositionFailure(result);
+      expect(result.errors[0].message).toContain("Purpose");
+      expect(result.errors[0].message).toContain("reserved");
+      expect(result.errors[0].extensions?.code).toBe(
+        "LINK_SPEC_RESERVED_TYPE_NAME",
+      );
+    }
+  });
+
+  test("should fail when user defines input object named Import (link spec reserved)", () => {
+    const result = composeServices([
+      {
+        name: "products",
+        typeDefs: parse(/* GraphQL */ `
+          extend schema
+            @link(
+              url: "https://specs.apollo.dev/federation/v2.3"
+              import: ["@key"]
+            )
+
+          input Import {
+            name: String!
+            value: String
+          }
+
+          type Product @key(fields: "id") {
+            id: ID!
+          }
+
+          type Query {
+            products: [Product]
+          }
+        `),
+      },
+    ]);
+
+    if (api.library === "apollo") {
+      assertCompositionSuccess(result);
+    } else {
+      assertCompositionFailure(result);
+      expect(result.errors[0].message).toContain("Import");
+      expect(result.errors[0].message).toContain("reserved");
+      expect(result.errors[0].extensions?.code).toBe(
+        "LINK_SPEC_RESERVED_TYPE_NAME",
+      );
+    }
+  });
+
+  test("should allow Purpose/Import in Federation v1 (no @link directive)", () => {
+    const result = composeServices([
+      {
+        name: "products",
+        typeDefs: parse(/* GraphQL */ `
+          enum Purpose {
+            FOO
+            BAR
+          }
+
+          scalar Import
+
+          type Product @key(fields: "id") {
+            id: ID!
+            purpose: Purpose
+          }
+
+          type Query {
+            products: [Product]
+          }
+        `),
+      },
+    ]);
+
+    // Federation v1 should allow these names since link spec is not used
+    assertCompositionSuccess(result);
+  });
 });
