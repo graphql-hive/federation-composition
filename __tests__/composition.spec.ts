@@ -2235,29 +2235,33 @@ testImplementations((api) => {
       expect(result.publicSdl).not.toMatch(/lowercase/);
     });
 
-    test("requires on a union __typename fails ", () => {
+    test("requires on a union __typename fails", () => {
       let result = composeServices([
         {
           name: "a",
           typeDefs: parse(/* GraphQL */ `
             extend schema
-            @link(url: "https://specs.apollo.dev/federation/v2.3"
-              import: ["@key"]
-            )
+              @link(
+                url: "https://specs.apollo.dev/federation/v2.3"
+                import: ["@key"]
+              )
+
             type Query {
-              product(id:ID!): Product
+              product(id: ID!): Product
             }
-            type Product @key(fields: "id"){
+
+            type Product @key(fields: "id") {
               id: ID!
               description: Description!
             }
+
             union Description = DescriptionLong | DescriptionShort
-            
-            type DescriptionLong{
+
+            type DescriptionLong {
               value: String!
             }
 
-            type DescriptionShort{
+            type DescriptionShort {
               value: String!
             }
           `),
@@ -2266,26 +2270,31 @@ testImplementations((api) => {
           name: "b",
           typeDefs: parse(/* GraphQL */ `
             extend schema
-            @link(url: "https://specs.apollo.dev/federation/v2.3"
-              import: ["@key", "@external", "@requires"]
-            )
-            type Product @key(fields: "id"){
+              @link(
+                url: "https://specs.apollo.dev/federation/v2.3"
+                import: ["@key", "@external", "@requires"]
+              )
+
+            type Product @key(fields: "id") {
               id: ID!
               description: Description! @external
-              calculatedField: String! @requires(fields: "description { __typename ... on DescriptionLong { value } ... on DescriptionShort {value}} ")
+              calculatedField: String!
+                @requires(
+                  fields: "description { __typename ... on DescriptionLong { value } ... on DescriptionShort {value}} "
+                )
             }
-            
+
             union Description = DescriptionLong | DescriptionShort
 
-            type DescriptionLong{
-            value: String! @external
+            type DescriptionLong {
+              value: String! @external
             }
 
-            type DescriptionShort{
-            value: String!@external
+            type DescriptionShort {
+              value: String! @external
             }
           `),
-        }
+        },
       ]);
       assertCompositionSuccess(result);
     });
