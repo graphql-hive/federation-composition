@@ -2235,14 +2235,14 @@ testImplementations((api) => {
       expect(result.publicSdl).not.toMatch(/lowercase/);
     });
 
-    test("requires on a union __typename fails", () => {
+    test("@requires on a union with `__typename` fails", () => {
       let result = composeServices([
         {
           name: "a",
           typeDefs: parse(/* GraphQL */ `
             extend schema
               @link(
-                url: "https://specs.apollo.dev/federation/v2.3"
+                url: "https://specs.apollo.dev/federation/${version}"
                 import: ["@key"]
               )
 
@@ -2271,7 +2271,7 @@ testImplementations((api) => {
           typeDefs: parse(/* GraphQL */ `
             extend schema
               @link(
-                url: "https://specs.apollo.dev/federation/v2.3"
+                url: "https://specs.apollo.dev/federation/${version}"
                 import: ["@key", "@external", "@requires"]
               )
 
