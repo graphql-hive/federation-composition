@@ -2235,6 +2235,42 @@ testImplementations((api) => {
       expect(result.publicSdl).not.toMatch(/lowercase/);
     });
 
+     test("requires on field with arguments without providing said arguments should fail", () => {
+            let result = composeServices([
+                        {
+                            name: "a",
+                            typeDefs: parse(/* GraphQL */ `
+                                extend schema
+                                  @link(url: "https://specs.apollo.dev/federation/v2.3"
+                                    import: ["@key"]
+                                  )
+                                type Query {
+                                    product(id:ID!): Product
+                                }
+                                type Product @key(fields: "id"){
+                                    id: ID!
+                                    description(filter: String!): String!
+                                }
+                            `),
+                        },
+                        {
+                            name: "b",
+                            typeDefs: parse(/* GraphQL */ `
+                                extend schema
+                                  @link(url: "https://specs.apollo.dev/federation/v2.3"
+                                      import: ["@key", "@external", "@requires"]
+                                  )
+                                type Product @key(fields: "id"){
+                                    id: ID!
+                                    description (filter: String!): String! @external
+                                    calculatedField: String! @requires(fields: "description")
+                                }
+                            `),
+                        }
+                    ]);
+            assertCompositionFailure(result);
+        });
+
     test("preserve directive from one subgraph if defined differently across subgraphs but one included in @composeDirective", () => {
       const result = composeServices([
         {
