@@ -82,8 +82,21 @@ function ensureAccessToSelectionSet(
   for (const selection of selectionSet.selections) {
     switch (selection.kind) {
       case Kind.FIELD: {
+        // For union types, only __typename can be selected directly (or inline fragments).
+        // When __typename is selected, we must verify access to all possible member types.
         if (currentType.kind === "union") {
-          throw new Error("Cannot select fields directly on union types.");
+          if (selection.name.value !== "__typename") {
+            throw new Error("Cannot select fields directly on union types.");
+          }
+
+          for (const memberTypeName of currentType.members) {
+            const memberType = supergraph.objectTypes.get(memberTypeName);
+            if (memberType && !provisionedAccess.canAccess(memberType)) {
+              return memberTypeName;
+            }
+          }
+
+          return;
         }
 
         const fieldLackingAccess = ensureAccessToField(
