@@ -1,5 +1,13 @@
 # @theguild/federation-composition
 
+## 0.21.3
+
+### Patch Changes
+
+- [#248](https://github.com/graphql-hive/federation-composition/pull/248) [`9535d50`](https://github.com/graphql-hive/federation-composition/commit/9535d5091af7e1b1f56078c6a529c636f514e3af) Thanks [@kamilkisiela](https://github.com/kamilkisiela)! - Fix access validation on union members when selecting `__typename` in `@requires` directives.
+
+  The `@requires` directive validation rule (`AuthOnRequiresRule`) was not checking authorization requirements for `__typename` selections on and types. When `__typename` on a union type was selected, code would throw an unexpected error.
+
 ## 0.21.2
 
 ### Patch Changes
