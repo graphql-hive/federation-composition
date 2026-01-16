@@ -2,7 +2,6 @@ import {
   GraphQLError,
   Kind,
   ListValueNode,
-  OperationTypeNode,
   print,
   specifiedScalarTypes,
   ValueNode,

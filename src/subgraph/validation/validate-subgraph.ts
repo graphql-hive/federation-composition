@@ -8,7 +8,6 @@ import {
   Kind,
   ObjectTypeDefinitionNode,
   ObjectTypeExtensionNode,
-  OperationTypeNode,
   parse,
   SchemaDefinitionNode,
   SchemaExtensionNode,
@@ -541,13 +540,13 @@ function cleanSubgraphTypeDefsFromSubgraphSpec(typeDefs: DocumentNode) {
       (node.kind === Kind.SCHEMA_DEFINITION ||
         node.kind === Kind.SCHEMA_EXTENSION) &&
       node.operationTypes?.some(
-        (op) => op.operation === OperationTypeNode.QUERY,
+        (op) => op.operation === 'query',
       ),
   ) as SchemaDefinitionNode | SchemaExtensionNode | undefined;
 
   const queryTypeName =
     schemaDef?.operationTypes?.find(
-      (op) => op.operation === OperationTypeNode.QUERY,
+      (op) => op.operation === 'query',
     )?.type.name.value ?? "Query";
 
   (typeDefs.definitions as unknown as DefinitionNode[]) =
