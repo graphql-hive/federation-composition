@@ -15,6 +15,45 @@ export function OverrideSourceHasOverrideRule(
         onlyWithOverride,
       );
 
+      // Check if source field has @requires or @provides
+      for (const [graph, fieldStateInGraph] of graphsWithOverride) {
+        const sourceGraphId = context.graphNameToId(fieldStateInGraph.override);
+        if (!sourceGraphId) {
+          continue;
+        }
+
+        const sourceFieldState = fieldState.byGraph.get(sourceGraphId);
+        if (!sourceFieldState) {
+          continue;
+        }
+
+        if (sourceFieldState.requires) {
+          context.reportError(
+            new GraphQLError(
+              `@override cannot be used on field "${objectTypeState.name}.${fieldState.name}" on subgraph "${context.graphIdToName(graph)}" since "${objectTypeState.name}.${fieldState.name}" on "${fieldStateInGraph.override}" is marked with directive "@requires"`,
+              {
+                extensions: {
+                  code: "OVERRIDE_COLLISION_WITH_ANOTHER_DIRECTIVE",
+                },
+              },
+            ),
+          );
+        }
+
+        if (sourceFieldState.provides) {
+          context.reportError(
+            new GraphQLError(
+              `@override cannot be used on field "${objectTypeState.name}.${fieldState.name}" on subgraph "${context.graphIdToName(graph)}" since "${objectTypeState.name}.${fieldState.name}" on "${fieldStateInGraph.override}" is marked with directive "@provides"`,
+              {
+                extensions: {
+                  code: "OVERRIDE_COLLISION_WITH_ANOTHER_DIRECTIVE",
+                },
+              },
+            ),
+          );
+        }
+      }
+
       if (graphsWithOverride.length === 1) {
         return;
       }
