@@ -27,23 +27,17 @@ export function OverrideSourceHasOverrideRule(
           continue;
         }
 
+        let directive: string | null = null;
         if (sourceFieldState.requires) {
-          context.reportError(
-            new GraphQLError(
-              `@override cannot be used on field "${objectTypeState.name}.${fieldState.name}" on subgraph "${context.graphIdToName(graph)}" since "${objectTypeState.name}.${fieldState.name}" on "${fieldStateInGraph.override}" is marked with directive "@requires"`,
-              {
-                extensions: {
-                  code: "OVERRIDE_COLLISION_WITH_ANOTHER_DIRECTIVE",
-                },
-              },
-            ),
-          );
+          directive = "@requires";
+        } else if (sourceFieldState.provides) {
+          directive = "@provides";
         }
 
-        if (sourceFieldState.provides) {
+        if (directive) {
           context.reportError(
             new GraphQLError(
-              `@override cannot be used on field "${objectTypeState.name}.${fieldState.name}" on subgraph "${context.graphIdToName(graph)}" since "${objectTypeState.name}.${fieldState.name}" on "${fieldStateInGraph.override}" is marked with directive "@provides"`,
+              `@override cannot be used on field "${objectTypeState.name}.${fieldState.name}" on subgraph "${context.graphIdToName(graph)}" since "${objectTypeState.name}.${fieldState.name}" on "${fieldStateInGraph.override}" is marked with directive "${directive}"`,
               {
                 extensions: {
                   code: "OVERRIDE_COLLISION_WITH_ANOTHER_DIRECTIVE",
