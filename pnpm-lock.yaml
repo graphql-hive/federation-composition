@@ -25,8 +25,8 @@ importers:
         version: 4.7.0
     devDependencies:
       '@apollo/composition':
-        specifier: 2.13.0
-        version: 2.13.0(graphql@16.12.0)
+        specifier: 2.13.1
+        version: 2.13.1(graphql@16.12.0)
       '@changesets/changelog-github':
         specifier: 0.5.2
         version: 0.5.2
@@ -76,20 +76,20 @@ importers:
 
 packages:
 
-  '@apollo/composition@2.13.0':
-    resolution: {integrity: sha512-Yh+uf500KBXvBGuV97mLyjKfqqwSBKZhZNfkF0QR+yhT3RaNeSwjsUUE7HsnIxWVkP2qG5PyR7f0wfYWuDTOpA==}
+  '@apollo/composition@2.13.1':
+    resolution: {integrity: sha512-F7FUlCspipP4GgzB4sB+49IS7aztrT9SAstQhhjDJD1HFzfqg8coY9w0IwXEOlZaANnC1wUEED+AgI69IOsp/Q==}
     engines: {node: '>=18'}
     peerDependencies:
       graphql: ^16.5.0
 
-  '@apollo/federation-internals@2.13.0':
-    resolution: {integrity: sha512-d8k6j+Jmrf1z9f4l9QEJKMBx5fkqQms0u86N3qEvSMIQ4V1y9LabQXWy9KLenaoUc9G0wIyd2cWwaDbbWdm53A==}
+  '@apollo/federation-internals@2.13.1':
+    resolution: {integrity: sha512-3w+pEjew3xDHTjM4INvBiy0+F/Puje7NSnH0S9WkFiiSjYDu9wwHW6yw5Frx8jN1T17lGOgAGbx1S+YTosCs6Q==}
     engines: {node: '>=18'}
     peerDependencies:
       graphql: ^16.5.0
 
-  '@apollo/query-graphs@2.13.0':
-    resolution: {integrity: sha512-ZgTfrsaBJbiEguEmVHZ1p4ryxKTUzO9uc6ziA3f1EmBdECdl1CKV+YkPf/vjSkBtf70CYzblTNTD3lc7TorJQg==}
+  '@apollo/query-graphs@2.13.1':
+    resolution: {integrity: sha512-YfcwdYMCXkq8ODgZ2vGY2d7m+5i9Sjl8UygsFkVzpJUfDJCnOA35bEcs4oRCdcz3Esc1+j8Z4ORhx+4UoPsk9Q==}
     engines: {node: '>=18'}
     peerDependencies:
       graphql: ^16.5.0
@@ -845,6 +845,7 @@ packages:
 
   glob@10.5.0:
     resolution: {integrity: sha512-DfXN8DfhJ7NH3Oe7cFmu3NCu1wKbkReJ8TorzSAFbSKrlNaQSKfIzqYqVY8zlbs2NLBbWpRiU52GX2PbaBVNkg==}
+    deprecated: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
     hasBin: true
 
   globby@11.1.0:
@@ -1585,13 +1586,13 @@ packages:
 
 snapshots:
 
-  '@apollo/composition@2.13.0(graphql@16.12.0)':
+  '@apollo/composition@2.13.1(graphql@16.12.0)':
     dependencies:
-      '@apollo/federation-internals': 2.13.0(graphql@16.12.0)
-      '@apollo/query-graphs': 2.13.0(graphql@16.12.0)
+      '@apollo/federation-internals': 2.13.1(graphql@16.12.0)
+      '@apollo/query-graphs': 2.13.1(graphql@16.12.0)
       graphql: 16.12.0
 
-  '@apollo/federation-internals@2.13.0(graphql@16.12.0)':
+  '@apollo/federation-internals@2.13.1(graphql@16.12.0)':
     dependencies:
       '@types/uuid': 9.0.8
       chalk: 4.1.2
@@ -1599,9 +1600,9 @@ snapshots:
       js-levenshtein: 1.1.6
       uuid: 9.0.1
 
-  '@apollo/query-graphs@2.13.0(graphql@16.12.0)':
+  '@apollo/query-graphs@2.13.1(graphql@16.12.0)':
     dependencies:
-      '@apollo/federation-internals': 2.13.0(graphql@16.12.0)
+      '@apollo/federation-internals': 2.13.1(graphql@16.12.0)
       deep-equal: 2.2.3
       graphql: 16.12.0
       ts-graphviz: 1.8.2
