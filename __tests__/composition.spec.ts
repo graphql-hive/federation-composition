@@ -248,6 +248,73 @@ testImplementations((api) => {
     `);
   });
 
+  test("@override(from:) no usedOverridden in case the overriden field is @external but has matching interface fields", () => {
+    const result = composeServices([
+      {
+        name: "a",
+        typeDefs: parse(/* GraphQL */ `
+          extend schema
+            @link(url: "https://specs.apollo.dev/link/v1.0")
+            @link(
+              url: "https://specs.apollo.dev/federation/v2.3"
+              import: ["@tag", "@external", "@shareable", "@key", "@override"]
+            )
+
+          type Query {
+            ping: String
+          }
+
+          interface Base {
+            id: String!
+            items: [String]
+          }
+
+          type Object implements Base @key(fields: "id") @shareable {
+            id: String!
+            items: [String] @override(from: "b")
+          }
+        `),
+      },
+      {
+        name: "b",
+        typeDefs: parse(/* GraphQL */ `
+          extend schema
+            @link(url: "https://specs.apollo.dev/link/v1.0")
+            @link(
+              url: "https://specs.apollo.dev/federation/v2.0"
+              import: ["@tag", "@external", "@shareable", "@key"]
+            )
+
+          type Query {
+            pong: String
+          }
+
+          interface Base {
+            id: String!
+            items: [String]
+          }
+
+          type Object implements Base @key(fields: "id") @shareable {
+            id: String!
+            items: [String] @external
+          }
+        `),
+      },
+    ]);
+
+    expect(result.errors).toEqual(undefined);
+    const line = result
+      .supergraphSdl!.split("\n")
+      .find((line) => line.includes("items: [String] @join__field"));
+
+    expect(line).toContain('@join__field(graph: A, override: "b")');
+    expect(line).toContain("@join__field(graph: B, external: true)");
+    // The usedOverridden should not appear
+    expect(line).not.toContain(
+      "@join__field(graph: B, usedOverridden: true, external: true)",
+    );
+  });
+
   test("@join__field(external: true) when field is overridden", () => {
     let result = composeServices([
       {
