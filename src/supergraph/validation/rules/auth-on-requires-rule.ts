@@ -8,6 +8,7 @@ import {
 } from "graphql";
 import { parseFields } from "../../../subgraph/helpers.js";
 import { mergeScopePolicies } from "../../../utils/auth.js";
+import { extractNamedTypeName } from "../../../utils/graphql.js";
 import type { SupergraphVisitorMap } from "../../composition/visitor.js";
 import type { SupergraphState } from "../../state.js";
 import type { SupergraphValidationContext } from "../validation-context.js";
@@ -323,28 +324,6 @@ function createAccessRequirementError(
       },
     },
   );
-}
-
-/**
- * Extracts the named type from a field's type string.
- * Removes list markers ([, ]) and non-null markers (!) to get the base type name.
- *
- * Examples:
- * - "String" -> "String"
- * - "String!" -> "String"
- * - "[String!]!" -> "String"
- * - "User" -> "User"
- * - "[User!]" -> "User"
- */
-function extractNamedTypeName(typeStr: string): string | null {
-  let typeName = typeStr;
-
-  if (!typeName) return null;
-
-  // Remove non-null markers (!) and list markers ([, ])
-  typeName = typeName.replace(/[![\]]/g, "");
-
-  return typeName || null;
 }
 
 class ProvisionedAccess {

@@ -570,6 +570,98 @@ testImplementations((api) => {
     `);
   });
 
+  test("@override a field with @requires", () => {
+    const result = composeServices([
+      {
+        name: "core",
+        typeDefs: parse(/* GraphQL */ `
+          extend schema
+            @link(
+              url: "https://specs.apollo.dev/federation/v2.3"
+              import: ["@key", "@shareable"]
+            )
+
+          type Query {
+            product(id: ID!): Product
+          }
+
+          type Product @key(fields: "id") {
+            id: ID!
+            creditCardNumber: String! @shareable
+          }
+        `),
+      },
+      {
+        name: "original",
+        typeDefs: parse(/* GraphQL */ `
+          extend schema
+            @link(
+              url: "https://specs.apollo.dev/federation/v2.3"
+              import: ["@key", "@external", "@requires", "@shareable"]
+            )
+
+          type Product @key(fields: "id") {
+            id: ID!
+            creditCardNumber: String! @external
+            paymentReceipt: String!
+              @shareable
+              @requires(fields: "creditCardNumber")
+          }
+        `),
+      },
+      {
+        name: "new",
+        typeDefs: parse(/* GraphQL */ `
+          extend schema
+            @link(
+              url: "https://specs.apollo.dev/federation/v2.3"
+              import: ["@key", "@override", "@shareable"]
+            )
+
+          type Product @key(fields: "id") {
+            id: ID!
+            creditCardNumber: String! @shareable
+            paymentReceipt: String! @shareable @override(from: "original")
+          }
+        `),
+      },
+    ]);
+
+    if (api.library === "apollo") {
+      expect(result).toEqual(
+        expect.objectContaining({
+          errors: expect.arrayContaining([
+            expect.objectContaining({
+              message: expect.stringContaining(
+                '@override cannot be used on field "Product.paymentReceipt" on subgraph "new" since "Product.paymentReceipt" on "original" is marked with directive "@requires"',
+              ),
+              extensions: expect.objectContaining({
+                code: "OVERRIDE_COLLISION_WITH_ANOTHER_DIRECTIVE",
+              }),
+            }),
+          ]),
+        }),
+      );
+
+      return;
+    }
+
+    assertCompositionSuccess(result);
+
+    expect(result.supergraphSdl).toContainGraphQL(/* GraphQL */ `
+      type Product
+        @join__type(graph: CORE, key: "id")
+        @join__type(graph: NEW, key: "id")
+        @join__type(graph: ORIGINAL, key: "id") {
+        id: ID!
+        creditCardNumber: String!
+          @join__field(graph: CORE)
+          @join__field(graph: NEW)
+        paymentReceipt: String! @join__field(graph: NEW, override: "original")
+      }
+    `);
+  });
+
   test("print @join__field on shareable field defined twice (once with non-effective override)", () => {
     const result = api.composeServices([
       {

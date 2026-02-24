@@ -24,6 +24,7 @@ import { ListSizeSlicingArgumentsRule } from "./rules/list-size-slicing-argument
 import { NoInaccessibleOnImplementedInterfaceFieldsRule } from "./rules/no-inaccessible-on-implemented-interface-fields-rule.js";
 import { OnlyInaccessibleChildrenRule } from "./rules/only-inaccessible-children-rule.js";
 import { OverrideSourceHasOverrideRule } from "./rules/override-source-has-override.js";
+import { OverrideLabelWithRequiresRule } from "./rules/override-label-with-requires.js";
 import { ReferencedInaccessibleRule } from "./rules/referenced-inaccessible-rule.js";
 import { RequiredArgumentMissingInSomeSubgraph } from "./rules/required-argument-missing-in-some-subgraph-rule.js";
 import { RequiredArgumentOrFieldIsNotInaccessibleRule } from "./rules/required-argument-or-field-is-not-inaccessible-rule.js";
@@ -73,6 +74,7 @@ export function validateSupergraph(
     FieldArgumentsOfTheSameTypeRule,
     EnumValuesRule,
     OverrideSourceHasOverrideRule,
+    OverrideLabelWithRequiresRule,
     ExternalMissingOnBaseRule,
     InputObjectValuesRule,
     RequiredArgumentMissingInSomeSubgraph,
