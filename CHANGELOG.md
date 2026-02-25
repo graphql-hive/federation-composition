@@ -1,5 +1,15 @@
 # @theguild/federation-composition
 
+## 0.22.0
+
+### Minor Changes
+
+- [#267](https://github.com/graphql-hive/federation-composition/pull/267) [`3e232fa`](https://github.com/graphql-hive/federation-composition/commit/3e232fa3faf4263ec8c4daa730d8cfe5f5f78e46) Thanks [@kamilkisiela](https://github.com/kamilkisiela)! - Fix supergraph `@join__field` generation for `@override` + `@requires` migrations and add a progressive override restriction.
+
+  When a field with `@requires` is overridden, composition now ignores `@requires` usage coming only from the overridden source field when deciding whether to keep `@join__field(..., external: true)`. This prevents stale external annotations in the supergraph.
+
+  Also, progressive override (`@override(..., label: ...)`) is now rejected when the overridden source field uses `@requires` (error code: `OVERRIDE_COLLISION_WITH_ANOTHER_DIRECTIVE`). Non-progressive override behavior is unchanged.
+
 ## 0.21.3
 
 ### Patch Changes
