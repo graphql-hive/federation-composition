@@ -15,6 +15,39 @@ export function OverrideSourceHasOverrideRule(
         onlyWithOverride,
       );
 
+      // Check if source field has @requires or @provides
+      for (const [graph, fieldStateInGraph] of graphsWithOverride) {
+        const sourceGraphId = context.graphNameToId(fieldStateInGraph.override);
+        if (!sourceGraphId) {
+          continue;
+        }
+
+        const sourceFieldState = fieldState.byGraph.get(sourceGraphId);
+        if (!sourceFieldState) {
+          continue;
+        }
+
+        let directive: string | null = null;
+        if (sourceFieldState.requires) {
+          directive = "@requires";
+        } else if (sourceFieldState.provides) {
+          directive = "@provides";
+        }
+
+        if (directive) {
+          context.reportError(
+            new GraphQLError(
+              `@override cannot be used on field "${objectTypeState.name}.${fieldState.name}" on subgraph "${context.graphIdToName(graph)}" since "${objectTypeState.name}.${fieldState.name}" on "${fieldStateInGraph.override}" is marked with directive "${directive}"`,
+              {
+                extensions: {
+                  code: "OVERRIDE_COLLISION_WITH_ANOTHER_DIRECTIVE",
+                },
+              },
+            ),
+          );
+        }
+      }
+
       if (graphsWithOverride.length === 1) {
         return;
       }
