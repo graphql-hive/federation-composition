@@ -73,7 +73,7 @@
     "@changesets/cli": "2.29.8",
     "@types/debug": "4.1.12",
     "@types/lodash.sortby": "4.7.9",
-    "@types/node": "24.10.13",
+    "@types/node": "24.10.15",
     "@vitest/ui": "4.0.18",
     "bob-the-bundler": "7.0.1",
     "graphql": "16.13.0",
