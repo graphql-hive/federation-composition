@@ -70,7 +70,7 @@
   "devDependencies": {
     "@apollo/composition": "2.13.1",
     "@changesets/changelog-github": "0.6.0",
-    "@changesets/cli": "2.29.8",
+    "@changesets/cli": "2.30.0",
     "@types/debug": "4.1.12",
     "@types/lodash.sortby": "4.7.9",
     "@types/node": "24.11.0",
