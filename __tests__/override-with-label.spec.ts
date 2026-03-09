@@ -435,6 +435,31 @@ describe("@override(label:)", () => {
 
       assertCompositionSuccess(result);
 
+      expect(result.supergraphSdl).toContainGraphQL(/* GraphQL */ `
+        type User
+          @join__type(graph: A, key: "id")
+          @join__type(graph: B, key: "id") {
+          id: ID!
+          group: Group
+            @join__field(graph: A, override: "b", type: "Group")
+            @join__field(graph: B, type: "Group!", usedOverridden: true)
+          groupLevel: ID! @join__field(graph: B, requires: "group { level }")
+        }
+      `);
+
+      expect(result.supergraphSdl).toContainGraphQL(/* GraphQL */ `
+        type Group
+          @join__type(graph: A, key: "id")
+          @join__type(graph: B, key: "id") {
+          id: ID
+            @join__field(graph: A, type: "ID!")
+            @join__field(graph: B, type: "ID")
+          level: Int
+            @join__field(graph: A)
+            @join__field(graph: B, external: true)
+        }
+      `);
+
       result = composeServices([
         {
           name: "a",

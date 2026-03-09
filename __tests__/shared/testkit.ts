@@ -11,6 +11,7 @@ import {
   composeServices as apolloComposeServices,
   CompositionSuccess as ApolloCompositionSuccess,
 } from "@apollo/composition";
+import { Supergraph as ApolloSupergraph } from "@apollo/federation-internals";
 import {
   assertCompositionFailure,
   compositionHasErrors,
@@ -91,6 +92,23 @@ function composeServicesFactory(
       const apolloSchema = (result as unknown as ApolloCompositionSuccess)
         .schema;
       result.publicSdl = print(apolloSchema.toAPISchema().toAST());
+    }
+
+    // runs it only for Guild
+    if (result.supergraphSdl && !("schema" in result)) {
+      // Detects if Apollo Gateway will reject the produced supergraphSdl
+      let supergraph = ApolloSupergraph.buildForTests(
+        result.supergraphSdl,
+        true,
+      );
+      let subgraphErrors = supergraph.subgraphs().validate();
+      if (subgraphErrors) {
+        throw new Error(
+          `Supergraph validation failed: ${subgraphErrors
+            .map((e) => e.message)
+            .join(", ")}`,
+        );
+      }
     }
 
     return result;

@@ -191,9 +191,6 @@ testVersions((api, version) => {
         {
           name: "users",
           typeDefs: graphql`
-            directive @external on FIELD_DEFINITION | OBJECT
-            directive @key(fields: String!) on INTERFACE | OBJECT
-
             type Query {
               users: [User]
             }
