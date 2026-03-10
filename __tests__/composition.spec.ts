@@ -8450,4 +8450,119 @@ testImplementations((api) => {
       }
     `);
   });
+
+  test("@external on non-key field in Federation v1", () => {
+      let result = api.composeServices([
+        {
+          name: "users",
+          typeDefs: parse(/* GraphQL */ `
+            type Query {
+              users: [User]
+            }
+
+            type User @key(fields: "id") {
+              id: ID!
+              name: String! @external
+            }
+          `),
+        },
+        {
+          name: "extra",
+          typeDefs: parse(/* GraphQL */ `
+            type User @key(fields: "id") {
+              id: ID!
+              name: String!
+            }
+          `),
+        },
+      ]);
+
+      assertCompositionSuccess(result);
+      expect(result.supergraphSdl).toContainGraphQL(/* GraphQL */ `
+        type User
+          @join__type(graph: EXTRA, key: "id")
+          @join__type(graph: USERS, key: "id") {
+          id: ID!
+          name: String! @join__field(graph: EXTRA)
+        }
+      `);
+    });
+
+    test("@external on non-key field in Federation v1", () => {
+    let result = api.composeServices([
+      {
+        name: "users",
+        typeDefs: parse(/* GraphQL */ `
+          type Query {
+            users: [User]
+          }
+
+          type User @key(fields: "id") {
+            id: ID!
+            name: String! @external
+          }
+        `),
+      },
+      {
+        name: "extra",
+        typeDefs: parse(/* GraphQL */ `
+          type User @key(fields: "id") {
+            id: ID!
+            name: String!
+          }
+        `),
+      },
+    ]);
+
+    assertCompositionSuccess(result);
+    expect(result.supergraphSdl).toContainGraphQL(/* GraphQL */ `
+      type User
+        @join__type(graph: EXTRA, key: "id")
+        @join__type(graph: USERS, key: "id") {
+        id: ID!
+        name: String! @join__field(graph: EXTRA)
+      }
+    `);
+  });
+
+  test("@external on non-key field in Federation v2", () => {
+    let result = api.composeServices([
+      {
+        name: "users",
+        typeDefs: parse(/* GraphQL */ `
+          extend schema
+            @link(
+              url: "https://specs.apollo.dev/federation/v2.3"
+              import: ["@key", "@external"]
+            )
+
+          type Query {
+            users: [User]
+          }
+
+          type User @key(fields: "id") {
+            id: ID!
+            name: String! @external
+          }
+        `),
+      },
+      {
+        name: "extra",
+        typeDefs: parse(/* GraphQL */ `
+          extend schema
+            @link(
+              url: "https://specs.apollo.dev/federation/v2.3"
+              import: ["@key", "@external"]
+            )
+
+          type User @key(fields: "id") {
+            id: ID!
+            name: String!
+          }
+        `),
+      },
+    ]);
+
+    assertCompositionFailure(result);
+  });
 });
