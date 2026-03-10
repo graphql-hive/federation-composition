@@ -8271,4 +8271,183 @@ testImplementations((api) => {
     assertCompositionSuccess(result);
     expect(result.supergraphSdl).not.includes("scalar FieldSet");
   });
+
+  test("keeps @join__field for object type extension with @key being @external", () => {
+    const result = api.composeServices([
+      {
+        name: "owner-service",
+        typeDefs: parse(/* GraphQL */ `
+          extend schema
+            @link(
+              url: "https://specs.apollo.dev/federation/v2.3"
+              import: ["@key", "@external"]
+            )
+
+          extend type Repository @key(fields: "id name") {
+            id: ID! @external
+            name: String! @external
+          }
+        `),
+      },
+      {
+        name: "team-service",
+        typeDefs: parse(/* GraphQL */ `
+          extend schema
+            @link(
+              url: "https://specs.apollo.dev/federation/v2.3"
+              import: ["@key", "@external"]
+            )
+
+          extend type Repository @key(fields: "id") {
+            id: ID! @external
+          }
+        `),
+      },
+      {
+        name: "repo-service",
+        typeDefs: parse(/* GraphQL */ `
+          extend schema
+            @link(
+              url: "https://specs.apollo.dev/federation/v2.3"
+              import: ["@key", "@shareable"]
+            )
+
+          type Query {
+            repo: Repository
+          }
+
+          type Repository @key(fields: "id") {
+            id: ID!
+            name: String! @shareable
+          }
+        `),
+      },
+    ]);
+
+    assertCompositionSuccess(result);
+
+    expect(result.supergraphSdl).toContainGraphQL(/* GraphQL */ `
+      type Repository
+        @join__type(extension: true, graph: OWNER_SERVICE, key: "id name")
+        @join__type(extension: true, graph: TEAM_SERVICE, key: "id")
+        @join__type(graph: REPO_SERVICE, key: "id") {
+        id: ID!
+        name: String!
+          @join__field(graph: OWNER_SERVICE)
+          @join__field(graph: REPO_SERVICE)
+      }
+    `);
+  });
+
+  test("keep @join__field for object type extension where @key is @external and have other @external fields used with @requires", () => {
+    const result = api.composeServices([
+      {
+        name: "developer-service",
+        typeDefs: parse(/* GraphQL */ `
+          extend schema
+            @link(
+              url: "https://specs.apollo.dev/federation/v2.3"
+              import: ["@key", "@shareable"]
+            )
+
+          type Query {
+            me: Developer
+          }
+
+          type Developer @key(fields: "id") @key(fields: "guestGuid") {
+            id: ID!
+            guestGuid: ID! @shareable
+            isMe: Boolean! @shareable
+            myFollowingStatus: String! @shareable
+            userVisibility: String! @shareable
+          }
+        `),
+      },
+      {
+        name: "team-service",
+        typeDefs: parse(/* GraphQL */ `
+          extend schema
+            @link(
+              url: "https://specs.apollo.dev/federation/v2.3"
+              import: ["@key", "@external", "@requires"]
+            )
+
+          extend type Developer @key(fields: "guestGuid") {
+            guestGuid: ID! @external
+            myFollowingStatus: String! @external
+            userVisibility: String! @external
+            guestSavedLists: [ID!]!
+              @requires(fields: "myFollowingStatus userVisibility")
+          }
+        `),
+      },
+      {
+        name: "commit-service",
+        typeDefs: parse(/* GraphQL */ `
+          extend schema
+            @link(
+              url: "https://specs.apollo.dev/federation/v2.3"
+              import: ["@key", "@external", "@requires"]
+            )
+
+          extend type Developer @key(fields: "id") {
+            id: ID! @external
+            isMe: Boolean! @external
+            userVisibility: String! @external
+            commits: [ID!]! @requires(fields: "isMe userVisibility")
+          }
+        `),
+      },
+      {
+        name: "reaction-service",
+        typeDefs: parse(/* GraphQL */ `
+          extend schema
+            @link(
+              url: "https://specs.apollo.dev/federation/v2.3"
+              import: ["@key", "@external"]
+            )
+
+          extend type Developer @key(fields: "id") {
+            id: ID! @external
+          }
+        `),
+      },
+    ]);
+
+    assertCompositionSuccess(result);
+
+    expect(result.supergraphSdl).toContainGraphQL(/* GraphQL */ `
+      type Developer
+        @join__type(extension: true, graph: TEAM_SERVICE, key: "guestGuid")
+        @join__type(extension: true, graph: REACTION_SERVICE, key: "id")
+        @join__type(extension: true, graph: COMMIT_SERVICE, key: "id")
+        @join__type(graph: DEVELOPER_SERVICE, key: "guestGuid")
+        @join__type(graph: DEVELOPER_SERVICE, key: "id") {
+        guestGuid: ID!
+          @join__field(graph: TEAM_SERVICE)
+          @join__field(graph: DEVELOPER_SERVICE)
+        guestSavedLists: [ID!]!
+          @join__field(
+            graph: TEAM_SERVICE
+            requires: "myFollowingStatus userVisibility"
+          )
+        id: ID!
+          @join__field(graph: REACTION_SERVICE)
+          @join__field(graph: COMMIT_SERVICE)
+          @join__field(graph: DEVELOPER_SERVICE)
+        isMe: Boolean!
+          @join__field(external: true, graph: COMMIT_SERVICE)
+          @join__field(graph: DEVELOPER_SERVICE)
+        myFollowingStatus: String!
+          @join__field(external: true, graph: TEAM_SERVICE)
+          @join__field(graph: DEVELOPER_SERVICE)
+        commits: [ID!]!
+          @join__field(graph: COMMIT_SERVICE, requires: "isMe userVisibility")
+        userVisibility: String!
+          @join__field(external: true, graph: TEAM_SERVICE)
+          @join__field(external: true, graph: COMMIT_SERVICE)
+          @join__field(graph: DEVELOPER_SERVICE)
+      }
+    `);
+  });
 });
