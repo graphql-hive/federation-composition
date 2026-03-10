@@ -7,9 +7,6 @@ interface CustomMatchers<R = unknown> {
   toEqualGraphQL(expected: string | DocumentNode | TypeSystemDefinitionNode): R;
 }
 
-declare global {
-  namespace Vi {
-    interface Assertion extends CustomMatchers {}
-    interface AsymmetricMatchersContaining extends CustomMatchers {}
-  }
+declare module "vitest" {
+  interface Matchers<T = any> extends CustomMatchers<T> {}
 }
