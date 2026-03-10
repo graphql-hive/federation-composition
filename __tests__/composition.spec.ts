@@ -8566,7 +8566,7 @@ testImplementations((api) => {
     assertCompositionFailure(result);
   });
 
-  object type field implementing interface field", () => {
+  test("@external object type field implementing interface field", () => {
     const result = api.composeServices([
       {
         name: "github_core",
