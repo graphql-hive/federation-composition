@@ -8565,4 +8565,86 @@ testImplementations((api) => {
 
     assertCompositionFailure(result);
   });
+
+  object type field implementing interface field", () => {
+    const result = api.composeServices([
+      {
+        name: "github_core",
+        typeDefs: parse(/* GraphQL */ `
+          extend schema
+            @link(
+              url: "https://specs.apollo.dev/federation/v2.3"
+              import: ["@key"]
+            )
+
+          type Query {
+            checks: QueuedCheckRunInfo
+          }
+
+          interface CheckRunInfo {
+            id: ID!
+            status: String!
+          }
+
+          type QueuedCheckRunInfo implements CheckRunInfo @key(fields: "id") {
+            id: ID!
+            status: String!
+            commitOid: String!
+          }
+        `),
+      },
+      {
+        name: "github_action",
+        typeDefs: parse(/* GraphQL */ `
+          extend schema
+            @link(
+              url: "https://specs.apollo.dev/federation/v2.3"
+              import: ["@key", "@external", "@requires"]
+            )
+
+          extend type QueuedCheckRunInfo implements CheckRunInfo
+            @key(fields: "id") {
+            id: ID! @external
+            status: String! @external
+            commitOid: String! @external
+            workflowRunId: ID! @requires(fields: "commitOid")
+          }
+
+          interface CheckRunInfo {
+            id: ID!
+            status: String!
+          }
+        `),
+      },
+    ]);
+
+    assertCompositionSuccess(result);
+
+    expect(result.supergraphSdl).toContainGraphQL(/* GraphQL */ `
+      interface CheckRunInfo
+        @join__type(graph: GITHUB_ACTION)
+        @join__type(graph: GITHUB_CORE) {
+        id: ID!
+        status: String!
+      }
+    `);
+
+    expect(result.supergraphSdl).toContainGraphQL(/* GraphQL */ `
+      type QueuedCheckRunInfo implements CheckRunInfo
+        @join__implements(graph: GITHUB_ACTION, interface: "CheckRunInfo")
+        @join__implements(graph: GITHUB_CORE, interface: "CheckRunInfo")
+        @join__type(graph: GITHUB_CORE, key: "id")
+        @join__type(graph: GITHUB_ACTION, key: "id", extension: true) {
+        id: ID!
+        status: String!
+          @join__field(graph: GITHUB_CORE)
+          @join__field(graph: GITHUB_ACTION, external: true)
+        commitOid: String!
+          @join__field(graph: GITHUB_CORE)
+          @join__field(graph: GITHUB_ACTION, external: true)
+        workflowRunId: ID!
+          @join__field(graph: GITHUB_ACTION, requires: "commitOid")
+      }
+    `);
+  });
 });
