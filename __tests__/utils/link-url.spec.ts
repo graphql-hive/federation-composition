@@ -18,7 +18,12 @@ describe("FederatedLinkUrl", () => {
     ],
     ["https://spec.example.com/v1.0", "https://spec.example.com", null, "v1.0"],
     ["https://spec.example.com/vX", "https://spec.example.com/vX", "vX", null],
-    ["file:///extensions/permissions", "file:///extensions/permissions", "permissions", null],
+    [
+      "file:///extensions/permissions",
+      "file:///extensions/permissions",
+      "permissions",
+      null,
+    ],
   ])(
     "fromUrl correctly parses the identity, name, and version",
     (url, identity, name, version) => {
@@ -28,6 +33,12 @@ describe("FederatedLinkUrl", () => {
       expect(spec.version).toBe(version);
     },
   );
+
+  test("fromUrl errors on invalid URL parses the identity, name, and version", () => {
+    expect(() => FederatedLinkUrl.fromUrl("spec.example.com")).toThrow(
+      `Invalid URL`,
+    );
+  });
 
   test.each([
     [

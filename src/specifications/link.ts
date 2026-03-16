@@ -103,7 +103,18 @@ export function printLink(link: Link): string {
   If a `name` is not present, then elements of the foreign schema must be imported in order to be referenced.
 */
 export function parseLinkUrl(urlString: string) {
-  const url = new URL(urlString);
+  let url: URL;
+  try {
+    url = new URL(urlString);
+  } catch (e) {
+    // if url: is not a valid RFC 3986 url, then it MUST be treated as an opaque identifier for the foreign schema
+    return {
+      name: null,
+      version: null,
+      identity: urlString,
+    };
+  }
+
   const parts = url.pathname.split("/").filter(Boolean);
   const len = parts.length;
 
@@ -142,7 +153,7 @@ export function parseLinkUrl(urlString: string) {
   }
 
   // node returns file protocol origins as null.
-  const origin = url.protocol === 'file:' ? 'file://' : url.origin;
+  const origin = url.protocol === "file:" ? "file://" : url.origin;
   return {
     name: last,
     version: null,

@@ -36,7 +36,7 @@ export class FederatedLinkUrl {
     const url = new URL(urlSource);
     const parts = url.pathname.split("/").filter(Boolean);
     const versionOrName = parts[parts.length - 1];
-    const origin = url.protocol === 'file:' ? 'file://' : url.origin;
+    const origin = url.protocol === "file:" ? "file://" : url.origin;
     if (versionOrName) {
       if (VERSION_MATCH.test(versionOrName)) {
         const maybeName = parts[parts.length - 2];
