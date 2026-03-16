@@ -97,7 +97,7 @@ export function printLink(link: Link): string {
   | https://spec.example.com/mySchema/not-v          | https://spec.example.com/mySchema/not-v     | mySchema    | not-v   |
   | https://spec.example.com/v1.0                    | https://spec.example.com/v1.0               | (null)      | v1.0    |
   | https://spec.example.com/vX                      | https://spec.example.com/vX                 | vX          | (null)  |
-  | file:///extensions/permissions                   | file:///extensions                          | permissions | (null)  |
+  | file:///extensions/permissions                   | file:///extensions/permissions              | permissions | (null)  |
 
   If `name` is present, that `namespace` prefix will automatically be linked to the URL.
   If a `name` is not present, then elements of the foreign schema must be imported in order to be referenced.
