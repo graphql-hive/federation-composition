@@ -28,13 +28,16 @@ import type {
 import { mergeScopePolicies } from "../../utils/auth.js";
 
 type RequiresUsageStateInGraph = {
-  active: boolean;
-  overridden: boolean;
+  isActivelyRequired: boolean;
+  isOnlyOverriddenRequired: boolean;
 };
 
-type RequiresUsageIndex = Map<string, Map<string, RequiresUsageStateInGraph>>;
+type RequiresFieldUsageIndex = Map<
+  string,
+  Map<string, RequiresUsageStateInGraph>
+>;
 
-export function isRealExtension(
+export function isFederationExtension(
   meta: ObjectTypeStateInGraph,
   version: FederationVersion,
 ) {
@@ -60,12 +63,12 @@ export function isRealExtension(
 }
 
 export function objectTypeBuilder(): TypeBuilder<ObjectType, ObjectTypeState> {
-  let requiresUsageIndex: RequiresUsageIndex | null = null;
+  let requiresUsageIndex: RequiresFieldUsageIndex | null = null;
 
   function getRequiresUsageIndexLazy(
     supergraphState: SupergraphState,
     graphNameToId: (graphId: string) => string | null,
-  ): RequiresUsageIndex {
+  ): RequiresFieldUsageIndex {
     if (requiresUsageIndex === null) {
       requiresUsageIndex = buildRequiresUsageIndex(
         supergraphState,
@@ -168,7 +171,8 @@ export function objectTypeBuilder(): TypeBuilder<ObjectType, ObjectTypeState> {
         // It's the first time we visited a non-external field, we should force the type on that field to match the local type
         const isExternal =
           graph.version === "v1.0"
-            ? field.external && isRealExtension(typeInGraph, graph.version)
+            ? field.external &&
+              isFederationExtension(typeInGraph, graph.version)
             : field.external;
         const shouldForceType =
           // If it's not an external field and it's first time we visited a non-external field,
@@ -411,7 +415,7 @@ export function objectTypeBuilder(): TypeBuilder<ObjectType, ObjectTypeState> {
                   graph: graphId,
                   key: key.fields,
                   // To support Fed v1, we need to only apply `extension: true` when it's a type annotated with @extends (not by using `extend type` syntax, this needs to be ignored)
-                  extension: isRealExtension(
+                  extension: isFederationExtension(
                     meta,
                     graphs.get(graphId)!.federation.version,
                   ),
@@ -428,9 +432,7 @@ export function objectTypeBuilder(): TypeBuilder<ObjectType, ObjectTypeState> {
             .flat(1);
 
       // a list of fields defined by interfaces (that type implements)
-      const fieldNamesOfImplementedInterfaces: {
-        [fieldName: string]: /* Graph IDs */ Set<string>;
-      } = {};
+      const interfaceFieldGraphsByFieldName = new Map<string, Set<string>>();
       const resolvableFieldsFromInterfaceObjects: InterfaceTypeFieldState[] =
         [];
 
@@ -448,15 +450,16 @@ export function objectTypeBuilder(): TypeBuilder<ObjectType, ObjectTypeState> {
           interfaceFieldName,
           interfaceField,
         ] of interfaceState.fields) {
-          const found = fieldNamesOfImplementedInterfaces[interfaceFieldName];
+          const found = interfaceFieldGraphsByFieldName.get(interfaceFieldName);
 
           if (found) {
             for (const graphId of interfaceField.byGraph.keys()) {
               found.add(graphId);
             }
           } else {
-            fieldNamesOfImplementedInterfaces[interfaceFieldName] = new Set(
-              Array.from(interfaceField.byGraph.keys()),
+            interfaceFieldGraphsByFieldName.set(
+              interfaceFieldName,
+              new Set(interfaceField.byGraph.keys()),
             );
           }
 
@@ -480,7 +483,7 @@ export function objectTypeBuilder(): TypeBuilder<ObjectType, ObjectTypeState> {
             graphId: joinType.graph,
             objectType,
             requiresUsageIndex,
-            fieldNamesOfImplementedInterfaces,
+            interfaceFieldGraphsByFieldName,
             graphNameToId,
           }),
         );
@@ -540,6 +543,21 @@ export function objectTypeBuilder(): TypeBuilder<ObjectType, ObjectTypeState> {
         return true;
       }
 
+      function shouldDropFedV1UnusedExternalJoinField(
+        graphId: string,
+        fieldStateInGraph: FieldStateInGraph,
+        isRequiredOrProvided: boolean,
+        usedOverridden: boolean,
+      ): boolean {
+        return (
+          fieldStateInGraph.external &&
+          !fieldStateInGraph.usedAsKey &&
+          !isRequiredOrProvided &&
+          !usedOverridden &&
+          graphs.get(graphId)!.federation.version === "v1.0"
+        );
+      }
+
       function createJoinFields(
         fieldInGraphs: [string, FieldStateInGraph][],
         field: ObjectTypeFieldState,
@@ -561,13 +579,18 @@ export function objectTypeBuilder(): TypeBuilder<ObjectType, ObjectTypeState> {
             const type = hasDifferentOutputType ? meta.type : undefined;
             const override = meta.override ?? undefined;
             const overrideLabel = meta.overrideLabel ?? undefined;
-            const usedOverridden = provideUsedOverriddenValue(
+            const usedOverridden = isUsedOverriddenInGraph(
               field,
               meta,
-              fieldNamesOfImplementedInterfaces,
+              interfaceFieldGraphsByFieldName,
               graphId,
               graphNameToId,
             );
+            const inInterfaceGraphs = interfaceFieldGraphsByFieldName.get(
+              field.name,
+            );
+            const isInterfaceFieldInGraph =
+              inInterfaceGraphs && inInterfaceGraphs.has(graphId);
             const external = shouldSetExternalOnJoinField(
               meta,
               graphId,
@@ -577,7 +600,7 @@ export function objectTypeBuilder(): TypeBuilder<ObjectType, ObjectTypeState> {
             const provides = meta.provides ?? undefined;
             const requires = meta.requires ?? undefined;
 
-            const definesSomething =
+            const hasAnyJoinFieldMetadata =
               !!type ||
               !!override ||
               !!provides ||
@@ -587,10 +610,22 @@ export function objectTypeBuilder(): TypeBuilder<ObjectType, ObjectTypeState> {
               meta.provided || isEffectivelyRequired(graphId, meta);
 
             if (
+              shouldDropFedV1UnusedExternalJoinField(
+                graphId,
+                meta,
+                isRequiredOrProvided,
+                usedOverridden,
+              )
+            ) {
+              return null;
+            }
+
+            if (
               external &&
               objectType.byGraph.get(graphId)!.extension === true &&
-              !definesSomething &&
-              !isRequiredOrProvided
+              !hasAnyJoinFieldMetadata &&
+              !isRequiredOrProvided &&
+              !isInterfaceFieldInGraph
             ) {
               return null;
             }
@@ -598,8 +633,10 @@ export function objectTypeBuilder(): TypeBuilder<ObjectType, ObjectTypeState> {
             if (
               meta.external &&
               !external &&
-              !definesSomething &&
-              !isRequiredOrProvided
+              hasOnlyOverriddenRequiresUsage(graphId) &&
+              !hasAnyJoinFieldMetadata &&
+              !isRequiredOrProvided &&
+              !isInterfaceFieldInGraph
             ) {
               return null;
             }
@@ -616,6 +653,69 @@ export function objectTypeBuilder(): TypeBuilder<ObjectType, ObjectTypeState> {
             };
           })
           .filter(isDefined);
+      }
+
+      function collectOverrideJoinFieldInfo(
+        fieldInGraphs: [string, FieldStateInGraph][],
+      ): {
+        overrideLabels: Record<string, string>;
+        overriddenGraphs: Set<string>;
+      } {
+        const overrideLabels: Record<string, string> = {};
+        const overriddenGraphs = new Set<string>();
+
+        for (const [toGraphId, meta] of fieldInGraphs) {
+          if (!meta.override) {
+            continue;
+          }
+
+          const fromGraphId = graphNameToId(meta.override);
+
+          if (!fromGraphId) {
+            continue;
+          }
+
+          overriddenGraphs.add(fromGraphId);
+
+          if (meta.overrideLabel) {
+            overrideLabels[fromGraphId] = meta.overrideLabel;
+            overrideLabels[toGraphId] = meta.overrideLabel;
+          }
+        }
+
+        return {
+          overrideLabels,
+          overriddenGraphs,
+        };
+      }
+
+      function buildJoinFieldAst(
+        graphId: string,
+        meta: FieldStateInGraph,
+        field: ObjectTypeFieldState,
+        hasDifferentOutputType: boolean,
+        overrideLabel: string | undefined,
+        external: boolean | undefined,
+        usedOverridden: boolean | undefined,
+      ): JoinFieldAST {
+        return {
+          graph: graphId,
+          override: meta.override ?? undefined,
+          overrideLabel,
+          usedOverridden:
+            usedOverridden ??
+            isUsedOverriddenInGraph(
+              field,
+              meta,
+              interfaceFieldGraphsByFieldName,
+              graphId,
+              graphNameToId,
+            ),
+          type: hasDifferentOutputType ? meta.type : undefined,
+          external,
+          provides: meta.provides ?? undefined,
+          requires: meta.requires ?? undefined,
+        };
       }
 
       return createObjectTypeNode({
@@ -646,14 +746,14 @@ export function objectTypeBuilder(): TypeBuilder<ObjectType, ObjectTypeState> {
               graphId: string,
               meta: FieldStateInGraph,
             ) =>
-              isCoordinateEffectivelyRequired(
+              isFieldCoordinateEffectivelyRequired(
                 requiresUsageIndex,
                 fieldCoordinate,
                 graphId,
                 meta.required,
               );
             const hasOnlyOverriddenRequiresUsage = (graphId: string) =>
-              hasOverriddenOnlyRequiresUsage(
+              hasOnlyOverriddenRequiresDependency(
                 requiresUsageIndex,
                 fieldCoordinate,
                 graphId,
@@ -699,6 +799,123 @@ export function objectTypeBuilder(): TypeBuilder<ObjectType, ObjectTypeState> {
               }
             }
 
+            const overrideJoinFieldInfo = differencesBetweenGraphs.override
+              ? collectOverrideJoinFieldInfo(fieldInGraphs)
+              : null;
+
+            const graphJoinFieldState = new Map<
+              string,
+              {
+                isRequired: boolean;
+                externalOnJoinField: boolean;
+                usedOverridden: boolean;
+              }
+            >();
+
+            // Precompute per-graph values once
+            for (const [graphId, meta] of fieldInGraphs) {
+              const hasOnlyRequiresUsage =
+                hasOnlyOverriddenRequiresUsage(graphId);
+              graphJoinFieldState.set(graphId, {
+                isRequired: isEffectivelyRequired(graphId, meta),
+                externalOnJoinField: shouldSetExternalOnJoinField(
+                  meta,
+                  graphId,
+                  field,
+                  hasOnlyRequiresUsage,
+                ),
+                usedOverridden: isUsedOverriddenInGraph(
+                  field,
+                  meta,
+                  interfaceFieldGraphsByFieldName,
+                  graphId,
+                  graphNameToId,
+                ),
+              });
+            }
+
+            function shouldEmitOverrideJoinField(
+              graphId: string,
+              meta: FieldStateInGraph,
+              mode: "query" | "object",
+            ): boolean {
+              const overrideLabels =
+                overrideJoinFieldInfo?.overrideLabels ?? {};
+              const overriddenGraphs = overrideJoinFieldInfo?.overriddenGraphs;
+              const overrideLabel = overrideLabels[graphId];
+
+              if (mode === "query") {
+                const hasExplicitOverride = meta.override !== null;
+                const hasOverrideLabel = Boolean(overrideLabel);
+                const isShareableSourceGraph =
+                  meta.shareable && overriddenGraphs?.has(graphId) === false;
+
+                return (
+                  hasExplicitOverride ||
+                  hasOverrideLabel ||
+                  isShareableSourceGraph
+                );
+              }
+
+              const graphState = graphJoinFieldState.get(graphId)!;
+              const isOverriddenSourceGraph =
+                overriddenGraphs?.has(graphId) === true;
+              const needsOverrideLabel =
+                typeof meta.overrideLabel === "string" ||
+                Boolean(overrideLabel);
+              const needsExternalForRequired =
+                graphState.externalOnJoinField && graphState.isRequired;
+              const hasUsedOverridden =
+                graphState.usedOverridden ||
+                (isOverriddenSourceGraph &&
+                  graphState.isRequired &&
+                  !graphState.externalOnJoinField);
+
+              return (
+                needsExternalForRequired ||
+                needsOverrideLabel ||
+                hasUsedOverridden ||
+                !isOverriddenSourceGraph
+              );
+            }
+
+            function buildOverrideJoinFields(
+              mode: "query" | "object",
+              graphsToEmit: [string, FieldStateInGraph][],
+            ): JoinFieldAST[] {
+              const overrideLabels =
+                overrideJoinFieldInfo?.overrideLabels ?? {};
+
+              return graphsToEmit.map(([graphId, meta]) => {
+                const graphState = graphJoinFieldState.get(graphId)!;
+                const isOverriddenSourceGraph =
+                  overrideJoinFieldInfo?.overriddenGraphs.has(graphId) === true;
+                const usedOverridden =
+                  mode === "object"
+                    ? graphState.usedOverridden ||
+                      (isOverriddenSourceGraph &&
+                        graphState.isRequired &&
+                        !graphState.externalOnJoinField)
+                    : undefined;
+
+                return buildJoinFieldAst(
+                  graphId,
+                  meta,
+                  field,
+                  differencesBetweenGraphs.type,
+                  mode === "query"
+                    ? (meta.overrideLabel ?? undefined)
+                    : (overrideLabels[graphId] ?? undefined),
+                  mode === "query"
+                    ? (meta.external ?? undefined)
+                    : graphState.externalOnJoinField
+                      ? true
+                      : undefined,
+                  usedOverridden,
+                );
+              });
+            }
+
             if (!isQuery && field.byGraph.size === 1) {
               const graphId = field.byGraph.keys().next().value!;
               const fieldInGraph = field.byGraph.get(graphId)!;
@@ -713,10 +930,10 @@ export function objectTypeBuilder(): TypeBuilder<ObjectType, ObjectTypeState> {
                 // it's not part of any @provides(fields:)
                 !fieldInGraph.provided &&
                 // it's not part of any @override(from:) and it's not used by any interface
-                !provideUsedOverriddenValue(
+                !isUsedOverriddenInGraph(
                   field,
                   fieldInGraph,
-                  fieldNamesOfImplementedInterfaces,
+                  interfaceFieldGraphsByFieldName,
                   graphId,
                   graphNameToId,
                 ) &&
@@ -733,54 +950,11 @@ export function objectTypeBuilder(): TypeBuilder<ObjectType, ObjectTypeState> {
               // We do not have to emit `@join__field` if the field is shareable in every graph as well.
 
               if (differencesBetweenGraphs.override && graphs.size > 1) {
-                const overrideLabels: {
-                  [graphId: string]: string;
-                } = {};
-
-                const overriddenGraphs: string[] = [];
-
-                for (const [toGraphId, meta] of fieldInGraphs) {
-                  if (!meta.override) {
-                    continue;
-                  }
-
-                  const fromGraphId = graphNameToId(meta.override);
-
-                  if (!fromGraphId) {
-                    continue;
-                  }
-
-                  overriddenGraphs.push(fromGraphId);
-
-                  if (meta.overrideLabel) {
-                    overrideLabels[fromGraphId] = meta.overrideLabel;
-                    overrideLabels[toGraphId] = meta.overrideLabel;
-                  }
-                }
-
-                const graphsToPrintJoinField = fieldInGraphs.filter(
-                  ([graphId, meta]) =>
-                    meta.override !== null ||
-                    !!overrideLabels[graphId] ||
-                    (meta.shareable && !overriddenGraphs.includes(graphId)),
+                const graphsToEmit = fieldInGraphs.filter(([graphId, meta]) =>
+                  shouldEmitOverrideJoinField(graphId, meta, "query"),
                 );
 
-                joinFields = graphsToPrintJoinField.map(([graphId, meta]) => ({
-                  graph: graphId,
-                  override: meta.override ?? undefined,
-                  overrideLabel: meta.overrideLabel ?? undefined,
-                  usedOverridden: provideUsedOverriddenValue(
-                    field,
-                    meta,
-                    fieldNamesOfImplementedInterfaces,
-                    graphId,
-                    graphNameToId,
-                  ),
-                  type: differencesBetweenGraphs.type ? meta.type : undefined,
-                  external: meta.external ?? undefined,
-                  provides: meta.provides ?? undefined,
-                  requires: meta.requires ?? undefined,
-                }));
+                joinFields = buildOverrideJoinFields("query", graphsToEmit);
               } else {
                 joinFields =
                   graphs.size > 1 && !isDefinedEverywhere
@@ -799,63 +973,13 @@ export function objectTypeBuilder(): TypeBuilder<ObjectType, ObjectTypeState> {
 
               // We probably need to emit `@join__field` for every graph, except the one where the override was applied
               if (differencesBetweenGraphs.override) {
-                const overrideLabels: {
-                  [graphId: string]: string;
-                } = {};
-
-                const overriddenGraphs: string[] = [];
-
-                for (const [toGraphId, meta] of fieldInGraphs) {
-                  if (!meta.override) {
-                    continue;
-                  }
-
-                  const fromGraphId = graphNameToId(meta.override);
-
-                  if (!fromGraphId) {
-                    continue;
-                  }
-
-                  overriddenGraphs.push(fromGraphId);
-
-                  if (meta.overrideLabel) {
-                    overrideLabels[fromGraphId] = meta.overrideLabel;
-                    overrideLabels[toGraphId] = meta.overrideLabel;
-                  }
-                }
-
-                // the exception is when a field is external, we need to emit `@join__field` for that graph,
-                // so gateway knows that it's an external field
                 const graphsToEmit = fieldInGraphs.filter(([graphId, f]) => {
-                  const isExternal = shouldSetExternalOnJoinField(
-                    f,
-                    graphId,
-                    field,
-                    hasOnlyOverriddenRequiresUsage(graphId),
-                  );
-                  const isOverridden = overriddenGraphs.includes(graphId);
-                  const needsToPrintOverrideLabel =
-                    typeof f.overrideLabel === "string" ||
-                    !!overrideLabels[graphId];
-                  const needsToPrintUsedOverridden = provideUsedOverriddenValue(
-                    field,
-                    f,
-                    fieldNamesOfImplementedInterfaces,
-                    graphId,
-                    graphNameToId,
-                  );
-                  const isRequired = isEffectivelyRequired(graphId, f);
-
-                  return (
-                    (isExternal && isRequired) ||
-                    needsToPrintOverrideLabel ||
-                    needsToPrintUsedOverridden ||
-                    !isOverridden
-                  );
+                  return shouldEmitOverrideJoinField(graphId, f, "object");
                 });
 
                 // Do not emit `@join__field` if there's only one graph left
                 // and the type has a single `@join__type` matching the graph.
+                // In that case field-level join info is redundant.
                 if (
                   !(
                     graphsToEmit.length === 1 &&
@@ -863,29 +987,7 @@ export function objectTypeBuilder(): TypeBuilder<ObjectType, ObjectTypeState> {
                     joinTypes[0].graph === graphsToEmit[0][0]
                   )
                 ) {
-                  joinFields = graphsToEmit.map(([graphId, meta]) => ({
-                    graph: graphId,
-                    override: meta.override ?? undefined,
-                    overrideLabel: overrideLabels[graphId] ?? undefined,
-                    usedOverridden: provideUsedOverriddenValue(
-                      field,
-                      meta,
-                      fieldNamesOfImplementedInterfaces,
-                      graphId,
-                      graphNameToId,
-                    ),
-                    type: differencesBetweenGraphs.type ? meta.type : undefined,
-                    external: shouldSetExternalOnJoinField(
-                      meta,
-                      graphId,
-                      field,
-                      hasOnlyOverriddenRequiresUsage(graphId),
-                    )
-                      ? true
-                      : undefined,
-                    provides: meta.provides ?? undefined,
-                    requires: meta.requires ?? undefined,
-                  }));
+                  joinFields = buildOverrideJoinFields("object", graphsToEmit);
                 }
               } else if (hasDifferencesBetweenGraphs) {
                 joinFields = createJoinFields(fieldInGraphs, field, {
@@ -897,85 +999,11 @@ export function objectTypeBuilder(): TypeBuilder<ObjectType, ObjectTypeState> {
             } else {
               // An override is a special case, we need to emit `@join__field` only for graphs where @override was applied
               if (differencesBetweenGraphs.override) {
-                const overrideLabels: {
-                  [graphId: string]: string;
-                } = {};
-
-                const overriddenGraphs: string[] = [];
-
-                for (const [toGraphId, meta] of fieldInGraphs) {
-                  if (!meta.override) {
-                    continue;
-                  }
-
-                  const fromGraphId = graphNameToId(meta.override);
-
-                  if (!fromGraphId) {
-                    continue;
-                  }
-
-                  overriddenGraphs.push(fromGraphId);
-
-                  if (meta.overrideLabel) {
-                    overrideLabels[fromGraphId] = meta.overrideLabel;
-                    overrideLabels[toGraphId] = meta.overrideLabel;
-                  }
-                }
-
-                const graphsToPrintJoinField = fieldInGraphs.filter(
-                  ([graphId, meta]) => {
-                    const isExternal = shouldSetExternalOnJoinField(
-                      meta,
-                      graphId,
-                      field,
-                      hasOnlyOverriddenRequiresUsage(graphId),
-                    );
-                    const isOverridden = overriddenGraphs.includes(graphId);
-                    const needsToPrintOverrideLabel =
-                      typeof meta.overrideLabel === "string" ||
-                      !!overrideLabels[graphId];
-                    const needsToPrintUsedOverridden =
-                      provideUsedOverriddenValue(
-                        field,
-                        meta,
-                        fieldNamesOfImplementedInterfaces,
-                        graphId,
-                        graphNameToId,
-                      );
-                    const isRequired = isEffectivelyRequired(graphId, meta);
-
-                    return (
-                      (isExternal && isRequired) ||
-                      needsToPrintOverrideLabel ||
-                      needsToPrintUsedOverridden ||
-                      !isOverridden
-                    );
-                  },
+                const graphsToEmit = fieldInGraphs.filter(([graphId, meta]) =>
+                  shouldEmitOverrideJoinField(graphId, meta, "object"),
                 );
 
-                joinFields = graphsToPrintJoinField.map(([graphId, meta]) => ({
-                  graph: graphId,
-                  override: meta.override ?? undefined,
-                  overrideLabel: overrideLabels[graphId] ?? undefined,
-                  usedOverridden: provideUsedOverriddenValue(
-                    field,
-                    meta,
-                    fieldNamesOfImplementedInterfaces,
-                    graphId,
-                    graphNameToId,
-                  ),
-                  type: differencesBetweenGraphs.type ? meta.type : undefined,
-                  external: shouldSetExternalOnJoinField(
-                    meta,
-                    graphId,
-                    field,
-                    hasOnlyOverriddenRequiresUsage(graphId),
-                  )
-                    ? true
-                    : undefined,
-                  provides: meta.provides ?? undefined,
-                  requires: meta.requires ?? undefined,
-                }));
+                joinFields = buildOverrideJoinFields("object", graphsToEmit);
               } else {
                 joinFields = createJoinFields(fieldInGraphs, field, {
                   hasDifferentOutputType,
@@ -1194,27 +1222,25 @@ export function objectTypeBuilder(): TypeBuilder<ObjectType, ObjectTypeState> {
   };
 }
 
-function provideUsedOverriddenValue(
+function isUsedOverriddenInGraph(
   field: ObjectTypeFieldState,
   fieldStateInGraph: FieldStateInGraph,
-  fieldNamesOfImplementedInterfaces: {
-    [fieldName: string]: Set<string>;
-  },
+  interfaceFieldGraphsByFieldName: Map<string, Set<string>>,
   graphId: string,
   graphNameToId: (graphId: string) => string | null,
 ): boolean {
-  const inGraphs = fieldNamesOfImplementedInterfaces[field.name];
-  const hasMatchingInterfaceFieldInGraph: boolean =
-    inGraphs && inGraphs.has(graphId);
+  const interfaceGraphsForField = interfaceFieldGraphsByFieldName.get(
+    field.name,
+  );
+  const isInterfaceFieldInGraph: boolean =
+    interfaceGraphsForField instanceof Set &&
+    interfaceGraphsForField.has(graphId);
   const isUsedAsNonExternalKey =
     fieldStateInGraph.usedAsKey && !fieldStateInGraph.external;
   const isOverridden =
     field.override && graphNameToId(field.override) === graphId;
 
-  if (
-    isOverridden &&
-    (isUsedAsNonExternalKey || hasMatchingInterfaceFieldInGraph)
-  ) {
+  if (isOverridden && (isUsedAsNonExternalKey || isInterfaceFieldInGraph)) {
     return true;
   }
 
@@ -1226,15 +1252,15 @@ function toFieldCoordinate(typeName: string, fieldName: string): string {
 }
 
 function getRequiresUsageState(
-  requiresUsageIndex: RequiresUsageIndex,
+  requiresUsageIndex: RequiresFieldUsageIndex,
   coordinate: string,
   graphId: string,
 ): RequiresUsageStateInGraph | undefined {
   return requiresUsageIndex.get(coordinate)?.get(graphId);
 }
 
-function isCoordinateEffectivelyRequired(
-  requiresUsageIndex: RequiresUsageIndex,
+function isFieldCoordinateEffectivelyRequired(
+  requiresUsageIndex: RequiresFieldUsageIndex,
   coordinate: string,
   graphId: string,
   fallbackRequired: boolean,
@@ -1245,19 +1271,19 @@ function isCoordinateEffectivelyRequired(
     graphId,
   );
 
-  if (usageInGraph?.active) {
+  if (usageInGraph?.isActivelyRequired) {
     return true;
   }
 
-  if (usageInGraph?.overridden) {
+  if (usageInGraph?.isOnlyOverriddenRequired) {
     return false;
   }
 
   return fallbackRequired;
 }
 
-function hasOverriddenOnlyRequiresUsage(
-  requiresUsageIndex: RequiresUsageIndex,
+function hasOnlyOverriddenRequiresDependency(
+  requiresUsageIndex: RequiresFieldUsageIndex,
   coordinate: string,
   graphId: string,
 ): boolean {
@@ -1267,22 +1293,22 @@ function hasOverriddenOnlyRequiresUsage(
     graphId,
   );
 
-  return !!usageInGraph?.overridden && !usageInGraph.active;
+  return (
+    !!usageInGraph?.isOnlyOverriddenRequired && !usageInGraph.isActivelyRequired
+  );
 }
 
 function shouldKeepObjectTypeJoinTypeInGraph({
   graphId,
   objectType,
   requiresUsageIndex,
-  fieldNamesOfImplementedInterfaces,
+  interfaceFieldGraphsByFieldName,
   graphNameToId,
 }: {
   graphId: string;
   objectType: ObjectTypeState;
-  requiresUsageIndex: RequiresUsageIndex;
-  fieldNamesOfImplementedInterfaces: {
-    [fieldName: string]: Set<string>;
-  };
+  requiresUsageIndex: RequiresFieldUsageIndex;
+  interfaceFieldGraphsByFieldName: Map<string, Set<string>>;
   graphNameToId: (graphId: string) => string | null;
 }): boolean {
   const objectTypeInGraph = objectType.byGraph.get(graphId);
@@ -1291,7 +1317,11 @@ function shouldKeepObjectTypeJoinTypeInGraph({
     return false;
   }
 
-  if (objectTypeInGraph.hasDefinition || objectTypeInGraph.keys.length > 0) {
+  if (objectTypeInGraph.keys.length > 0) {
+    return true;
+  }
+
+  if (objectTypeInGraph.hasDefinition) {
     return true;
   }
 
@@ -1303,21 +1333,27 @@ function shouldKeepObjectTypeJoinTypeInGraph({
     }
 
     const fieldCoordinate = toFieldCoordinate(objectType.name, field.name);
-    const isEffectivelyRequired = isCoordinateEffectivelyRequired(
+    const isEffectivelyRequired = isFieldCoordinateEffectivelyRequired(
       requiresUsageIndex,
       fieldCoordinate,
       graphId,
       fieldInGraph.required,
+    );
+    const hasOnlyOverriddenRequires = hasOnlyOverriddenRequiresDependency(
+      requiresUsageIndex,
+      fieldCoordinate,
+      graphId,
     );
 
     if (
       !fieldInGraph.external ||
       fieldInGraph.provided ||
       isEffectivelyRequired ||
-      provideUsedOverriddenValue(
+      (objectTypeInGraph.extension && !hasOnlyOverriddenRequires) ||
+      isUsedOverriddenInGraph(
         field,
         fieldInGraph,
-        fieldNamesOfImplementedInterfaces,
+        interfaceFieldGraphsByFieldName,
         graphId,
         graphNameToId,
       )
@@ -1354,8 +1390,8 @@ function collectOverriddenGraphsByField(
 function buildRequiresUsageIndex(
   supergraphState: SupergraphState,
   graphNameToId: (graphId: string) => string | null,
-): RequiresUsageIndex {
-  const index: RequiresUsageIndex = new Map();
+): RequiresFieldUsageIndex {
+  const index: RequiresFieldUsageIndex = new Map();
 
   for (const objectType of supergraphState.objectTypes.values()) {
     for (const field of objectType.fields.values()) {
@@ -1396,7 +1432,7 @@ function markRequiresUsageFromSelectionSet(
   selectionSet: SelectionSetNode,
   graphId: string,
   overriddenSourceUsage: boolean,
-  index: RequiresUsageIndex,
+  index: RequiresFieldUsageIndex,
 ) {
   for (const selection of selectionSet.selections) {
     if (selection.kind === Kind.FIELD) {
@@ -1472,7 +1508,7 @@ function markRequiresUsageForCoordinate(
   coordinate: string,
   graphId: string,
   overriddenSourceUsage: boolean,
-  index: RequiresUsageIndex,
+  index: RequiresFieldUsageIndex,
 ) {
   let usageByGraph = index.get(coordinate);
 
@@ -1482,14 +1518,14 @@ function markRequiresUsageForCoordinate(
   }
 
   const usageInGraph = usageByGraph.get(graphId) ?? {
-    active: false,
-    overridden: false,
+    isActivelyRequired: false,
+    isOnlyOverriddenRequired: false,
   };
 
   if (overriddenSourceUsage) {
-    usageInGraph.overridden = true;
+    usageInGraph.isOnlyOverriddenRequired = true;
   } else {
-    usageInGraph.active = true;
+    usageInGraph.isActivelyRequired = true;
   }
 
   usageByGraph.set(graphId, usageInGraph);

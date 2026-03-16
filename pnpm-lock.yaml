@@ -27,6 +27,9 @@ importers:
       '@apollo/composition':
         specifier: 2.13.2
         version: 2.13.2(graphql@16.13.1)
+      '@apollo/federation-internals':
+        specifier: 2.13.2
+        version: 2.13.2(graphql@16.13.1)
       '@changesets/changelog-github':
         specifier: 0.6.0
         version: 0.6.0
