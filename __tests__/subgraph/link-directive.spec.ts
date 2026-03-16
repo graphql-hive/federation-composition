@@ -276,7 +276,7 @@ testVersions((api, version) => {
    * source: https://specs.apollo.dev/link/v1.0/#@link.url
    */
   api.runIf("guild", () => {
-    test.only("Non-RFC 3986 url", () => {
+    test("Non-RFC 3986 url", () => {
       assertCompositionSuccess(
         api.composeServices([
           {
