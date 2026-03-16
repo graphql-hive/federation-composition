@@ -1,9 +1,8 @@
-import {
+import { GraphQLError, Kind } from "graphql";
+import type {
   ASTVisitor,
-  GraphQLError,
   InterfaceTypeDefinitionNode,
   InterfaceTypeExtensionNode,
-  Kind,
   ObjectTypeDefinitionNode,
   ObjectTypeExtensionNode,
   SelectionSetNode,
@@ -145,6 +144,18 @@ export function ProvidesRules(context: SubgraphValidationContext): ASTVisitor {
             context,
             selectionSet,
             typeDefinition: targetType,
+            interceptField(info) {
+              if (
+                (info.typeDefinition.kind === Kind.OBJECT_TYPE_DEFINITION ||
+                  info.typeDefinition.kind === Kind.OBJECT_TYPE_EXTENSION) &&
+                info.fieldName !== "__typename"
+              ) {
+                context.stateBuilder.objectType.field.markAsProvided(
+                  info.typeDefinition.name.value,
+                  info.fieldName,
+                );
+              }
+            },
             interceptFieldWithMissingSelectionSet(info) {
               isValid = false;
               context.reportError(
@@ -299,20 +310,6 @@ export function ProvidesRules(context: SubgraphValidationContext): ASTVisitor {
                           // if it is an extension, we should report it as an error (historical thingy)
                           if (isExtension) {
                             interceptedFieldIsPrimaryKeyFromExtension = true;
-                          }
-                        }
-
-                        if (
-                          info.typeDefinition.kind ===
-                            Kind.OBJECT_TYPE_DEFINITION ||
-                          info.typeDefinition.kind ===
-                            Kind.OBJECT_TYPE_EXTENSION
-                        ) {
-                          if (info.fieldName !== "__typename") {
-                            context.stateBuilder.objectType.field.markAsProvided(
-                              info.typeDefinition.name.value,
-                              info.fieldName,
-                            );
                           }
                         }
                       },

@@ -1,6 +1,6 @@
 import { GraphQLError } from "graphql";
 import { andList } from "../../../utils/format.js";
-import { isRealExtension } from "../../composition/object-type.js";
+import { isFederationExtension } from "../../composition/object-type.js";
 import type { SupergraphVisitorMap } from "../../composition/visitor.js";
 import type { SupergraphValidationContext } from "../validation-context.js";
 
@@ -23,7 +23,7 @@ export function ExternalTypeMismatchRule(
         const isExternal =
           graphVersion === "v1.0"
             ? field.external &&
-              isRealExtension(
+              isFederationExtension(
                 objectTypeState.byGraph.get(graphId)!,
                 graphVersion,
               )

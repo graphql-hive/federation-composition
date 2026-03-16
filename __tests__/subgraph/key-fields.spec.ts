@@ -8,67 +8,86 @@ import {
 
 testVersions((api, version) => {
   test("__typename allowed in @provides", () => {
-    expect(
-      api.composeServices([
-        {
-          name: "users",
-          typeDefs: graphql`
-            extend schema @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@key"])
+    let result = api.composeServices([
+      {
+        name: "users",
+        typeDefs: graphql`
+          extend schema @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@key", "@shareable"])
 
-            type Query {
-              users: [User]
-            }
+          type Query {
+            users: [User]
+          }
 
-            type User @key(fields: "id") {
-              id: ID!
-              profile: Profile!
-            }
+          type User @key(fields: "id") {
+            id: ID!
+            profile: Profile! @shareable
+          }
 
-            type Profile {
-              id: ID!
-              name: String!
-            }
-          `,
-        },
-        {
-          name: "reviews",
-          typeDefs: graphql`
-            extend schema
-              @link(
-                url: "https://specs.apollo.dev/federation/${version}"
-                import: ["@key", "@provides", "@external"]
-              )
+          type Profile {
+            id: ID!  @shareable
+            name: String!
+          }
+        `,
+      },
+      {
+        name: "reviews",
+        typeDefs: graphql`
+          extend schema
+            @link(
+              url: "https://specs.apollo.dev/federation/${version}"
+              import: ["@key", "@provides", "@external"]
+            )
 
-            type Query {
-              reviews: [Review]
-            }
+          type Query {
+            reviews: [Review]
+          }
 
-            type Review @key(fields: "id") {
-              id: ID!
-              title: String!
-              author: User! @provides(fields: "profile { id __typename }")
-            }
+          type Review @key(fields: "id") {
+            id: ID!
+            title: String!
+            author: User! @provides(fields: "profile { id __typename }")
+          }
 
-            extend type User @key(fields: "id") {
-              id: ID! @external
-              profile: Profile! @external
-            }
+          extend type User @key(fields: "id") {
+            id: ID! @external
+            profile: Profile! @external
+          }
 
-            extend type Profile {
-              id: ID! @external
-            }
-          `,
-        },
-      ]),
-    ).not.toEqual(
-      expect.objectContaining({
-        errors: expect.arrayContaining([
-          expect.objectContaining({
-            message: expect.stringContaining(`__typename`),
-          }),
-        ]),
-      }),
-    );
+          extend type Profile {
+            id: ID! @external
+          }
+        `,
+      },
+    ]);
+
+    expect(result.supergraphSdl).toContainGraphQL(/* GraphQL */ `
+      type Profile @join__type(graph: REVIEWS) @join__type(graph: USERS) {
+        id: ID!
+          @join__field(graph: REVIEWS, external: true)
+          @join__field(graph: USERS)
+        name: String! @join__field(graph: USERS)
+      }
+    `);
+
+    expect(result.supergraphSdl).toContainGraphQL(/* GraphQL */ `
+      type Review @join__type(graph: REVIEWS, key: "id") {
+        id: ID!
+        title: String!
+        author: User!
+          @join__field(graph: REVIEWS, provides: "profile { id __typename }")
+      }
+    `);
+
+    expect(result.supergraphSdl).toContainGraphQL(/* GraphQL */ `
+      type User
+        @join__type(graph: REVIEWS, key: "id", extension: true)
+        @join__type(graph: USERS, key: "id") {
+        id: ID!
+        profile: Profile!
+          @join__field(graph: REVIEWS, external: true)
+          @join__field(graph: USERS)
+      }
+    `);
   });
 
   test("__typename allowed in @requires", () => {
