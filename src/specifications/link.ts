@@ -91,7 +91,7 @@ export function printLink(link: Link): string {
 
   | url                                              | normalized url                              | name        | version |
   -------------------------------------------------------------------------------------------------------------------------|
-  | https://spec.example.com/a/b/mySchema/v1.0/      | https://spec.example.com/a/b/mySchema/v1.0  | mySchema.   | v1.0    |
+  | https://spec.example.com/a/b/mySchema/v1.0/      | https://spec.example.com/a/b/mySchema/v1.0  | mySchema    | v1.0    |
   | https://spec.example.com                         | https://spec.example.com                    | (null)      | (null)  |
   | https://spec.example.com/mySchema/v0.1?q=v#frag  | https://spec.example.com/mySchema/v0.1      | mySchema    | v0.1    |
   | https://spec.example.com/mySchema/not-v          | https://spec.example.com/mySchema/not-v     | mySchema    | not-v   |
