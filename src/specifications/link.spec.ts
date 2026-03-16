@@ -3,14 +3,15 @@ import { parseLinkImport, parseLinkUrl } from "./link.js";
 
 describe("parseLinkUrl", () => {
   test.each`
-    url                                                  | name          | version            | identity
-    ${"https://spec.example.com/a/b/mySchema/v1.0/"}     | ${"mySchema"} | ${"v1.0"}          | ${"https://spec.example.com/a/b/mySchema"}
-    ${"https://spec.example.com/a/b/mySchema/v1.0"}      | ${"mySchema"} | ${"v1.0"}          | ${"https://spec.example.com/a/b/mySchema"}
-    ${"https://spec.example.com"}                        | ${null}       | ${null}            | ${"https://spec.example.com"}
-    ${"https://spec.example.com/mySchema/v0.1?q=v#frag"} | ${"mySchema"} | ${"v0.1"}          | ${"https://spec.example.com/mySchema"}
-    ${"https://spec.example.com/mySchema/not-a-version"} | ${"mySchema"} | ${"not-a-version"} | ${"https://spec.example.com/mySchema"}
-    ${"https://spec.example.com/v1.0"}                   | ${null}       | ${"v1.0"}          | ${"https://spec.example.com"}
-    ${"https://spec.example.com/vX"}                     | ${"vX"}       | ${null}            | ${"https://spec.example.com/vX"}
+    url                                                  | name               | version            | identity
+    ${"https://spec.example.com/a/b/mySchema/v1.0/"}     | ${"mySchema"}      | ${"v1.0"}          | ${"https://spec.example.com/a/b/mySchema"}
+    ${"https://spec.example.com/a/b/mySchema/v1.0"}      | ${"mySchema"}      | ${"v1.0"}          | ${"https://spec.example.com/a/b/mySchema"}
+    ${"https://spec.example.com"}                        | ${null}            | ${null}            | ${"https://spec.example.com"}
+    ${"https://spec.example.com/mySchema/v0.1?q=v#frag"} | ${"mySchema"}      | ${"v0.1"}          | ${"https://spec.example.com/mySchema"}
+    ${"https://spec.example.com/mySchema/not-a-version"} | ${"not-a-version"} | ${null}            | ${"https://spec.example.com/mySchema/not-a-version"}
+    ${"https://spec.example.com/v1.0"}                   | ${null}            | ${"v1.0"}          | ${"https://spec.example.com"}
+    ${"https://spec.example.com/vX"}                     | ${"vX"}            | ${null}            | ${"https://spec.example.com/vX"}
+    ${"file:///extensions/permissions"}                  | ${"permissions"}   | ${null}            | ${"file:///extensions/permissions"}
   `("$url", ({ url, name, version, identity }) => {
     expect(parseLinkUrl(url)).toEqual({ name, version, identity });
   });
