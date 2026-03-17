@@ -411,7 +411,25 @@ function extractLinks(subgraph: { name: string; typeDefs: DocumentNode }) {
         continue;
       }
 
-      if (link.identity.startsWith("https://specs.apollo.dev/")) {
+      const isApolloSpecsLink =
+        link.identity === "https://specs.apollo.dev" ||
+        link.identity.startsWith("https://specs.apollo.dev/");
+
+      if (isApolloSpecsLink) {
+        if (!link.name && !link.version) {
+          errors.push(
+            new GraphQLError(
+              `Invalid @link url '${link.identity}': expected '/<feature>/vX.Y' (for example '/federation/v2.9')`,
+              {
+                extensions: {
+                  code: "INVALID_LINK_IDENTIFIER",
+                },
+              },
+            ),
+          );
+          continue;
+        }
+
         if (!link.version) {
           // federation must have a version
           errors.push(
@@ -426,6 +444,7 @@ function extractLinks(subgraph: { name: string; typeDefs: DocumentNode }) {
           );
           continue;
         }
+
         if (link.name === "federation") {
           if (!link.version) {
             errors.push(

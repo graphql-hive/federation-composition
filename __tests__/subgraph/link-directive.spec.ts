@@ -12,6 +12,70 @@ testVersions((api, version) => {
         {
           name: "billing",
           typeDefs: graphql`
+                extend schema
+                  @link(
+                    url: "https://specs.apollo.dev/federation/${version}"
+                    import: ["@override", "@external", "@provides"]
+                  )
+                  @link(url: "https://specs.apollo.dev", import: [{ name: "@key", as: "@renamed" }])
+
+                extend type Payment @key(fields: "id") {
+                  id: ID!
+                  amount: Int! @external
+                }
+
+                type Invoice @key(fields: "id") {
+                  id: ID!
+                  amount: Int!
+                  payment: Payment
+                }
+              `,
+        },
+        {
+          name: "payments",
+          typeDefs: graphql`
+                extend schema
+                  @link(
+                    url: "https://specs.apollo.dev/federation/${version}"
+                    import: [{ name: "@key", as: "@renamed" }]
+                  )
+
+                type Query {
+                  payments: [Payment]
+                }
+
+                type Payment @renamed(fields: "id") {
+                  id: ID!
+                  amount: Int!
+                }
+              `,
+        },
+      ]),
+    ).toEqual(
+      expect.objectContaining({
+        errors: expect.arrayContaining([
+          expect.objectContaining({
+            message:
+              api.library === "guild"
+                ? expect.stringContaining(
+                    "Invalid @link url 'https://specs.apollo.dev': expected '/<feature>/vX.Y' (for example '/federation/v2.9')",
+                  )
+                : expect.stringContaining(
+                    "Missing path in feature url 'https://specs.apollo.dev/'",
+                  ),
+            extensions: expect.objectContaining({
+              code: "INVALID_LINK_IDENTIFIER",
+            }),
+          }),
+        ]),
+      }),
+    );
+
+    expect(
+      api.composeServices([
+        {
+          name: "billing",
+          typeDefs: graphql`
             extend schema
               @link(
                 url: "https://specs.apollo.dev/federation/${version}"
