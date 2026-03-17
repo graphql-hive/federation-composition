@@ -1,5 +1,16 @@
 # @theguild/federation-composition
 
+## 0.22.1
+
+### Patch Changes
+
+- [#291](https://github.com/graphql-hive/federation-composition/pull/291) [`ec0ef84`](https://github.com/graphql-hive/federation-composition/commit/ec0ef84413acc84167db0ca45f96ee7c1aefb64a) Thanks [@jdolle](https://github.com/jdolle)! - Support "file:" protocol and non-RFC 3986 in imported "link" url argument
+
+- [#282](https://github.com/graphql-hive/federation-composition/pull/282) [`e507fdd`](https://github.com/graphql-hive/federation-composition/commit/e507fdd84a5cbc4168a27b864b4fbcdb00548b87) Thanks [@kamilkisiela](https://github.com/kamilkisiela)! - Fix supergraph `@join__field` emission for Federation v1 `@external` fields and improve override/requires edge-case handling.
+  - Drop Federation v1 `@join__field(external: true)` fields based on key usage in the subgraph instead of aggregated field key usage across subgraphs.
+  - Avoid emitting redundant `@join__field(external: true)` metadata when a field is only required through overridden paths.
+  - Tighten `@join__field` emission around `@override` and interface type fields.
+
 ## 0.22.0
 
 ### Minor Changes
