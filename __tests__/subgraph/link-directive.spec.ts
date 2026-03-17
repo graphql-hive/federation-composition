@@ -12,52 +12,57 @@ testVersions((api, version) => {
         {
           name: "billing",
           typeDefs: graphql`
-            extend schema
-              @link(
-                url: "https://specs.apollo.dev/federation/${version}"
-                import: ["@override", "@external", "@provides"]
-              )
-              @link(url: "https://specs.apollo.dev", import: [{ name: "@key", as: "@renamed" }])
+                extend schema
+                  @link(
+                    url: "https://specs.apollo.dev/federation/${version}"
+                    import: ["@override", "@external", "@provides"]
+                  )
+                  @link(url: "https://specs.apollo.dev", import: [{ name: "@key", as: "@renamed" }])
 
-            extend type Payment @key(fields: "id") {
-              id: ID!
-              amount: Int! @external
-            }
+                extend type Payment @key(fields: "id") {
+                  id: ID!
+                  amount: Int! @external
+                }
 
-            type Invoice @key(fields: "id") {
-              id: ID!
-              amount: Int!
-              payment: Payment
-            }
-          `,
+                type Invoice @key(fields: "id") {
+                  id: ID!
+                  amount: Int!
+                  payment: Payment
+                }
+              `,
         },
         {
           name: "payments",
           typeDefs: graphql`
-            extend schema
-              @link(
-                url: "https://specs.apollo.dev/federation/${version}"
-                import: [{ name: "@key", as: "@renamed" }]
-              )
+                extend schema
+                  @link(
+                    url: "https://specs.apollo.dev/federation/${version}"
+                    import: [{ name: "@key", as: "@renamed" }]
+                  )
 
-            type Query {
-              payments: [Payment]
-            }
+                type Query {
+                  payments: [Payment]
+                }
 
-            type Payment @renamed(fields: "id") {
-              id: ID!
-              amount: Int!
-            }
-          `,
+                type Payment @renamed(fields: "id") {
+                  id: ID!
+                  amount: Int!
+                }
+              `,
         },
       ]),
     ).toEqual(
       expect.objectContaining({
         errors: expect.arrayContaining([
           expect.objectContaining({
-            message: expect.stringMatching(
-              "Missing path in feature url 'https://specs.apollo.dev",
-            ),
+            message:
+              api.library === "guild"
+                ? expect.stringContaining(
+                    "Invalid @link url 'https://specs.apollo.dev': expected '/<feature>/vX.Y' (for example '/federation/v2.9')",
+                  )
+                : expect.stringContaining(
+                    "Missing path in feature url 'https://specs.apollo.dev/'",
+                  ),
             extensions: expect.objectContaining({
               code: "INVALID_LINK_IDENTIFIER",
             }),
@@ -73,16 +78,14 @@ testVersions((api, version) => {
           typeDefs: graphql`
             extend schema
               @link(
-                url: "https://specs.apollo.dev/federation/not-a-version"
-                import: ["@override", "@external", "@provides"]
+                url: "https://specs.apollo.dev/federation/${version}"
+                import: ["@override", "@external", "@provides", "@key", "@requires"]
               )
-              @link(
-                url: "https://specs.apollo.dev"
-                import: [{ name: "@key", as: "@renamed" }]
-              )
+              @link(url: "https://specs.apollo.dev/federation/not-a-version", import: [{ name: "@key", as: "@renamed" }])
 
             extend type Payment @key(fields: "id") {
               id: ID!
+              tax: Int! @requires(fields: "amount")
               amount: Int! @external
             }
 
@@ -98,7 +101,7 @@ testVersions((api, version) => {
           typeDefs: graphql`
             extend schema
               @link(
-                url: "https://specs.apollo.dev/federation/not-a-version"
+                url: "https://specs.apollo.dev/federation/${version}"
                 import: [{ name: "@key", as: "@renamed" }]
               )
 
@@ -118,15 +121,7 @@ testVersions((api, version) => {
         errors: expect.arrayContaining([
           expect.objectContaining({
             message: expect.stringContaining(
-              "[billing] Expected a version string (of the form v1.2), got not-a-version",
-            ),
-            extensions: expect.objectContaining({
-              code: "INVALID_LINK_IDENTIFIER",
-            }),
-          }),
-          expect.objectContaining({
-            message: expect.stringContaining(
-              "[payments] Expected a version string (of the form v1.2), got not-a-version",
+              "Expected a version string (of the form v1.2), got", // Hive correctly says "got null", apollo says "got not-a-version"
             ),
             extensions: expect.objectContaining({
               code: "INVALID_LINK_IDENTIFIER",
@@ -201,7 +196,7 @@ testVersions((api, version) => {
     );
   });
 
-  test(" INVALID_LINK_DIRECTIVE_USAGE: unknown element", () => {
+  test("INVALID_LINK_DIRECTIVE_USAGE: unknown element", () => {
     expect(
       api.composeServices([
         {
@@ -336,5 +331,85 @@ testVersions((api, version) => {
         },
       ]),
     );
+  });
+
+  /**
+   * If url: is not a valid RFC 3986 url, then it MUST be treated as an opaque
+   * identifier for the foreign schema. Such non‐URL inputs to url: SHOULD
+   * NOT have name and version information extracted from them—both are null.
+   * source: https://specs.apollo.dev/link/v1.0/#@link.url
+   */
+  api.runIf("guild", () => {
+    test("Non-RFC 3986 url", () => {
+      let result = api.composeServices([
+        {
+          name: "billing",
+          typeDefs: graphql`
+            extend schema
+              @link(
+                url: "https://specs.apollo.dev/federation/${version}"
+                import: ["@override", "@external", "@provides", "@key", "@requires", "@shareable"]
+              )
+              @link(url: "file:///foo/bar", import: ["Bar"])
+
+              scalar Bar
+
+            extend type Payment @key(fields: "id") {
+              id: ID!
+              tax: Int! @requires(fields: "amount")
+              amount: Int! @external
+              bar: Bar @shareable
+            }
+
+            type Invoice @key(fields: "id") {
+              id: ID!
+              amount: Int!
+              payment: Payment
+            }
+          `,
+        },
+        {
+          name: "payments",
+          typeDefs: graphql`
+            extend schema
+              @link(
+                url: "https://specs.apollo.dev/federation/${version}"
+                import: [{ name: "@key", as: "@renamed" }, "@shareable"]
+              )
+              @link(url: "file:///foo/bar", import: ["Bar"])
+
+            scalar Bar
+
+            type Query {
+              payments: [Payment]
+            }
+
+            type Payment @renamed(fields: "id") {
+              id: ID!
+              amount: Int!
+              bar: Bar @shareable
+            }
+          `,
+        },
+      ]);
+      assertCompositionSuccess(result);
+
+      expect(result.supergraphSdl).toContainGraphQL(/* GraphQL */ `
+        scalar Bar @join__type(graph: BILLING) @join__type(graph: PAYMENTS)
+      `);
+
+      expect(result.supergraphSdl).toContainGraphQL(/* GraphQL */ `
+        type Payment
+          @join__type(graph: BILLING, key: "id", extension: true)
+          @join__type(graph: PAYMENTS, key: "id") {
+          id: ID!
+          tax: Int! @join__field(graph: BILLING, requires: "amount")
+          amount: Int!
+            @join__field(graph: BILLING, external: true)
+            @join__field(graph: PAYMENTS)
+          bar: Bar
+        }
+      `);
+    });
   });
 });

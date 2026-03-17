@@ -36,23 +36,24 @@ export class FederatedLinkUrl {
     const url = new URL(urlSource);
     const parts = url.pathname.split("/").filter(Boolean);
     const versionOrName = parts[parts.length - 1];
+    const origin = url.protocol === "file:" ? "file://" : url.origin;
     if (versionOrName) {
       if (VERSION_MATCH.test(versionOrName)) {
         const maybeName = parts[parts.length - 2];
         return new FederatedLinkUrl(
-          url.origin +
+          origin +
             (maybeName ? `/${parts.slice(0, parts.length - 1).join("/")}` : ""),
           maybeName ?? null,
           versionOrName,
         );
       }
       return new FederatedLinkUrl(
-        `${url.origin}/${parts.join("/")}`,
+        `${origin}/${parts.join("/")}`,
         versionOrName,
         null,
       );
     }
-    return new FederatedLinkUrl(url.origin, null, null);
+    return new FederatedLinkUrl(origin, null, null);
   };
 
   /** Check if this version supports another version */

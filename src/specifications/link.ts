@@ -89,20 +89,32 @@ export function printLink(link: Link): string {
 
   All of these are valid arguments to url, and their interpretations:
 
-  | url                                              | normalized url                              | name     | version |
-  ----------------------------------------------------------------------------------------------------------------------|
-  | https://spec.example.com/a/b/mySchema/v1.0/      | https://spec.example.com/a/b/mySchema/v1.0  | mySchema | v1.0    |
-  | https://spec.example.com                         | https://spec.example.com                    | (null)   | (null)  |
-  | https://spec.example.com/mySchema/v0.1?q=v#frag  | https://spec.example.com/mySchema/v0.1      | mySchema | v0.1    |
-  | https://spec.example.com/mySchema/not-v          | https://spec.example.com/mySchema/not-v     | mySchema | not-v   |
-  | https://spec.example.com/v1.0                    | https://spec.example.com/v1.0               | (null)   | v1.0    |
-  | https://spec.example.com/vX                      | https://spec.example.com/vX                 | vX       | (null)  |
+  | url                                              | normalized url                              | name        | version |
+  -------------------------------------------------------------------------------------------------------------------------|
+  | https://spec.example.com/a/b/mySchema/v1.0/      | https://spec.example.com/a/b/mySchema/v1.0  | mySchema    | v1.0    |
+  | https://spec.example.com                         | https://spec.example.com                    | (null)      | (null)  |
+  | https://spec.example.com/mySchema/v0.1?q=v#frag  | https://spec.example.com/mySchema/v0.1      | mySchema    | v0.1    |
+  | https://spec.example.com/mySchema/not-v          | https://spec.example.com/mySchema/not-v     | mySchema    | not-v   |
+  | https://spec.example.com/v1.0                    | https://spec.example.com/v1.0               | (null)      | v1.0    |
+  | https://spec.example.com/vX                      | https://spec.example.com/vX                 | vX          | (null)  |
+  | file:///extensions/permissions                   | file:///extensions/permissions              | permissions | (null)  |
 
   If `name` is present, that `namespace` prefix will automatically be linked to the URL.
   If a `name` is not present, then elements of the foreign schema must be imported in order to be referenced.
 */
 export function parseLinkUrl(urlString: string) {
-  const url = new URL(urlString);
+  let url: URL;
+  try {
+    url = new URL(urlString);
+  } catch (e) {
+    // if url: is not a valid RFC 3986 url, then it MUST be treated as an opaque identifier for the foreign schema
+    return {
+      name: null,
+      version: null,
+      identity: urlString,
+    };
+  }
+
   const parts = url.pathname.split("/").filter(Boolean);
   const len = parts.length;
 
@@ -116,8 +128,9 @@ export function parseLinkUrl(urlString: string) {
   // https://spec.example.com/mySchema/v0.1
   // https://spec.example.com/mySchema/not-a-version
   const potentiallyNameAndVersion = typeof secondLast === "string";
+  const lastIsVersion = /^v\d+/i.test(last);
 
-  if (potentiallyNameAndVersion) {
+  if (potentiallyNameAndVersion && lastIsVersion) {
     return {
       name: secondLast,
       version: last,
@@ -131,22 +144,7 @@ export function parseLinkUrl(urlString: string) {
     };
   }
 
-  if (/^v\d+/i.test(last)) {
-    // if (len >= 2) {
-    //   const secondLast = parts[len - 2];
-
-    //   return {
-    //     name: secondLast,
-    //     version: last,
-    //     identity:
-    //       url.origin +
-    //       '/' +
-    //       parts
-    //         .slice(0, len - 2)
-    //         .concat(secondLast)
-    //         .join('/'),
-    //   };
-    // }
+  if (lastIsVersion) {
     return {
       name: null,
       version: last,
@@ -154,14 +152,16 @@ export function parseLinkUrl(urlString: string) {
     };
   }
 
+  // node returns file protocol origins as null.
+  const origin = url.protocol === "file:" ? "file://" : url.origin;
   return {
     name: last,
     version: null,
     identity:
-      url.origin +
+      origin +
       "/" +
       parts
-        .slice(0, len - 2)
+        .slice(0, len - 1)
         .concat(last)
         .join("/"),
   };

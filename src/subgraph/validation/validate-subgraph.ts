@@ -395,7 +395,9 @@ function extractLinks(subgraph: { name: string; typeDefs: DocumentNode }) {
 
       identities.add(link.identity);
 
-      if (link.version && !/^v\d+\.\d+/.test(link.version)) {
+      const hasInvalidVersion =
+        link.version && !/^v\d+\.\d+/.test(link.version);
+      if (hasInvalidVersion) {
         errors.push(
           new GraphQLError(
             `Expected a version string (of the form v1.2), got ${link.version}`,
@@ -409,18 +411,40 @@ function extractLinks(subgraph: { name: string; typeDefs: DocumentNode }) {
         continue;
       }
 
-      if (!link.name) {
-        errors.push(
-          new GraphQLError(`Missing path in feature url '${link.identity}'`, {
-            extensions: {
-              code: "INVALID_LINK_IDENTIFIER",
-            },
-          }),
-        );
-        continue;
-      }
+      const isApolloSpecsLink =
+        link.identity === "https://specs.apollo.dev" ||
+        link.identity.startsWith("https://specs.apollo.dev/");
 
-      if (link.identity.startsWith("https://specs.apollo.dev/")) {
+      if (isApolloSpecsLink) {
+        if (!link.name && !link.version) {
+          errors.push(
+            new GraphQLError(
+              `Invalid @link url '${link.identity}': expected '/<feature>/vX.Y' (for example '/federation/v2.9')`,
+              {
+                extensions: {
+                  code: "INVALID_LINK_IDENTIFIER",
+                },
+              },
+            ),
+          );
+          continue;
+        }
+
+        if (!link.version) {
+          // federation must have a version
+          errors.push(
+            new GraphQLError(
+              `Expected a version string (of the form v1.2), got ${link.version}`,
+              {
+                extensions: {
+                  code: "INVALID_LINK_IDENTIFIER",
+                },
+              },
+            ),
+          );
+          continue;
+        }
+
         if (link.name === "federation") {
           if (!link.version) {
             errors.push(
@@ -428,7 +452,7 @@ function extractLinks(subgraph: { name: string; typeDefs: DocumentNode }) {
                 `Missing version in feature url '${link.identity}'`,
                 {
                   extensions: {
-                    code: "TODO",
+                    code: "INVALID_LINK_IDENTIFIER",
                   },
                 },
               ),
@@ -464,7 +488,7 @@ function extractLinks(subgraph: { name: string; typeDefs: DocumentNode }) {
           if (pushedError) {
             continue;
           }
-        } else if (link.version && availableFeatures[link.name]) {
+        } else if (link.version && link.name && availableFeatures[link.name]) {
           if (!availableFeatures[link.name].includes(link.version)) {
             errors.push(
               new GraphQLError(
