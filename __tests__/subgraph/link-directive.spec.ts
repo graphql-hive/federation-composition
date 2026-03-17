@@ -341,52 +341,75 @@ testVersions((api, version) => {
    */
   api.runIf("guild", () => {
     test("Non-RFC 3986 url", () => {
-      assertCompositionSuccess(
-        api.composeServices([
-          {
-            name: "billing",
-            typeDefs: graphql`
-              extend schema
-                @link(
-                  url: "https://specs.apollo.dev/federation/${version}"
-                  import: ["@override", "@external", "@provides", "@key", "@requires"]
-                )
-                @link(url: "file:///foo/bar")
+      let result = api.composeServices([
+        {
+          name: "billing",
+          typeDefs: graphql`
+            extend schema
+              @link(
+                url: "https://specs.apollo.dev/federation/${version}"
+                import: ["@override", "@external", "@provides", "@key", "@requires", "@shareable"]
+              )
+              @link(url: "file:///foo/bar", import: ["Bar"])
 
-              extend type Payment @key(fields: "id") {
-                id: ID!
-                tax: Int! @requires(fields: "amount")
-                amount: Int! @external
-              }
+              scalar Bar
 
-              type Invoice @key(fields: "id") {
-                id: ID!
-                amount: Int!
-                payment: Payment
-              }
-            `,
-          },
-          {
-            name: "payments",
-            typeDefs: graphql`
-              extend schema
-                @link(
-                  url: "https://specs.apollo.dev/federation/${version}"
-                  import: [{ name: "@key", as: "@renamed" }]
-                )
+            extend type Payment @key(fields: "id") {
+              id: ID!
+              tax: Int! @requires(fields: "amount")
+              amount: Int! @external
+              bar: Bar @shareable
+            }
 
-              type Query {
-                payments: [Payment]
-              }
+            type Invoice @key(fields: "id") {
+              id: ID!
+              amount: Int!
+              payment: Payment
+            }
+          `,
+        },
+        {
+          name: "payments",
+          typeDefs: graphql`
+            extend schema
+              @link(
+                url: "https://specs.apollo.dev/federation/${version}"
+                import: [{ name: "@key", as: "@renamed" }, "@shareable"]
+              )
+              @link(url: "file:///foo/bar", import: ["Bar"])
 
-              type Payment @renamed(fields: "id") {
-                id: ID!
-                amount: Int!
-              }
-            `,
-          },
-        ]),
-      );
+            scalar Bar
+
+            type Query {
+              payments: [Payment]
+            }
+
+            type Payment @renamed(fields: "id") {
+              id: ID!
+              amount: Int!
+              bar: Bar @shareable
+            }
+          `,
+        },
+      ]);
+      assertCompositionSuccess(result);
+
+      expect(result.supergraphSdl).toContainGraphQL(/* GraphQL */ `
+        scalar Bar @join__type(graph: BILLING) @join__type(graph: PAYMENTS)
+      `);
+
+      expect(result.supergraphSdl).toContainGraphQL(/* GraphQL */ `
+        type Payment
+          @join__type(graph: BILLING, key: "id", extension: true)
+          @join__type(graph: PAYMENTS, key: "id") {
+          id: ID!
+          tax: Int! @join__field(graph: BILLING, requires: "amount")
+          amount: Int!
+            @join__field(graph: BILLING, external: true)
+            @join__field(graph: PAYMENTS)
+          bar: Bar
+        }
+      `);
     });
   });
 });
