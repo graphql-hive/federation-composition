@@ -1,5 +1,19 @@
 # @theguild/federation-composition
 
+## 0.22.2
+
+### Patch Changes
+
+- [#295](https://github.com/graphql-hive/federation-composition/pull/295) [`fffe987`](https://github.com/graphql-hive/federation-composition/commit/fffe98742a4e2fb4b3fd481dbb321aac406e370a) Thanks [@n1ru4l](https://github.com/n1ru4l)! - Fix schema contract composition applying `@inaccessible` on the federation types `ContextArgument` and `FieldValue` on the supergraph SDL.
+
+  This mitigates the following error in apollo-router upon processing the supergraph:
+
+  ```
+  could not create router: Api error(s): The supergraph schema failed to produce a valid API schema: The following errors occurred:
+    - Core feature type `join__ContextArgument` cannot use @inaccessible.
+    - Core feature type `join__FieldValue` cannot use @inaccessible.
+  ```
+
 ## 0.22.1
 
 ### Patch Changes
