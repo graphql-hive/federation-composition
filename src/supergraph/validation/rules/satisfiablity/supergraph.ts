@@ -1,4 +1,4 @@
-import { OperationTypeNode } from "graphql";
+import type { OperationTypeNode } from "graphql";
 import { Logger, LoggerContext } from "../../../../utils/logger.js";
 import type { SupergraphState } from "../../../state.js";
 import { MERGEDGRAPH_ID, SUPERGRAPH_ID } from "./constants.js";
