@@ -99,7 +99,7 @@ test("Filters based on tags", async () => {
   `);
 });
 
-test("Inaccessible is not added on built-in Federation types ContextArgument ContextArgument and FieldValue", async () => {
+test("Inaccessible is not added on built-in Federation types ContextArgument and FieldValue", async () => {
   const sdl = /* GraphQL */ `
     extend schema
       @link(url: "https://specs.apollo.dev/federation/v2.9", import: ["@key"])
