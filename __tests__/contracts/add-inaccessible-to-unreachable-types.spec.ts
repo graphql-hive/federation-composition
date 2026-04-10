@@ -98,3 +98,50 @@ test("Filters based on tags", async () => {
     }"
   `);
 });
+
+test("Inaccessible is not added on built-in Federation types ContextArgument ContextArgument and FieldValue", async () => {
+  const sdl = /* GraphQL */ `
+    extend schema
+      @link(url: "https://specs.apollo.dev/federation/v2.9", import: ["@key"])
+
+    type Query {
+      me: Me
+    }
+
+    type Me @key(fields: "id") {
+      id: ID!
+    }
+  `;
+
+  let compositionResult = composeServices([
+    {
+      name: "user",
+      url: "https://noop.graphql-hive.com",
+      typeDefs: parse(sdl),
+    },
+  ]);
+
+  expect(compositionResult.errors).toBe(undefined);
+  expect(compositionResult.supergraphSdl).not.toBe(undefined);
+  const { resolveImportName } = extractLinkImplementations(
+    parse(compositionResult.supergraphSdl!),
+  );
+
+  compositionResult = addInaccessibleToUnreachableTypes(
+    resolveImportName,
+    compositionResult as CompositionSuccess,
+  );
+
+  expect(compositionResult.supergraphSdl).to.include(
+    "scalar join__FieldValue\n",
+  );
+  expect(compositionResult.supergraphSdl).to.not.include(
+    "scalar join__FieldValue @inaccessible",
+  );
+  expect(compositionResult.supergraphSdl).to.not.include(
+    "input join__ContextArgument @inaccessible {",
+  );
+  expect(compositionResult.supergraphSdl).to.include(
+    "input join__ContextArgument {\n",
+  );
+});

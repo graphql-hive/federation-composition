@@ -28,6 +28,8 @@ export const addInaccessibleToUnreachableTypes = (
     resolveName("https://specs.apollo.dev/federation", "Policy"),
     resolveName("https://specs.apollo.dev/federation", "Scope"),
     resolveName("https://specs.apollo.dev/join", "DirectiveArguments"),
+    resolveName("https://specs.apollo.dev/join", "ContextArgument"),
+    resolveName("https://specs.apollo.dev/join", "FieldValue"),
   ]);
 
   // we retrieve the list of reachable types from the public api sdl
