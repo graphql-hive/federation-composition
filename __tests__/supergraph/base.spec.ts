@@ -247,6 +247,38 @@ testVersions((api, version) => {
     expect(result.supergraphSdl).not.toContain("directive @a(n: Int)");
   });
 
+  test("non-composed executable directive with QUERY | MUTATION is omitted if only defined within a single subgraph", () => {
+    const result = api.composeServices([
+      {
+        name: "a",
+        url: "http://a.com",
+        typeDefs: graphql`
+        extend schema
+          @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@key"])
+
+          directive @a(n: Int) on QUERY | MUTATION
+
+          type Query {
+            a: Int
+          }
+        `,
+      },
+      {
+        name: "b",
+        url: "http://b.com",
+        typeDefs: graphql`
+          extend schema
+            @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@key"])
+
+          type Query {
+            b: Int
+          }
+        `,
+      },
+    ]);
+    expect(result.supergraphSdl).not.toContain("directive @a");
+  });
+
   test("executable directive only contains locations shared between all subgraphs", () => {
     const result = api.composeServices([
       {
@@ -448,6 +480,120 @@ testVersions((api, version) => {
           a: Int @a @join__field(graph: A)
           b: Int @a @join__field(graph: B)
         }
+      `);
+    });
+
+    test("composed directive with only executable locations is preserved in supergraph", () => {
+      const result = api.composeServices([
+        {
+          name: "a",
+          url: "http://a.com",
+          typeDefs: graphql`
+          extend schema
+            @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@composeDirective"])
+            @link(url: "https://a.dev/a/v1.0", import: ["@a"])
+            @composeDirective(name: "@a")
+
+          directive @a(name: String!) on QUERY | MUTATION
+
+          type Query {
+            a: Int
+          }
+        `,
+        },
+        {
+          name: "b",
+          url: "http://b.com",
+          typeDefs: graphql`
+          extend schema
+            @link(url: "https://specs.apollo.dev/federation/${version}", import: [])
+
+          type Query {
+            b: Int
+          }
+          `,
+        },
+      ]);
+
+      assertCompositionSuccess(result);
+      expect(result.supergraphSdl).toContainGraphQL(graphql`
+        directive @a(name: String!) on QUERY | MUTATION
+      `);
+    });
+
+    test("composed directive with VARIABLE_DEFINITION and FIELD locations is preserved in supergraph", () => {
+      const result = api.composeServices([
+        {
+          name: "a",
+          url: "http://a.com",
+          typeDefs: graphql`
+          extend schema
+            @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@composeDirective"])
+            @link(url: "https://a.dev/a/v1.0", import: ["@a"])
+            @composeDirective(name: "@a")
+
+          directive @a(provider: String!) on VARIABLE_DEFINITION | FIELD
+
+          type Query {
+            a: Int
+          }
+        `,
+        },
+        {
+          name: "b",
+          url: "http://b.com",
+          typeDefs: graphql`
+          extend schema
+            @link(url: "https://specs.apollo.dev/federation/${version}", import: [])
+
+          type Query {
+            b: Int
+          }
+          `,
+        },
+      ]);
+
+      assertCompositionSuccess(result);
+      expect(result.supergraphSdl).toContainGraphQL(graphql`
+        directive @a(provider: String!) on VARIABLE_DEFINITION | FIELD
+      `);
+    });
+
+    test("composed directive with mixed schema and executable locations is preserved when only one subgraph defines it", () => {
+      const result = api.composeServices([
+        {
+          name: "a",
+          url: "http://a.com",
+          typeDefs: graphql`
+          extend schema
+            @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@composeDirective"])
+            @link(url: "https://a.dev/a/v1.0", import: ["@a"])
+            @composeDirective(name: "@a")
+
+          directive @a(n: Int) on FIELD | FIELD_DEFINITION
+
+          type Query {
+            a: Int
+          }
+        `,
+        },
+        {
+          name: "b",
+          url: "http://b.com",
+          typeDefs: graphql`
+          extend schema
+            @link(url: "https://specs.apollo.dev/federation/${version}", import: [])
+
+          type Query {
+            b: Int
+          }
+          `,
+        },
+      ]);
+
+      assertCompositionSuccess(result);
+      expect(result.supergraphSdl).toContainGraphQL(graphql`
+        directive @a(n: Int) on FIELD | FIELD_DEFINITION
       `);
     });
   }
