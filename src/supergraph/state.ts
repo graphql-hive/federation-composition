@@ -303,7 +303,11 @@ export function createSupergraphStateBuilder() {
 
       // Strip out all executable directives that are not defined or identical every supergraph
       for (const directiveState of state.directives.values()) {
-        if (!directiveState.isExecutable || !directiveState.byGraph.size) {
+        if (
+          !directiveState.isExecutable ||
+          !directiveState.byGraph.size ||
+          directiveState.composed
+        ) {
           continue;
         }
 
