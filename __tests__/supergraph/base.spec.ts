@@ -1,5 +1,6 @@
 import { expect, test } from "vitest";
 import {
+  assertCompositionFailure,
   assertCompositionSuccess,
   graphql,
   testVersions,
@@ -595,6 +596,159 @@ testVersions((api, version) => {
       expect(result.supergraphSdl).toContainGraphQL(graphql`
         directive @a(n: Int) on FIELD | FIELD_DEFINITION
       `);
+    });
+
+    test("composed directive with only executable locations is preserved when both subgraphs define it", () => {
+      const result = api.composeServices([
+        {
+          name: "a",
+          url: "http://a.com",
+          typeDefs: graphql`
+          extend schema
+            @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@composeDirective"])
+            @link(url: "https://a.dev/a/v1.0", import: ["@a"])
+            @composeDirective(name: "@a")
+
+          directive @a(name: String!) on QUERY | MUTATION
+
+          type Query {
+            a: Int
+          }
+        `,
+        },
+        {
+          name: "b",
+          url: "http://b.com",
+          typeDefs: graphql`
+          extend schema
+            @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@composeDirective"])
+            @link(url: "https://a.dev/a/v1.0", import: ["@a"])
+            @composeDirective(name: "@a")
+
+          directive @a(name: String!) on QUERY | MUTATION
+
+          type Query {
+            b: Int
+          }
+          `,
+        },
+      ]);
+
+      assertCompositionSuccess(result);
+      expect(result.supergraphSdl).toContainGraphQL(graphql`
+        directive @a(name: String!) on QUERY | MUTATION
+      `);
+    });
+
+    // Apollo silently picks a winning definition by reverse-alphabetical service name
+    // (i.e., "b" wins over "a") when composed directive definitions conflict across subgraphs.
+    // Guild raises FIELD_ARGUMENT_TYPE_MISMATCH, which is stricter and arguably more correct.
+    test("conflicting composed directive definitions across subgraphs", () => {
+      const result = api.composeServices([
+        {
+          name: "a",
+          url: "http://a.com",
+          typeDefs: graphql`
+          extend schema
+            @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@composeDirective"])
+            @link(url: "https://a.dev/a/v1.0", import: ["@a"])
+            @composeDirective(name: "@a")
+
+          directive @a(name: String!) on QUERY | MUTATION
+
+          type Query {
+            a: Int
+          }
+        `,
+        },
+        {
+          name: "b",
+          url: "http://b.com",
+          typeDefs: graphql`
+          extend schema
+            @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@composeDirective"])
+            @link(url: "https://a.dev/a/v1.0", import: ["@a"])
+            @composeDirective(name: "@a")
+
+          directive @a(name: ID!) on QUERY | MUTATION
+
+          type Query {
+            b: Int
+          }
+          `,
+        },
+      ]);
+
+      if (api.library === "apollo") {
+        // Apollo silently resolves the conflict by picking one definition
+        // by reverse-alphabetical service name. Service "b" wins over "a",
+        // so the ID! type from subgraph "b" is used.
+        assertCompositionSuccess(result);
+        expect(result.supergraphSdl).toContainGraphQL(graphql`
+          directive @a(name: ID!) on QUERY | MUTATION
+        `);
+      } else {
+        // Guild correctly rejects conflicting argument types
+        assertCompositionFailure(result);
+        expect(result.errors?.[0]?.message).toContain(
+          'Type of argument "@a(name:)" is incompatible across subgraphs',
+        );
+      }
+    });
+
+    // When the type definitions are swapped between services, Apollo picks a
+    // different winner, confirming the resolution is based on service name sort
+    // order, not schema correctness.
+    test("conflicting composed directive definitions; swapped types changes Apollo winner", () => {
+      const result = api.composeServices([
+        {
+          name: "a",
+          url: "http://a.com",
+          typeDefs: graphql`
+          extend schema
+            @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@composeDirective"])
+            @link(url: "https://a.dev/a/v1.0", import: ["@a"])
+            @composeDirective(name: "@a")
+
+          directive @a(name: ID!) on QUERY | MUTATION
+
+          type Query {
+            a: Int
+          }
+        `,
+        },
+        {
+          name: "b",
+          url: "http://b.com",
+          typeDefs: graphql`
+          extend schema
+            @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@composeDirective"])
+            @link(url: "https://a.dev/a/v1.0", import: ["@a"])
+            @composeDirective(name: "@a")
+
+          directive @a(name: String!) on QUERY | MUTATION
+
+          type Query {
+            b: Int
+          }
+          `,
+        },
+      ]);
+
+      if (api.library === "apollo") {
+        // Now service "b" has String! instead of ID!, and Apollo picks "b" again;
+        // so this time String! wins, proving the winner is name-sorted, not type-based.
+        assertCompositionSuccess(result);
+        expect(result.supergraphSdl).toContainGraphQL(graphql`
+          directive @a(name: String!) on QUERY | MUTATION
+        `);
+      } else {
+        // Guild rejects regardless of which service has which type
+        assertCompositionFailure(result);
+        expect(result.errors?.[0]?.message).toContain(
+          'Type of argument "@a(name:)" is incompatible across subgraphs',
+        );
+      }
     });
   }
 });
