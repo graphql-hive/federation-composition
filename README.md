@@ -121,6 +121,12 @@ will continue to do so as we learn more about the Federation specification.
 
 Your feedback and bug reports are welcome and appreciated.
 
+#### Known Behavioral Differences
+
+| Scenario | Apollo | Guild |
+| --- | --- | --- |
+| `@composeDirective` with conflicting argument types across subgraphs (e.g. `String!` vs `ID!`) | Silently picks one definition by reverse-alphabetical service name | Raises `FIELD_ARGUMENT_TYPE_MISMATCH` error |
+
 ## Supergraph SDL Composition
 
 ✅ Done
