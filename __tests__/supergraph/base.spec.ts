@@ -521,6 +521,96 @@ testVersions((api, version) => {
       `);
     });
 
+    test("compose directive definition conflict (does the order matter? 1)", () => {
+      const result = api.composeServices([
+        {
+          name: "a",
+          url: "http://a.com",
+          typeDefs: graphql`
+          extend schema
+            @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@composeDirective"])
+            @link(url: "https://a.dev/a/v1.0", import: ["@a"])
+            @composeDirective(name: "@a")
+
+          directive @a(name: String!) on QUERY | MUTATION
+
+          type Query {
+            a: Int
+          }
+        `,
+        },
+        {
+          name: "b",
+          url: "http://b.com",
+          typeDefs: graphql`
+          extend schema
+            @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@composeDirective"])
+            @link(url: "https://a.dev/a/v1.0", import: ["@a"])
+            @composeDirective(name: "@a")
+
+
+        directive @a(name: ID!) on QUERY | MUTATION
+
+
+          type Query {
+            b: Int
+          }
+          `,
+        },
+      ]);
+
+      expect(result.errors).toEqual(undefined);
+      assertCompositionSuccess(result);
+      expect(result.supergraphSdl).toContainGraphQL(graphql`
+        directive @a(name: String!) on QUERY | MUTATION
+      `);
+    });
+
+    test("compose directive definition conflict (does the order matter? 2)", () => {
+      const result = api.composeServices([
+        {
+          name: "b",
+          url: "http://b.com",
+          typeDefs: graphql`
+          extend schema
+            @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@composeDirective"])
+            @link(url: "https://a.dev/a/v1.0", import: ["@a"])
+            @composeDirective(name: "@a")
+
+
+            directive @a(name: ID!) on QUERY | MUTATION
+
+
+          type Query {
+            b: Int
+          }
+          `,
+        },
+        {
+          name: "a",
+          url: "http://a.com",
+          typeDefs: graphql`
+          extend schema
+            @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@composeDirective"])
+            @link(url: "https://a.dev/a/v1.0", import: ["@a"])
+            @composeDirective(name: "@a")
+
+          directive @a(name: String!) on QUERY | MUTATION
+
+          type Query {
+            a: Int
+          }
+        `,
+        },
+      ]);
+
+      expect(result.errors).toEqual(undefined);
+      assertCompositionSuccess(result);
+      expect(result.supergraphSdl).toContainGraphQL(graphql`
+        directive @a(name: String!) on QUERY | MUTATION
+      `);
+    });
+
     test("composed directive with VARIABLE_DEFINITION and FIELD locations is preserved in supergraph", () => {
       const result = api.composeServices([
         {
