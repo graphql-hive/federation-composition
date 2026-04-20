@@ -124,7 +124,6 @@ testVersions((api, version) => {
 
           type Query {
             a(id: String! = "brrry" @inaccessible): Int!
-            b: Int!
           }
         `,
         },
