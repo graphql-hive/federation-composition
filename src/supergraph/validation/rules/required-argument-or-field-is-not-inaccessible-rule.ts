@@ -10,7 +10,8 @@ export function RequiredArgumentOrFieldIsNotInaccessibleRule(
       if (
         !inputObjectState.inaccessible &&
         fieldState.inaccessible &&
-        fieldState.type.endsWith("!")
+        fieldState.type.endsWith("!") &&
+        fieldState.defaultValue === undefined
       ) {
         context.reportError(
           new GraphQLError(
@@ -28,7 +29,8 @@ export function RequiredArgumentOrFieldIsNotInaccessibleRule(
       if (
         !fieldState.inaccessible &&
         argState.inaccessible &&
-        argState.type.endsWith("!")
+        argState.type.endsWith("!") &&
+        argState.defaultValue === undefined
       ) {
         context.reportError(
           new GraphQLError(

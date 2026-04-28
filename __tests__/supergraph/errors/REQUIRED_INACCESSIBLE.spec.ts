@@ -42,7 +42,7 @@ testVersions((api, version) => {
                 url: "https://specs.apollo.dev/federation/${version}"
                 import: ["@key", "@inaccessible"]
               )
-              
+
             input A {
               id: ID! @inaccessible
               b: Int
@@ -104,6 +104,50 @@ testVersions((api, version) => {
 
           type Query {
             a(id: A! @inaccessible): Int! @inaccessible
+            b: Int!
+          }
+        `,
+        },
+      ])?.errors,
+    ).toBeUndefined();
+
+    expect(
+      api.composeServices([
+        {
+          name: "users",
+          typeDefs: graphql`
+          extend schema
+            @link(
+              url: "https://specs.apollo.dev/federation/${version}"
+              import: ["@inaccessible"]
+            )
+
+          type Query {
+            a(id: String! = "brrry" @inaccessible): Int!
+          }
+        `,
+        },
+      ])?.errors,
+    ).toBeUndefined();
+
+    expect(
+      api.composeServices([
+        {
+          name: "users",
+          typeDefs: graphql`
+          extend schema
+            @link(
+              url: "https://specs.apollo.dev/federation/${version}"
+              import: ["@inaccessible"]
+            )
+
+          input Foo {
+            a: String
+            b: String! = "he he he" @inaccessible
+          }
+
+          type Query {
+            a(id: Foo!): Int!
             b: Int!
           }
         `,
