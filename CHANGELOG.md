@@ -1,5 +1,25 @@
 # @theguild/federation-composition
 
+## 0.22.3
+
+### Patch Changes
+
+- [#299](https://github.com/graphql-hive/federation-composition/pull/299) [`c417891`](https://github.com/graphql-hive/federation-composition/commit/c417891d8e539e9ddccee0436d160a6cb645e388) Thanks [@n1ru4l](https://github.com/n1ru4l)! - Fix `REQUIRED_INACCESSIBLE` composition rule reporting a composition error if `@inaccessible` is applied on a non-nullable field with a default value.
+
+  In the following example schema the `Query.ping(message:)` argument no longer raises `REQUIRED_INACCESSIBLE`, as a default value for the argument is provided. The same behaviour applies for input type fields.
+
+  ```graphql
+  extend schema
+    @link(
+      url: "https://specs.apollo.dev/federation/v2.9"
+      import: ["@inaccessible"]
+    )
+
+  type Query {
+    ping(message: String! = "pong" @inaccessible): String!
+  }
+  ```
+
 ## 0.22.2
 
 ### Patch Changes
