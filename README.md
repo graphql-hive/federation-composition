@@ -4,6 +4,8 @@ Supports all Federation versions. Drop-in replacement for `@apollo/composition`.
 
 [Learn more about compability](#compatibility).
 
+[In-browser Federation Playground](https://the-guild.dev/graphql/hive/federation-playground)
+
 ## Comparison with `@apollo/composition`
 
 - Open Source (MIT License)
