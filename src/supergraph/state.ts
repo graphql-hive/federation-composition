@@ -301,9 +301,14 @@ export function createSupergraphStateBuilder() {
     build() {
       const transformFields = createFieldsTransformer(state);
 
-      // Strip out all executable directives that are not defined or identical every supergraph
+      // Strip non-composed executable directives that are not defined identically in every subgraph.
+      // Composed directives are preserved unconditionally, they were explicitly requested via @composeDirective.
       for (const directiveState of state.directives.values()) {
-        if (!directiveState.isExecutable || !directiveState.byGraph.size) {
+        if (
+          !directiveState.isExecutable ||
+          !directiveState.byGraph.size ||
+          directiveState.composed
+        ) {
           continue;
         }
 
@@ -325,11 +330,6 @@ export function createSupergraphStateBuilder() {
         directiveState.locations.forEach((location) => {
           // if it is not an executable location -> remove
           if (!isExecutableDirectiveLocation(location)) {
-            // If it is a compose directive we want to retain the schema location.
-            if (directiveState.composed) {
-              return;
-            }
-
             directiveState.locations.delete(location);
             return;
           }
