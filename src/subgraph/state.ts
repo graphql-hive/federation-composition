@@ -140,6 +140,7 @@ export interface InputObjectType {
   ast: {
     directives: DirectiveNode[];
   };
+  isOneOf?: boolean;
 }
 
 export interface UnionType {
@@ -1031,6 +1032,15 @@ export function createSubgraphStateBuilder(
 
                 break;
               }
+            }
+          } else if (node.name.value === "oneOf") {
+            const typeDef = typeNodeInfo.getTypeDef();
+            if (
+              typeDef &&
+              (typeDef.kind === Kind.INPUT_OBJECT_TYPE_DEFINITION ||
+              typeDef.kind === Kind.INPUT_OBJECT_TYPE_EXTENSION)
+            ) {
+              inputObjectTypeBuilder.setOneOf(typeDef.name.value)
             }
           }
         },
@@ -2251,6 +2261,15 @@ function inputObjectTypeFactory(state: SubgraphState) {
     },
     setTag(typeName: string, tag: string) {
       getOrCreateInputObjectType(state, typeName).tags.add(tag);
+    },
+    setOneOf(
+      typeName: string,
+    ) {
+      getOrCreateInputObjectType(state, typeName).isOneOf =
+        true;
+      const oneOfDirective = getOrCreateDirective(state, 'oneOf');
+      oneOfDirective.locations.add(DirectiveLocation.INPUT_OBJECT);
+      oneOfDirective.composed = true; // force including in the composed output
     },
     field: {
       setType(typeName: string, fieldName: string, fieldType: string) {

@@ -8647,4 +8647,56 @@ testImplementations((api) => {
       }
     `);
   });
+
+  test("guild composition supports composing built-in directive (@oneOf)", () => {
+    api.runIf("guild", () => {
+      const result = api.composeServices([
+        {
+          name: "a",
+          typeDefs: parse(/* GraphQL */ `
+              extend schema
+                @link(url: "https://specs.apollo.dev/federation/v2.0" import: ["@key"])
+
+              input HelloInput @oneOf {
+                world: String
+                me: String
+              }
+
+              type Query {
+                hello(input: HelloInput): String
+              }
+            `),
+        },
+      ]);
+
+      assertCompositionSuccess(result);
+
+      expect(result.supergraphSdl).toContainGraphQL(/* GraphQL */ `
+        input HelloInput @oneOf @join__type(graph: A) {
+          world: String
+          me: String
+        }
+      `);
+
+      expect(result.supergraphSdl).toContainGraphQL(/* GraphQL */ `
+        directive @oneOf on INPUT_OBJECT
+      `);
+
+      expect(result.publicSdl).toContainGraphQL(/* GraphQL */ `
+        input HelloInput @oneOf
+        {
+          world: String
+          me: String
+        }
+      `);
+
+      expect(result.supergraphSdl).toContainGraphQL(/* GraphQL */ `
+        schema
+          @link(url: "https://specs.apollo.dev/link/v1.0")
+          @link(url: "https://specs.apollo.dev/join/v0.3", for: EXECUTION) {
+          query: Query
+        }
+      `);
+    })
+  });
 });
