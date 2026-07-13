@@ -1038,9 +1038,9 @@ export function createSubgraphStateBuilder(
             if (
               typeDef &&
               (typeDef.kind === Kind.INPUT_OBJECT_TYPE_DEFINITION ||
-              typeDef.kind === Kind.INPUT_OBJECT_TYPE_EXTENSION)
+                typeDef.kind === Kind.INPUT_OBJECT_TYPE_EXTENSION)
             ) {
-              inputObjectTypeBuilder.setOneOf(typeDef.name.value)
+              inputObjectTypeBuilder.setOneOf(typeDef.name.value);
             }
           }
         },
@@ -2262,14 +2262,27 @@ function inputObjectTypeFactory(state: SubgraphState) {
     setTag(typeName: string, tag: string) {
       getOrCreateInputObjectType(state, typeName).tags.add(tag);
     },
-    setOneOf(
-      typeName: string,
-    ) {
-      getOrCreateInputObjectType(state, typeName).isOneOf =
-        true;
-      const oneOfDirective = getOrCreateDirective(state, 'oneOf');
-      oneOfDirective.locations.add(DirectiveLocation.INPUT_OBJECT);
-      oneOfDirective.composed = true; // force including in the composed output
+    setOneOf(typeName: string) {
+      const existingOneOf = state.types.get("oneOf");
+      // if there is an existing oneOf definition, then leave it as it is defined. Otherwise,
+      // create one
+      const oneOfDirective = getOrCreateDirective(state, "oneOf");
+      if (!existingOneOf) {
+        oneOfDirective.locations.add(DirectiveLocation.INPUT_OBJECT);
+        oneOfDirective.composed = true; // force including in the composed output
+      }
+
+      // if definition doesn't match the build-in's, then assume it's custom
+      // and skip flagging the type as oneOf. We should let composeDirective handle this
+      if (
+        oneOfDirective.locations.size === 1 &&
+        oneOfDirective.locations.has(DirectiveLocation.INPUT_OBJECT) &&
+        oneOfDirective.repeatable == false &&
+        oneOfDirective.args.size === 0
+      ) {
+        oneOfDirective.composed = true; // make sure it's composed
+        getOrCreateInputObjectType(state, typeName).isOneOf = true;
+      }
     },
     field: {
       setType(typeName: string, fieldName: string, fieldType: string) {
