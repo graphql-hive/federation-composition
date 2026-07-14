@@ -2265,7 +2265,7 @@ function inputObjectTypeFactory(state: SubgraphState) {
     setOneOf(typeName: string) {
       const existingOneOf = state.types.get("oneOf");
 
-      // if definition matches the build-in, flag the type as isOneOf
+      // if definition matches the built-in, flag the type as isOneOf
       // and ensure the directive is composed
       if (
         existingOneOf &&
