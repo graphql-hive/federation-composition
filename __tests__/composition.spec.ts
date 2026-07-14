@@ -8648,7 +8648,7 @@ testImplementations((api) => {
     `);
   });
 
-  describe.only(
+  describe(
     "guild composition (@oneOf)",
     { skip: api.library === "apollo" },
     () => {
