@@ -2264,25 +2264,32 @@ function inputObjectTypeFactory(state: SubgraphState) {
     },
     setOneOf(typeName: string) {
       const existingOneOf = state.types.get("oneOf");
-      // if there is an existing oneOf definition, then leave it as it is defined. Otherwise,
-      // create one
-      const oneOfDirective = getOrCreateDirective(state, "oneOf");
-      if (!existingOneOf) {
-        oneOfDirective.locations.add(DirectiveLocation.INPUT_OBJECT);
-        oneOfDirective.composed = true; // force including in the composed output
-      }
 
-      // if definition doesn't match the build-in's, then assume it's custom
-      // and skip flagging the type as oneOf. We should let composeDirective handle this
+      // if definition matches the build-in, flag the type as isOneOf
+      // and ensure the directive is composed
       if (
-        oneOfDirective.locations.size === 1 &&
-        oneOfDirective.locations.has(DirectiveLocation.INPUT_OBJECT) &&
-        oneOfDirective.repeatable == false &&
-        oneOfDirective.args.size === 0
+        existingOneOf &&
+        existingOneOf.kind === TypeKind.DIRECTIVE &&
+        existingOneOf.locations.size === 1 &&
+        existingOneOf.locations.has(DirectiveLocation.INPUT_OBJECT) &&
+        !existingOneOf.repeatable &&
+        existingOneOf.args.size === 0
       ) {
-        oneOfDirective.composed = true; // make sure it's composed
+        existingOneOf.composed = true; // make sure it's composed
         getOrCreateInputObjectType(state, typeName).isOneOf = true;
       }
+
+      // If there is no existing definition, then this must be referencing the built-in.
+      // Create the definition and flag the type as isOneOf
+      else if (!existingOneOf) {
+        const oneOfDirective = getOrCreateDirective(state, "oneOf");
+        oneOfDirective.locations.add(DirectiveLocation.INPUT_OBJECT);
+        oneOfDirective.composed = true; // force including in the composed output
+
+        getOrCreateInputObjectType(state, typeName).isOneOf = true;
+      }
+
+      // otherwise let composeDirective figure it out
     },
     field: {
       setType(typeName: string, fieldName: string, fieldType: string) {
