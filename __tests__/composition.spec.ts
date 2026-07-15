@@ -4337,7 +4337,6 @@ testImplementations((api) => {
             @join__field(graph: B, requires: "inStock")
             @tag(name: "public")
         }
-
       `);
     });
 
