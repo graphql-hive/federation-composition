@@ -197,6 +197,7 @@ export function createInputObjectTypeNode(inputObjectType: {
   tags?: string[];
   inaccessible?: boolean;
   description?: DescriptionAST;
+  isOneOf?: boolean;
   ast?: {
     directives?: ConstDirectiveNode[];
   };
@@ -786,6 +787,17 @@ function createInaccessibleDirectiveNode(): ConstDirectiveNode {
   };
 }
 
+function createOneOfDirectiveNode(): ConstDirectiveNode {
+  return {
+    kind: Kind.DIRECTIVE,
+    name: {
+      kind: Kind.NAME,
+      value: "oneOf",
+    },
+    arguments: [],
+  };
+}
+
 function createAuthenticatedDirectiveNode(): ConstDirectiveNode {
   return {
     kind: Kind.DIRECTIVE,
@@ -1219,6 +1231,7 @@ function applyDirectives(common: {
   scopes?: string[][];
   cost?: Cost | null;
   listSize?: ListSize | null;
+  isOneOf?: boolean;
 }) {
   const deduplicatedDirectives = (common.ast?.directives ?? [])
     .map((directive) => {
@@ -1253,6 +1266,7 @@ function applyDirectives(common: {
     common.specifiedBy
       ? [createSpecifiedByDirectiveNode(common.specifiedBy)]
       : [],
+    common.isOneOf ? [createOneOfDirectiveNode()] : [],
   );
 }
 
