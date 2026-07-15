@@ -4182,6 +4182,107 @@ testImplementations((api) => {
       `);
     });
 
+    test("@external + @shareable", () => {
+      const result = composeServices([
+         {
+          name: "a",
+          typeDefs: parse(/* GraphQL */ `
+            extend schema @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@key", "@shareable"])
+
+            type Product @key(fields: "id") @shareable{
+              id: ID!
+              productId: String!
+            }
+
+            type Query {
+              products: [Product]
+            }
+          `),
+        },
+        {
+          name: "b",
+          typeDefs: parse(/* GraphQL */ `
+            extend schema @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@key"])
+
+            type Product @key(fields: "id", resolvable: false) {
+              id: ID!
+            }
+          `),
+        },
+        {
+          name: "c",
+          typeDefs: parse(/* GraphQL */ `
+            extend schema @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@shareable", "@external", "@key", "@requires"])
+
+            extend type Product @key(fields: "id") @shareable {
+              id: ID!
+              productId: String! @external
+              bField: Boolean @requires(fields: "productId")
+            }
+          `),
+        },
+        {
+          // FIX ME: this is the one that is causing issues
+          name: "d",
+          typeDefs: parse(/* GraphQL */ `
+            extend schema @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@shareable", "@external", "@key", "@requires"])
+
+            extend type Product @shareable @key(fields: "id productId") {
+              id: ID! @external
+              productId: String! @external
+              bField: Boolean
+            }
+          `),
+        },
+        {
+          name: "e",
+          typeDefs: parse(/* GraphQL */ `
+            extend schema @link(url: "https://specs.apollo.dev/federation/v2.3", import: ["@key", "@shareable", "@external", "@requires"]) 
+
+            extend type Product @shareable @key(fields: "id") {
+              id: ID! @external
+              productId: String! @external
+              bField: Boolean @requires(fields: "productId")
+            }
+          `),
+        },
+      ]);
+
+      assertCompositionSuccess(result, `Composition failures:\n${result.errors?.map(e => `- ${e.message}`).join('\n')}`);
+
+      api.runIf('guild', () => {
+        expect(result.supergraphSdl).toContainGraphQL(/* GraphQL */ `
+          type Product
+            @join__type(graph: A, key: "id")
+            @join__type(graph: B, key: "id", resolvable: false)
+            @join__type(graph: C, key: "id", extension: true)
+            @join__type(graph: D, key: "id productId", extension: true)
+            @join__type(graph: E, key: "id", extension: true)
+          {
+            id: ID!
+            productId: String! @join__field(graph: A) @join__field(graph: C) @join__field(graph: D) @join__field(graph: E)
+            bField: Boolean @join__field(graph: C, requires: "productId") @join__field(graph: D) @join__field(graph: E, requires: "productId")
+          }
+        `);
+      })
+
+      api.runIf('apollo', () => {
+        expect(result.supergraphSdl).toContainGraphQL(/* GraphQL */ `
+          type Product
+            @join__type(graph: A, key: "id")
+            @join__type(graph: B, key: "id", resolvable: false)
+            @join__type(graph: C, key: "id", extension: true)
+            @join__type(graph: D, key: "id productId", extension: true)
+            @join__type(graph: E, key: "id", extension: true)
+          {
+            id: ID!
+            productId: String! @join__field(external: true, graph: C) @join__field(external: true, graph: E) @join__field(graph: A) @join__field(graph: D)
+            bField: Boolean @join__field(graph: C, requires: "productId") @join__field(graph: D) @join__field(graph: E, requires: "productId")
+          }
+        `);
+      })
+    });
+
     test("@external + @tag", () => {
       const subgraphs = [
         {
@@ -4236,6 +4337,7 @@ testImplementations((api) => {
             @join__field(graph: B, requires: "inStock")
             @tag(name: "public")
         }
+
       `);
     });
 
