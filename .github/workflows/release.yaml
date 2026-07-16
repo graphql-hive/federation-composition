@@ -1,0 +1,52 @@
+name: release
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  id-token: write
+  pull-requests: write
+  actions: write
+  contents: write
+
+jobs:
+  stable:
+    if: github.event_name == 'push'
+    uses: the-guild-org/shared-config/.github/workflows/release-stable.yml@main
+    with:
+      releaseScript: release
+      packageManager: pnpm
+      nodeVersion: 24
+    secrets:
+      githubToken: ${{ secrets.GITHUB_TOKEN }}
+
+  snapshot:
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.title != 'Upcoming Release Changes'
+    uses: the-guild-org/shared-config/.github/workflows/release-snapshot.yml@main
+    with:
+      npmTag: alpha
+      buildScript: build
+      packageManager: pnpm
+      nodeVersion: 24
+    secrets:
+      githubToken: ${{ secrets.GITHUB_TOKEN }}
+
+  rc:
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.title == 'Upcoming Release Changes'
+    uses: the-guild-org/shared-config/.github/workflows/release-snapshot.yml@main
+    with:
+      npmTag: rc
+      restoreDeletedChangesets: true
+      buildScript: build
+      packageManager: pnpm
+      nodeVersion: 24
+    secrets:
+      githubToken: ${{ secrets.GITHUB_TOKEN }}
