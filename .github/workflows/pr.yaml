@@ -1,8 +1,7 @@
-name: PR
+name: pr
 on: [pull_request]
 jobs:
   test:
-    name: Test
     runs-on: ubuntu-latest
     steps:
       - name: checkout
@@ -22,7 +21,6 @@ jobs:
         run: pnpm test
 
   bench:
-    name: Benchmark
     runs-on: ubuntu-latest
     steps:
       - name: checkout
@@ -38,30 +36,3 @@ jobs:
         run: pnpm install --frozen-lockfile
       - name: bench
         run: pnpm bench
-
-  release_snapshot:
-    if: ${{ github.event.pull_request.title != 'Upcoming Release Changes' }}
-    name: Release snapshot
-    uses: the-guild-org/shared-config/.github/workflows/release-snapshot.yml@main
-    with:
-      npmTag: alpha
-      buildScript: build
-      nodeVersion: 20
-      packageManager: pnpm
-    secrets:
-      githubToken: ${{ secrets.GITHUB_TOKEN }}
-      npmToken: ${{ secrets.NPM_TOKEN }}
-
-  release_candidate:
-    uses: the-guild-org/shared-config/.github/workflows/release-snapshot.yml@main
-    name: Release candidate
-    if: ${{ github.event.pull_request.title == 'Upcoming Release Changes' }}
-    with:
-      npmTag: rc
-      restoreDeletedChangesets: true
-      buildScript: build
-      nodeVersion: 20
-      packageManager: pnpm
-    secrets:
-      githubToken: ${{ secrets.GITHUB_TOKEN }}
-      npmToken: ${{ secrets.NPM_TOKEN }}

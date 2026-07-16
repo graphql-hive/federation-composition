@@ -54,7 +54,7 @@
     "compose:debug": "DEBUG_COLORS=0 DEBUG=composition:* pnpm compose > guild.log",
     "compose:inspect": "tsx --inspect-brk --expose-gc ./compose.ts",
     "format": "prettier --write .",
-    "release": "pnpm build && changeset publish",
+    "release": "changeset publish",
     "test": "vitest --config ./vitest.config.js",
     "typecheck": "tsc --noEmit --project tsconfig.build.json"
   },
