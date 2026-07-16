@@ -534,7 +534,7 @@ export function objectTypeBuilder(): TypeBuilder<ObjectType, ObjectTypeState> {
 
         // mark field as external if it's annotated with @external, but it's not used as a key on the extension type
         if (
-          fieldState.usedAsKey &&
+          fieldStateInGraph.usedAsKey &&
           objectType.byGraph.get(graphId)!.extension === true
         ) {
           return false;
