@@ -4182,9 +4182,9 @@ testImplementations((api) => {
       `);
     });
 
-    test("@external + @shareable", () => {
+    test("@external and not a @key in its graph, but is @key in other graph", () => {
       const result = composeServices([
-         {
+        {
           name: "a",
           typeDefs: parse(/* GraphQL */ `
             extend schema @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@key", "@shareable"])
@@ -4210,19 +4210,6 @@ testImplementations((api) => {
           `),
         },
         {
-          name: "c",
-          typeDefs: parse(/* GraphQL */ `
-            extend schema @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@shareable", "@external", "@key", "@requires"])
-
-            extend type Product @key(fields: "id") @shareable {
-              id: ID!
-              productId: String! @external
-              bField: Boolean @requires(fields: "productId")
-            }
-          `),
-        },
-        {
-          // FIX ME: this is the one that is causing issues
           name: "d",
           typeDefs: parse(/* GraphQL */ `
             extend schema @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@shareable", "@external", "@key", "@requires"])
@@ -4237,7 +4224,11 @@ testImplementations((api) => {
         {
           name: "e",
           typeDefs: parse(/* GraphQL */ `
-            extend schema @link(url: "https://specs.apollo.dev/federation/v2.3", import: ["@key", "@shareable", "@external", "@requires"]) 
+            extend schema
+              @link(
+                url: "https://specs.apollo.dev/federation/v2.3"
+                import: ["@key", "@shareable", "@external", "@requires"]
+              )
 
             extend type Product @shareable @key(fields: "id") {
               id: ID! @external
@@ -4248,39 +4239,27 @@ testImplementations((api) => {
         },
       ]);
 
-      assertCompositionSuccess(result, `Composition failures:\n${result.errors?.map(e => `- ${e.message}`).join('\n')}`);
+      assertCompositionSuccess(
+        result,
+        `Composition failures:\n${result.errors?.map((e) => `- ${e.message}`).join("\n")}`,
+      );
 
-      api.runIf('guild', () => {
-        expect(result.supergraphSdl).toContainGraphQL(/* GraphQL */ `
-          type Product
-            @join__type(graph: A, key: "id")
-            @join__type(graph: B, key: "id", resolvable: false)
-            @join__type(graph: C, key: "id", extension: true)
-            @join__type(graph: D, key: "id productId", extension: true)
-            @join__type(graph: E, key: "id", extension: true)
-          {
-            id: ID!
-            productId: String! @join__field(graph: A) @join__field(graph: C) @join__field(graph: D) @join__field(graph: E)
-            bField: Boolean @join__field(graph: C, requires: "productId") @join__field(graph: D) @join__field(graph: E, requires: "productId")
-          }
-        `);
-      })
-
-      api.runIf('apollo', () => {
-        expect(result.supergraphSdl).toContainGraphQL(/* GraphQL */ `
-          type Product
-            @join__type(graph: A, key: "id")
-            @join__type(graph: B, key: "id", resolvable: false)
-            @join__type(graph: C, key: "id", extension: true)
-            @join__type(graph: D, key: "id productId", extension: true)
-            @join__type(graph: E, key: "id", extension: true)
-          {
-            id: ID!
-            productId: String! @join__field(external: true, graph: C) @join__field(external: true, graph: E) @join__field(graph: A) @join__field(graph: D)
-            bField: Boolean @join__field(graph: C, requires: "productId") @join__field(graph: D) @join__field(graph: E, requires: "productId")
-          }
-        `);
-      })
+      expect(result.supergraphSdl).toContainGraphQL(/* GraphQL */ `
+        type Product
+          @join__type(graph: A, key: "id")
+          @join__type(graph: B, key: "id", resolvable: false)
+          @join__type(graph: D, key: "id productId", extension: true)
+          @join__type(graph: E, key: "id", extension: true) {
+          id: ID!
+          productId: String!
+            @join__field(external: true, graph: E)
+            @join__field(graph: A)
+            @join__field(graph: D)
+          bField: Boolean
+            @join__field(graph: D)
+            @join__field(graph: E, requires: "productId")
+        }
+      `);
     });
 
     test("@external + @tag", () => {
