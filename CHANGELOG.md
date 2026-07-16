@@ -1,5 +1,11 @@
 # @theguild/federation-composition
 
+## 0.23.0
+
+### Minor Changes
+
+- [#306](https://github.com/graphql-hive/federation-composition/pull/306) [`68cace8`](https://github.com/graphql-hive/federation-composition/commit/68cace83bac196ddade710af9fdebc7661082bf1) Thanks [@jdolle](https://github.com/jdolle)! - Support oneOf directive without using composeDirective
+
 ## 0.22.3
 
 ### Patch Changes
