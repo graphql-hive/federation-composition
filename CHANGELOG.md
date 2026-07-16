@@ -1,5 +1,11 @@
 # @theguild/federation-composition
 
+## 0.23.1
+
+### Patch Changes
+
+- [#307](https://github.com/graphql-hive/federation-composition/pull/307) [`b3367b4`](https://github.com/graphql-hive/federation-composition/commit/b3367b42e7ae15c37e438e46345430ef819e0982) Thanks [@jdolle](https://github.com/jdolle)! - Set external to true for external fields that are not in the key, but are used in keys for other graphs
+
 ## 0.23.0
 
 ### Minor Changes
