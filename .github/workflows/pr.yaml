@@ -1,7 +1,8 @@
-name: pr
+name: PR
 on: [pull_request]
 jobs:
   test:
+    name: Test
     runs-on: ubuntu-latest
     steps:
       - name: checkout
@@ -21,6 +22,7 @@ jobs:
         run: pnpm test
 
   bench:
+    name: Benchmark
     runs-on: ubuntu-latest
     steps:
       - name: checkout
