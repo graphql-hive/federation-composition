@@ -32,6 +32,10 @@ export function inputObjectTypeBuilder(): TypeBuilder<
         inputObjectTypeState.hasDefinition = true;
       }
 
+      if (type.isOneOf) {
+        inputObjectTypeState.isOneOf = true;
+      }
+
       if (type.ast.directives) {
         type.ast.directives.forEach((directive) => {
           inputObjectTypeState.ast.directives.push(directive);
@@ -99,6 +103,7 @@ export function inputObjectTypeBuilder(): TypeBuilder<
         tags: Array.from(inputObjectType.tags),
         inaccessible: inputObjectType.inaccessible,
         description: inputObjectType.description,
+        isOneOf: inputObjectType.isOneOf,
         ast: {
           directives: convertToConst(inputObjectType.ast.directives),
         },
@@ -168,6 +173,7 @@ export interface InputObjectTypeState {
   inaccessible: boolean;
   hasDefinition: boolean;
   description?: Description;
+  isOneOf?: boolean;
   byGraph: MapByGraph<InputObjectTypeStateInGraph>;
   fields: Map<string, InputObjectTypeFieldState>;
   ast: {

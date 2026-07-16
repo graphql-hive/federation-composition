@@ -1,4 +1,4 @@
-import { parse, print } from "graphql";
+import { assertValidSchema, buildSchema, parse, print } from "graphql";
 import { describe, expect, test } from "vitest";
 import { sortSDL } from "../src/graphql/sort-sdl.js";
 import { sdl as joinSDL } from "../src/specifications/join.js";
@@ -8727,4 +8727,420 @@ testImplementations((api) => {
       }
     `);
   });
+
+  describe(
+    "guild composition (@oneOf)",
+    { skip: api.library === "apollo" },
+    () => {
+      test("supports composing built-in directive", () => {
+        const result = api.composeServices([
+          {
+            name: "a",
+            typeDefs: parse(/* GraphQL */ `
+              extend schema
+                @link(
+                  url: "https://specs.apollo.dev/federation/v2.0"
+                  import: ["@key"]
+                )
+
+              input HelloInput @oneOf {
+                world: String
+                me: String
+              }
+
+              type Query {
+                hello(input: HelloInput): String
+              }
+            `),
+          },
+        ]);
+
+        assertCompositionSuccess(result);
+
+        expect(result.supergraphSdl).toContainGraphQL(/* GraphQL */ `
+          input HelloInput @oneOf @join__type(graph: A) {
+            world: String
+            me: String
+          }
+        `);
+
+        expect(result.supergraphSdl).toContainGraphQL(/* GraphQL */ `
+          directive @oneOf on INPUT_OBJECT
+        `);
+
+        expect(result.publicSdl).toContainGraphQL(/* GraphQL */ `
+          input HelloInput @oneOf {
+            world: String
+            me: String
+          }
+        `);
+      });
+
+      test("supports composing built-in directive (with matching definition)", () => {
+        const result = api.composeServices([
+          {
+            name: "a",
+            typeDefs: parse(/* GraphQL */ `
+              extend schema
+                @link(
+                  url: "https://specs.apollo.dev/federation/v2.0"
+                  import: ["@key"]
+                )
+
+              directive @oneOf on INPUT_OBJECT
+
+              input HelloInput @oneOf {
+                world: String
+                me: String
+              }
+
+              type Query {
+                hello(input: HelloInput): String
+              }
+            `),
+          },
+        ]);
+
+        assertCompositionSuccess(result);
+
+        expect(result.supergraphSdl).toContainGraphQL(/* GraphQL */ `
+          input HelloInput @oneOf @join__type(graph: A) {
+            world: String
+            me: String
+          }
+        `);
+
+        expect(result.supergraphSdl).toContainGraphQL(/* GraphQL */ `
+          directive @oneOf on INPUT_OBJECT
+        `);
+
+        expect(result.publicSdl).toContainGraphQL(/* GraphQL */ `
+          input HelloInput @oneOf {
+            world: String
+            me: String
+          }
+        `);
+      });
+
+      test("merges built-in @oneOf with an explicitly linked and composed @oneOf definition", () => {
+        const result = api.composeServices([
+          {
+            name: "a",
+            typeDefs: parse(/* GraphQL */ `
+              extend schema
+                @link(
+                  url: "https://specs.apollo.dev/federation/v2.0"
+                  import: ["@key"]
+                )
+
+              input HelloInput @oneOf {
+                world: String
+                me: String
+              }
+
+              type Query {
+                hello(input: HelloInput): String
+              }
+            `),
+          },
+          {
+            name: "b",
+            typeDefs: parse(/* GraphQL */ `
+              extend schema
+                @link(
+                  url: "https://specs.apollo.dev/federation/v2.3"
+                  import: ["@key", "@composeDirective"]
+                )
+                @link(
+                  url: "https://spec.graphql.org/specified/v1.6"
+                  import: ["@oneOf"]
+                )
+                @composeDirective(name: "@oneOf")
+
+              directive @oneOf on INPUT_OBJECT
+
+              type Hello {
+                world: String
+              }
+
+              type Query {
+                greetings(input: GreetingsInput!): [Hello]
+              }
+
+              input GreetingsInput @oneOf {
+                hello: String
+                world: String
+              }
+            `),
+          },
+        ]);
+
+        assertCompositionSuccess(
+          result,
+          `Composition failed: ${JSON.stringify(result.errors)}`,
+        );
+        expect(result.errors).toBeUndefined();
+        expect(result.supergraphSdl).toBeDefined();
+        if (result.supergraphSdl !== undefined) {
+          expect(() => buildSchema(result.supergraphSdl)).not.toThrow();
+          expect(result.supergraphSdl).toContainGraphQL(
+            `directive @oneOf on INPUT_OBJECT`,
+          );
+          expect(result.supergraphSdl).toContainGraphQL(
+            `input GreetingsInput @join__type(graph: B) @oneOf`,
+          );
+          expect(result.supergraphSdl).toContainGraphQL(
+            `input HelloInput @join__type(graph: A) @oneOf`,
+          );
+          expect(() => buildSchema(result.publicSdl)).not.toThrow();
+          expect(result.publicSdl).toContainGraphQL(`input HelloInput @oneOf`);
+          expect(result.publicSdl).toContainGraphQL(
+            `input GreetingsInput @oneOf`,
+          );
+        }
+      });
+
+      test("throws during composition when a manual @oneOf definition adds a conflicting required argument", () => {
+        expect(() =>
+          api.composeServices([
+            {
+              name: "a",
+              typeDefs: parse(/* GraphQL */ `
+                extend schema
+                  @link(
+                    url: "https://specs.apollo.dev/federation/v2.0"
+                    import: ["@key"]
+                  )
+
+                input HelloInput @oneOf {
+                  world: String
+                  me: String
+                }
+
+                type Query {
+                  hello(input: HelloInput): String
+                }
+              `),
+            },
+            {
+              name: "b",
+              typeDefs: parse(/* GraphQL */ `
+                extend schema
+                  @link(
+                    url: "https://specs.apollo.dev/federation/v2.3"
+                    import: ["@key", "@composeDirective"]
+                  )
+                  @link(
+                    url: "https://spec.graphql.org/specified/v1.6"
+                    import: ["@oneOf"]
+                  )
+                  @composeDirective(name: "@oneOf")
+
+                directive @oneOf(arg: String!) on INPUT_OBJECT | OBJECT
+
+                type Hello @oneOf(arg: "Test") {
+                  world: String
+                }
+
+                type Query {
+                  greetings: [Hello]
+                }
+              `),
+            },
+          ]),
+        ).toThrowErrorMatchingInlineSnapshot(`
+          [GraphQLError: The schema is not a valid GraphQL schema.. Caused by:
+          Directive "@oneOf" argument "arg" of type "String!" is required, but it was not provided.]
+        `);
+      });
+
+      test("composes successfully but outputs an unbuildable public SDL when a composed manual definition widens locations invalidly", () => {
+        const result = api.composeServices([
+          {
+            name: "a",
+            typeDefs: parse(/* GraphQL */ `
+              extend schema
+                @link(
+                  url: "https://specs.apollo.dev/federation/v2.3"
+                  import: ["@key"]
+                )
+
+              input HelloInput @oneOf {
+                world: String
+                me: String
+              }
+
+              directive @oneOf on INPUT_OBJECT
+
+              type Query {
+                hello(input: HelloInput): String
+              }
+            `),
+          },
+          {
+            name: "b",
+            typeDefs: parse(/* GraphQL */ `
+              extend schema
+                @link(
+                  url: "https://specs.apollo.dev/federation/v2.3"
+                  import: ["@key", "@composeDirective"]
+                )
+                @link(
+                  url: "https://spec.graphql.org/specified/v1.6"
+                  import: ["@oneOf"]
+                )
+                @composeDirective(name: "@oneOf")
+
+              directive @oneOf on INPUT_OBJECT | OBJECT
+
+              type Hello @oneOf {
+                world: String
+              }
+
+              type Query {
+                greetings: [Hello]
+              }
+            `),
+          },
+        ]);
+
+        expect(result.errors).toBeUndefined();
+        expect(result.supergraphSdl).toBeDefined();
+
+        if (result.supergraphSdl !== undefined) {
+          expect(result.supergraphSdl).toContainGraphQL(
+            `directive @oneOf on INPUT_OBJECT | OBJECT`,
+          );
+          expect(() => buildSchema(result.supergraphSdl)).not.toThrow();
+          // Verify the public SDL is corrupted because the engine's standard core definition
+          // overwrites subgraph B's wider locations, leaving `@oneOf` dangling on an OBJECT type.
+          expect(() => buildSchema(result.publicSdl)).toThrow(
+            `Directive "@oneOf" may not be used on OBJECT.`,
+          );
+        }
+      });
+
+      test("composes successfully but outputs an unbuildable public SDL when a single subgraph defines an invalid, composed @oneOf", () => {
+        const result = api.composeServices([
+          {
+            name: "b",
+            typeDefs: parse(/* GraphQL */ `
+              extend schema
+                @link(
+                  url: "https://specs.apollo.dev/federation/v2.3"
+                  import: ["@key", "@composeDirective"]
+                )
+                @link(
+                  url: "https://spec.graphql.org/specified/v1.6"
+                  import: ["@oneOf"]
+                )
+                @composeDirective(name: "@oneOf")
+
+              directive @oneOf on INPUT_OBJECT | OBJECT
+
+              type Hello @oneOf {
+                world: String
+              }
+
+              type Query {
+                greetings: [Hello]
+              }
+            `),
+          },
+        ]);
+
+        expect(result.errors).toBeUndefined();
+        expect(result.supergraphSdl).toBeDefined();
+
+        if (result.supergraphSdl !== undefined) {
+          // The composition engine's standard internal definition overrides the public schema output
+          expect(result.supergraphSdl).toContainGraphQL(
+            `directive @oneOf on INPUT_OBJECT`,
+          );
+
+          expect(() => buildSchema(result.publicSdl)).toThrow(
+            `Directive "@oneOf" may not be used on OBJECT.`,
+          );
+        }
+      });
+
+      test("strips custom @oneOf execution locations from the composed SDL if it is not explicitly composed", () => {
+        const result = api.composeServices([
+          {
+            name: "b",
+            typeDefs: parse(/* GraphQL */ `
+              extend schema
+                @link(
+                  url: "https://specs.apollo.dev/federation/v2.3"
+                  import: ["@key"]
+                )
+
+              directive @oneOf on INPUT_OBJECT | OBJECT
+
+              type Hello @oneOf {
+                world: String
+              }
+
+              type Query {
+                greetings: [Hello]
+              }
+            `),
+          },
+        ]);
+
+        expect(result.errors).toBeUndefined();
+        expect(result.supergraphSdl).toBeDefined();
+        if (result.supergraphSdl !== undefined) {
+          expect(result.supergraphSdl).not.toContainGraphQL(
+            `directive @oneOf on INPUT_OBJECT | OBJECT`,
+          );
+          expect(result.supergraphSdl).not.toContainGraphQL(
+            `type Hello @oneOf`,
+          );
+          expect(() => buildSchema(result.publicSdl)).not.toThrow();
+          // Ensure internal directive use on the OBJECT type doesn't leak to public graph
+          expect(result.publicSdl).not.toContainGraphQL(`type Hello @oneOf`);
+        }
+      });
+
+      test("allows an uncomposed @oneOf matching the spec to surface implicitly on public input objects", () => {
+        const result = api.composeServices([
+          {
+            name: "b",
+            typeDefs: parse(/* GraphQL */ `
+              extend schema
+                @link(
+                  url: "https://specs.apollo.dev/federation/v2.3"
+                  import: ["@key"]
+                )
+
+              directive @oneOf on INPUT_OBJECT
+
+              input GreetingsInput @oneOf {
+                hello: String
+                world: String
+              }
+
+              type Query {
+                greetings(input: GreetingsInput!): String
+              }
+            `),
+          },
+        ]);
+
+        assertCompositionSuccess(result);
+        if (result.supergraphSdl !== undefined) {
+          expect(result.supergraphSdl).toContainGraphQL(
+            `directive @oneOf on INPUT_OBJECT`,
+          );
+          expect(result.supergraphSdl).toContainGraphQL(
+            `input GreetingsInput @join__type(graph: B) @oneOf`,
+          );
+          expect(result.publicSdl).toContainGraphQL(
+            `input GreetingsInput @oneOf`,
+          );
+        }
+      });
+    },
+  );
 });
