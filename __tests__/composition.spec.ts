@@ -1587,6 +1587,20 @@ testImplementations((api) => {
             }
           `),
         },
+        {
+          name: "d",
+          typeDefs: parse(/* GraphQL */ `
+            extend schema
+              @link(url: "https://specs.apollo.dev/federation/v2.5", import: ["@key", "@composeDirective"])
+              @link(url: "https://myspecs.dev/access/v1.0", import: ["@access"])
+              @composeDirective(name: "@access")
+
+            directive @access(scope: Scope! = PUBLIC) on FIELD_DEFINITION
+            enum Scope { PUBLIC PRIVATE }
+
+            type Query { hello: String @access }
+          `),
+        }
       ]);
 
       assertCompositionSuccess(result);
@@ -1626,11 +1640,16 @@ testImplementations((api) => {
         }
       `);
 
+      expect(result.supergraphSdl).toContainGraphQL(/* GraphQL */`
+        directive @access(scope: Scope! = PUBLIC) on FIELD_DEFINITION
+      `);
+
       expect(result.supergraphSdl).toContainGraphQL(/* GraphQL */ `
         type Query
           @join__type(graph: A)
           @join__type(graph: B)
-          @join__type(graph: C) {
+          @join__type(graph: C)
+          @join__type(graph: D) {
           books(
             filter: LibraryFilter
             access: LibraryAccess = PUBLIC
@@ -1639,6 +1658,7 @@ testImplementations((api) => {
             @join__field(graph: B)
           media(filter: MediaFilter, access: MediaAccess = PRIVATE): [Media!]!
             @join__field(graph: C)
+            hello: String @access @join__field(graph: D)
         }
       `);
     });
