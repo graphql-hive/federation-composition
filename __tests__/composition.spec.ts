@@ -1794,7 +1794,7 @@ testImplementations((api) => {
             },
           ]);
         } catch (e) {
-          expect(api.library).toBe('apollo');
+          expect(api.library).toBe("apollo");
           result = {
             errors: [e as any],
           };
@@ -1841,7 +1841,7 @@ testImplementations((api) => {
             },
           ]);
         } catch (e) {
-          expect(api.library).toBe('apollo');
+          expect(api.library).toBe("apollo");
           result = {
             errors: [e as any],
           };
