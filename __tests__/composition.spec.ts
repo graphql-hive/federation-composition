@@ -1688,7 +1688,7 @@ testImplementations((api) => {
             typeDefs: parse(/* GraphQL */ `
               extend schema
                 @link(
-                  url: "https://specs.apollo.dev/federation/v2.5"
+                  url: "https://specs.apollo.dev/federation/${version}"
                   import: ["@key", "@composeDirective"]
                 )
                 @link(
@@ -1713,7 +1713,7 @@ testImplementations((api) => {
             typeDefs: parse(/* GraphQL */ `
               extend schema
                 @link(
-                  url: "https://specs.apollo.dev/federation/v2.5"
+                  url: "https://specs.apollo.dev/federation/${version}"
                   import: ["@key", "@composeDirective"]
                 )
                 @link(
@@ -1747,7 +1747,7 @@ testImplementations((api) => {
               typeDefs: parse(/* GraphQL */ `
                 extend schema
                   @link(
-                    url: "https://specs.apollo.dev/federation/v2.5"
+                    url: "https://specs.apollo.dev/federation/${version}"
                     import: ["@key", "@composeDirective"]
                   )
                   @link(
@@ -1772,7 +1772,7 @@ testImplementations((api) => {
               typeDefs: parse(/* GraphQL */ `
                 extend schema
                   @link(
-                    url: "https://specs.apollo.dev/federation/v2.5"
+                    url: "https://specs.apollo.dev/federation/${version}"
                     import: ["@key", "@composeDirective"]
                   )
                   @link(
@@ -1794,6 +1794,54 @@ testImplementations((api) => {
             },
           ]);
         } catch (e) {
+          expect(api.library).toBe('apollo');
+          result = {
+            errors: [e as any],
+          };
+        }
+
+        assertCompositionFailure(result);
+      });
+
+      test("collision with different default on argument", () => {
+        let result: CompositionResult;
+        try {
+          result = composeServices([
+            {
+              name: "a",
+              typeDefs: parse(/* GraphQL */ `
+                extend schema
+                  @link(url: "https://specs.apollo.dev/federation/${version}")
+
+                enum Scope {
+                  PUBLIC
+                  PRIVATE
+                }
+
+                type Query {
+                  hello(scope: Scope! = PUBLIC): String
+                }
+              `),
+            },
+            {
+              name: "b",
+              typeDefs: parse(/* GraphQL */ `
+                extend schema
+                  @link(url: "https://specs.apollo.dev/federation/${version}")
+
+                enum Scope {
+                  PUBLIC
+                  PRIVATE
+                }
+
+                type Query {
+                  hello(scope: Scope! = PRIVATE): String
+                }
+              `),
+            },
+          ]);
+        } catch (e) {
+          expect(api.library).toBe('apollo');
           result = {
             errors: [e as any],
           };
