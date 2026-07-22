@@ -12,6 +12,7 @@ import {
   testImplementations,
   versions,
 } from "./shared/testkit.js";
+import { CompositionResult } from "../src/compose.js";
 
 expect.addSnapshotSerializer({
   serialize: (value) => print(sortSDL(parse(value as string))),
@@ -1517,130 +1518,494 @@ testImplementations((api) => {
       `);
     });
 
-    test("print default values", () => {
-      const result = composeServices([
-        {
-          name: "a",
-          typeDefs: parse(/* GraphQL */ `
-            extend schema
-              @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@shareable"])
+    describe("default values", () => {
+      test("print", () => {
+        const result = composeServices([
+          {
+            name: "a",
+            typeDefs: parse(/* GraphQL */ `
+              extend schema
+                @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@shareable"])
 
-            input LibraryFilter {
-              limit: Int = 5
-            }
+              input LibraryFilter {
+                limit: Int = 5
+              }
 
-            enum LibraryAccess {
-              PUBLIC
-              PRIVATE
-            }
+              enum LibraryAccess {
+                PUBLIC
+                PRIVATE
+              }
 
-            type Query {
-              books(filter: LibraryFilter, access: LibraryAccess = PUBLIC): [String!]!
-            }
-          `),
-        },
-        {
-          name: "b",
-          typeDefs: parse(/* GraphQL */ `
-            extend schema
-              @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@shareable"])
+              type Query {
+                books(filter: LibraryFilter, access: LibraryAccess = PUBLIC): [String!]!
+              }
+            `),
+          },
+          {
+            name: "b",
+            typeDefs: parse(/* GraphQL */ `
+              extend schema
+                @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@shareable"])
 
-            input UserFilter {
-              limit: Int = 10
-            }
+              input UserFilter {
+                limit: Int = 10
+              }
 
-            enum UserAccess {
-              PUBLIC
-              PRIVATE
-            }
+              enum UserAccess {
+                PUBLIC
+                PRIVATE
+              }
 
-            type Query {
-              users(filter: UserFilter, access: UserAccess = PRIVATE): [String!]!
-            }
-          `),
-        },
-        {
-          name: "c",
-          typeDefs: parse(/* GraphQL */ `
-            extend schema
-              @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@shareable"])
+              type Query {
+                users(filter: UserFilter, access: UserAccess = PRIVATE): [String!]!
+              }
+            `),
+          },
+          {
+            name: "c",
+            typeDefs: parse(/* GraphQL */ `
+              extend schema
+                @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@shareable"])
 
-            input MediaFilter {
-              limit: Int = 15
-            }
+              input MediaFilter {
+                limit: Int = 15
+              }
 
-            enum MediaAccess {
-              PUBLIC
-              PRIVATE
-            }
+              enum MediaAccess {
+                PUBLIC
+                PRIVATE
+              }
 
-            interface Media {
-              records(filter: MediaFilter, access: MediaAccess = PRIVATE): [String!]!
-            }
+              interface Media {
+                records(filter: MediaFilter, access: MediaAccess = PRIVATE): [String!]!
+              }
 
-            type Movie implements Media {
-              records(filter: MediaFilter, access: MediaAccess = PUBLIC): [String!]!
-            }
+              type Movie implements Media {
+                records(filter: MediaFilter, access: MediaAccess = PUBLIC): [String!]!
+              }
 
-            type Query {
-              media(filter: MediaFilter, access: MediaAccess = PRIVATE): [Media!]!
-            }
-          `),
-        },
-      ]);
+              type Query {
+                media(filter: MediaFilter, access: MediaAccess = PRIVATE): [Media!]!
+              }
+            `),
+          },
+          {
+            name: "d",
+            typeDefs: parse(/* GraphQL */ `
+              extend schema
+                @link(
+                  url: "https://specs.apollo.dev/federation/v2.5"
+                  import: ["@key", "@composeDirective"]
+                )
+                @link(
+                  url: "https://myspecs.dev/access/v1.0"
+                  import: ["@access"]
+                )
+                @composeDirective(name: "@access")
 
-      assertCompositionSuccess(result);
+              directive @access(scope: Scope! = PUBLIC) on FIELD_DEFINITION
+              enum Scope {
+                PUBLIC
+                PRIVATE
+              }
 
-      expect(result.supergraphSdl).toContainGraphQL(/* GraphQL */ `
-        input LibraryFilter @join__type(graph: A) {
-          limit: Int = 5
+              type Query {
+                hello: String @access
+              }
+            `),
+          },
+        ]);
+
+        assertCompositionSuccess(result);
+
+        expect(result.supergraphSdl).toContainGraphQL(/* GraphQL */ `
+          input LibraryFilter @join__type(graph: A) {
+            limit: Int = 5
+          }
+        `);
+
+        expect(result.supergraphSdl).toContainGraphQL(/* GraphQL */ `
+          input UserFilter @join__type(graph: B) {
+            limit: Int = 10
+          }
+        `);
+
+        expect(result.supergraphSdl).toContainGraphQL(/* GraphQL */ `
+          input MediaFilter @join__type(graph: C) {
+            limit: Int = 15
+          }
+        `);
+
+        expect(result.supergraphSdl).toContainGraphQL(/* GraphQL */ `
+          interface Media @join__type(graph: C) {
+            records(
+              filter: MediaFilter
+              access: MediaAccess = PRIVATE
+            ): [String!]!
+          }
+        `);
+
+        expect(result.supergraphSdl).toContainGraphQL(/* GraphQL */ `
+          type Movie implements Media
+            @join__implements(graph: C, interface: "Media")
+            @join__type(graph: C) {
+            records(
+              filter: MediaFilter
+              access: MediaAccess = PUBLIC
+            ): [String!]!
+          }
+        `);
+
+        expect(result.supergraphSdl).toContainGraphQL(/* GraphQL */ `
+          directive @access(scope: Scope! = PUBLIC) on FIELD_DEFINITION
+        `);
+
+        expect(result.supergraphSdl).toContainGraphQL(/* GraphQL */ `
+          type Query
+            @join__type(graph: A)
+            @join__type(graph: B)
+            @join__type(graph: C)
+            @join__type(graph: D) {
+            books(
+              filter: LibraryFilter
+              access: LibraryAccess = PUBLIC
+            ): [String!]! @join__field(graph: A)
+            users(filter: UserFilter, access: UserAccess = PRIVATE): [String!]!
+              @join__field(graph: B)
+            media(
+              filter: MediaFilter
+              access: MediaAccess = PRIVATE
+            ): [Media!]! @join__field(graph: C)
+            hello: String @access @join__field(graph: D)
+          }
+        `);
+      });
+
+      test("collision with missing default value on directive argument", () => {
+        // @composeDirective requires v2.1+
+        if (version === "v2.0") {
+          return;
         }
-      `);
+        const result = composeServices([
+          {
+            name: "a",
+            typeDefs: parse(/* GraphQL */ `
+              extend schema
+                @link(
+                  url: "https://specs.apollo.dev/federation/${version}"
+                  import: ["@key", "@composeDirective"]
+                )
+                @link(
+                  url: "https://myspecs.dev/access/v1.0"
+                  import: ["@access"]
+                )
+                @composeDirective(name: "@access")
 
-      expect(result.supergraphSdl).toContainGraphQL(/* GraphQL */ `
-        input UserFilter @join__type(graph: B) {
-          limit: Int = 10
-        }
-      `);
+              directive @access(scope: Scope!) on FIELD_DEFINITION
+              enum Scope {
+                PUBLIC
+                PRIVATE
+              }
 
-      expect(result.supergraphSdl).toContainGraphQL(/* GraphQL */ `
-        input MediaFilter @join__type(graph: C) {
-          limit: Int = 15
-        }
-      `);
+              type Query {
+                a: String @access
+              }
+            `),
+          },
+          {
+            name: "b",
+            typeDefs: parse(/* GraphQL */ `
+              extend schema
+                @link(
+                  url: "https://specs.apollo.dev/federation/${version}"
+                  import: ["@key", "@composeDirective"]
+                )
+                @link(
+                  url: "https://myspecs.dev/access/v1.0"
+                  import: ["@access"]
+                )
+                @composeDirective(name: "@access")
 
-      expect(result.supergraphSdl).toContainGraphQL(/* GraphQL */ `
-        interface Media @join__type(graph: C) {
-          records(
-            filter: MediaFilter
-            access: MediaAccess = PRIVATE
-          ): [String!]!
-        }
-      `);
+              directive @access(scope: Scope! = PUBLIC) on FIELD_DEFINITION
+              enum Scope {
+                PUBLIC
+                PRIVATE
+              }
 
-      expect(result.supergraphSdl).toContainGraphQL(/* GraphQL */ `
-        type Movie implements Media
-          @join__implements(graph: C, interface: "Media")
-          @join__type(graph: C) {
-          records(filter: MediaFilter, access: MediaAccess = PUBLIC): [String!]!
-        }
-      `);
+              type Query {
+                b: String @access
+              }
+            `),
+          },
+        ]);
 
-      expect(result.supergraphSdl).toContainGraphQL(/* GraphQL */ `
-        type Query
-          @join__type(graph: A)
-          @join__type(graph: B)
-          @join__type(graph: C) {
-          books(
-            filter: LibraryFilter
-            access: LibraryAccess = PUBLIC
-          ): [String!]! @join__field(graph: A)
-          users(filter: UserFilter, access: UserAccess = PRIVATE): [String!]!
-            @join__field(graph: B)
-          media(filter: MediaFilter, access: MediaAccess = PRIVATE): [Media!]!
-            @join__field(graph: C)
+        assertCompositionFailure(result);
+        expect(result.errors.length).toEqual(1);
+        expect(result.errors).toContainEqual(
+          expect.objectContaining({
+            message: expect.stringContaining(
+              'Directive "@access" argument "scope" of type "Scope!" is required, but it was not provided.',
+            ),
+          }),
+        );
+      });
+
+      test("collision with different default value on directive argument for schema directive", () => {
+        // @composeDirective requires v2.1+
+        if (version === "v2.0") {
+          return;
         }
-      `);
+
+        const result = composeServices([
+          {
+            name: "a",
+            typeDefs: parse(/* GraphQL */ `
+                extend schema
+                  @link(
+                    url: "https://specs.apollo.dev/federation/${version}"
+                    import: ["@key", "@composeDirective"]
+                  )
+                  @link(
+                    url: "https://myspecs.dev/access/v1.0"
+                    import: ["@access"]
+                  )
+                  @composeDirective(name: "@access")
+
+                directive @access(scope: Scope! = PRIVATE) on FIELD_DEFINITION
+
+                enum Scope {
+                  PUBLIC
+                  PRIVATE
+                }
+
+                type Query {
+                  a: String @access
+                }
+              `),
+          },
+          {
+            name: "b",
+            typeDefs: parse(/* GraphQL */ `
+                extend schema
+                  @link(
+                    url: "https://specs.apollo.dev/federation/${version}"
+                    import: ["@key", "@composeDirective"]
+                  )
+                  @link(
+                    url: "https://myspecs.dev/access/v1.0"
+                    import: ["@access"]
+                  )
+                  @composeDirective(name: "@access")
+
+                directive @access(scope: Scope! = PUBLIC) on FIELD_DEFINITION
+
+                enum Scope {
+                  PUBLIC
+                  PRIVATE
+                }
+
+                type Query {
+                  b: String @access
+                }
+              `),
+          },
+        ]);
+
+        // This fails actually.
+        assertCompositionSuccess(result);
+        expect(result.supergraphSdl).toContainGraphQL(
+          "directive @access(scope: Scope! = PUBLIC) on FIELD_DEFINITION",
+        );
+      });
+
+      test("collision with different default value on directive argument for executable directive", () => {
+        // @composeDirective requires v2.1+
+        if (version === "v2.0") {
+          return;
+        }
+
+        const result = composeServices([
+          {
+            name: "a",
+            typeDefs: parse(/* GraphQL */ `
+                extend schema
+                  @link(
+                    url: "https://specs.apollo.dev/federation/${version}"
+                    import: ["@key", "@composeDirective"]
+                  )
+                  @link(
+                    url: "https://myspecs.dev/access/v1.0"
+                    import: ["@access"]
+                  )
+                  @composeDirective(name: "@access")
+
+                directive @access(scope: Scope! = PRIVATE) on QUERY
+
+                enum Scope {
+                  PUBLIC
+                  PRIVATE
+                }
+
+                type Query {
+                  a: String
+                }
+              `),
+          },
+          {
+            name: "b",
+            typeDefs: parse(/* GraphQL */ `
+                extend schema
+                  @link(
+                    url: "https://specs.apollo.dev/federation/${version}"
+                    import: ["@key", "@composeDirective"]
+                  )
+                  @link(
+                    url: "https://myspecs.dev/access/v1.0"
+                    import: ["@access"]
+                  )
+                  @composeDirective(name: "@access")
+
+                directive @access(scope: Scope! = PUBLIC) on QUERY
+
+                enum Scope {
+                  PUBLIC
+                  PRIVATE
+                }
+
+                type Query {
+                  b: String
+                }
+              `),
+          },
+        ]);
+
+        // This fails actually.
+        assertCompositionSuccess(result);
+        expect(result.supergraphSdl).toContainGraphQL(
+          "directive @access(scope: Scope! = PUBLIC) on QUERY",
+        );
+      });
+
+      test("collision with missing default value on directive argument for executable directive", () => {
+        // @composeDirective requires v2.1+
+        if (version === "v2.0") {
+          return;
+        }
+
+        const result = composeServices([
+          {
+            name: "a",
+            typeDefs: parse(/* GraphQL */ `
+                extend schema
+                  @link(
+                    url: "https://specs.apollo.dev/federation/${version}"
+                    import: ["@key", "@composeDirective"]
+                  )
+                  @link(
+                    url: "https://myspecs.dev/access/v1.0"
+                    import: ["@access"]
+                  )
+                  @composeDirective(name: "@access")
+
+                directive @access(scope: Scope!) on QUERY
+
+                enum Scope {
+                  PUBLIC
+                  PRIVATE
+                }
+
+                type Query {
+                  a: String
+                }
+              `),
+          },
+          {
+            name: "b",
+            typeDefs: parse(/* GraphQL */ `
+                extend schema
+                  @link(
+                    url: "https://specs.apollo.dev/federation/${version}"
+                    import: ["@key", "@composeDirective"]
+                  )
+                  @link(
+                    url: "https://myspecs.dev/access/v1.0"
+                    import: ["@access"]
+                  )
+                  @composeDirective(name: "@access")
+
+                directive @access(scope: Scope! = PUBLIC) on QUERY
+
+                enum Scope {
+                  PUBLIC
+                  PRIVATE
+                }
+
+                type Query {
+                  b: String
+                }
+              `),
+          },
+        ]);
+
+        // This fails actually.
+        assertCompositionSuccess(result);
+        expect(result.supergraphSdl).toContainGraphQL(
+          "directive @access(scope: Scope! = PUBLIC) on QUERY",
+        );
+      });
+      test("collision with different default value on argument on field argument", () => {
+        const result = composeServices([
+          {
+            name: "a",
+            typeDefs: parse(/* GraphQL */ `
+                extend schema
+                  @link(url: "https://specs.apollo.dev/federation/${version}")
+
+                enum Scope {
+                  PUBLIC
+                  PRIVATE
+                }
+
+                type Query {
+                  hello(scope: Scope! = PUBLIC): String
+                }
+              `),
+          },
+          {
+            name: "b",
+            typeDefs: parse(/* GraphQL */ `
+                extend schema
+                  @link(url: "https://specs.apollo.dev/federation/${version}")
+
+                enum Scope {
+                  PUBLIC
+                  PRIVATE
+                }
+
+                type Query {
+                  hello(scope: Scope! = PRIVATE): String
+                }
+              `),
+          },
+        ]);
+
+        assertCompositionFailure(result);
+        expect(result.errors.length).toEqual(2);
+        expect(result.errors).toContainEqual(
+          expect.objectContaining({
+            message: expect.stringContaining(
+              '"Query.hello(scope:)" has incompatible default values across subgraphs:',
+            ),
+          }),
+        );
+        expect(result.errors).toContainEqual(
+          expect.objectContaining({
+            message: expect.stringContaining(
+              'Non-shareable field "Query.hello" is resolved from multiple subgraphs',
+            ),
+          }),
+        );
+      });
     });
 
     test("merge enum type types when used as the return type for at least one object or interface field", () => {

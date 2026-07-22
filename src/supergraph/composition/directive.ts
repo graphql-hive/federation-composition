@@ -51,6 +51,10 @@ export function directiveBuilder(): TypeBuilder<Directive, DirectiveState> {
           argState.ast.directives.push(directive);
         });
 
+        if (typeof arg.defaultValue !== "undefined") {
+          argState.defaultValue = arg.defaultValue;
+        }
+
         if (arg.inaccessible) {
           argState.inaccessible = true;
         }
