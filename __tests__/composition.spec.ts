@@ -1886,6 +1886,73 @@ testImplementations((api) => {
         );
       });
 
+      test("collision with missing default value on directive argument for executable directive", () => {
+        // @composeDirective requires v2.1+
+        if (version === "v2.0") {
+          return;
+        }
+
+        const result = composeServices([
+          {
+            name: "a",
+            typeDefs: parse(/* GraphQL */ `
+                extend schema
+                  @link(
+                    url: "https://specs.apollo.dev/federation/${version}"
+                    import: ["@key", "@composeDirective"]
+                  )
+                  @link(
+                    url: "https://myspecs.dev/access/v1.0"
+                    import: ["@access"]
+                  )
+                  @composeDirective(name: "@access")
+
+                directive @access(scope: Scope!) on QUERY
+
+                enum Scope {
+                  PUBLIC
+                  PRIVATE
+                }
+
+                type Query {
+                  a: String
+                }
+              `),
+          },
+          {
+            name: "b",
+            typeDefs: parse(/* GraphQL */ `
+                extend schema
+                  @link(
+                    url: "https://specs.apollo.dev/federation/${version}"
+                    import: ["@key", "@composeDirective"]
+                  )
+                  @link(
+                    url: "https://myspecs.dev/access/v1.0"
+                    import: ["@access"]
+                  )
+                  @composeDirective(name: "@access")
+
+                directive @access(scope: Scope! = PUBLIC) on QUERY
+
+                enum Scope {
+                  PUBLIC
+                  PRIVATE
+                }
+
+                type Query {
+                  b: String
+                }
+              `),
+          },
+        ]);
+
+        // This fails actually.
+        assertCompositionSuccess(result);
+        expect(result.supergraphSdl).toContainGraphQL(
+          "directive @access(scope: Scope! = PUBLIC) on QUERY",
+        );
+      });
       test("collision with different default value on argument on field argument", () => {
         const result = composeServices([
           {
