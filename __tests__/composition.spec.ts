@@ -1681,7 +1681,11 @@ testImplementations((api) => {
         `);
       });
 
-      test("collision with missing default", () => {
+      test("collision with missing default value on directive argument", () => {
+        // @composeDirective requires v2.1+
+        if (version === "v2.0") {
+          return;
+        }
         const result = composeServices([
           {
             name: "a",
@@ -1704,7 +1708,7 @@ testImplementations((api) => {
               }
 
               type Query {
-                hello: String @access
+                a: String @access
               }
             `),
           },
@@ -1729,22 +1733,33 @@ testImplementations((api) => {
               }
 
               type Query {
-                hello: String @access
+                b: String @access
               }
             `),
           },
         ]);
 
         assertCompositionFailure(result);
+        expect(result.errors.length).toEqual(1);
+        expect(result.errors).toContainEqual(
+          expect.objectContaining({
+            message: expect.stringContaining(
+              'Directive "@access" argument "scope" of type "Scope!" is required, but it was not provided.',
+            ),
+          }),
+        );
       });
 
-      test("collision with different default", () => {
-        let result: CompositionResult;
-        try {
-          result = composeServices([
-            {
-              name: "a",
-              typeDefs: parse(/* GraphQL */ `
+      test("collision with different default value on directive argument for schema directive", () => {
+        // @composeDirective requires v2.1+
+        if (version === "v2.0") {
+          return;
+        }
+
+        const result = composeServices([
+          {
+            name: "a",
+            typeDefs: parse(/* GraphQL */ `
                 extend schema
                   @link(
                     url: "https://specs.apollo.dev/federation/${version}"
@@ -1757,19 +1772,20 @@ testImplementations((api) => {
                   @composeDirective(name: "@access")
 
                 directive @access(scope: Scope! = PRIVATE) on FIELD_DEFINITION
+
                 enum Scope {
                   PUBLIC
                   PRIVATE
                 }
 
                 type Query {
-                  hello: String @access
+                  a: String @access
                 }
               `),
-            },
-            {
-              name: "b",
-              typeDefs: parse(/* GraphQL */ `
+          },
+          {
+            name: "b",
+            typeDefs: parse(/* GraphQL */ `
                 extend schema
                   @link(
                     url: "https://specs.apollo.dev/federation/${version}"
@@ -1782,34 +1798,99 @@ testImplementations((api) => {
                   @composeDirective(name: "@access")
 
                 directive @access(scope: Scope! = PUBLIC) on FIELD_DEFINITION
+
                 enum Scope {
                   PUBLIC
                   PRIVATE
                 }
 
                 type Query {
-                  hello: String @access
+                  b: String @access
                 }
               `),
-            },
-          ]);
-        } catch (e) {
-          expect(api.library).toBe("apollo");
-          result = {
-            errors: [e as any],
-          };
-        }
+          },
+        ]);
 
-        assertCompositionFailure(result);
+        // This fails actually.
+        assertCompositionSuccess(result);
+        expect(result.supergraphSdl).toContainGraphQL(
+          "directive @access(scope: Scope! = PUBLIC) on FIELD_DEFINITION",
+        );
       });
 
-      test("collision with different default on argument", () => {
-        let result: CompositionResult;
-        try {
-          result = composeServices([
-            {
-              name: "a",
-              typeDefs: parse(/* GraphQL */ `
+      test("collision with different default value on directive argument for executable directive", () => {
+        // @composeDirective requires v2.1+
+        if (version === "v2.0") {
+          return;
+        }
+
+        const result = composeServices([
+          {
+            name: "a",
+            typeDefs: parse(/* GraphQL */ `
+                extend schema
+                  @link(
+                    url: "https://specs.apollo.dev/federation/${version}"
+                    import: ["@key", "@composeDirective"]
+                  )
+                  @link(
+                    url: "https://myspecs.dev/access/v1.0"
+                    import: ["@access"]
+                  )
+                  @composeDirective(name: "@access")
+
+                directive @access(scope: Scope! = PRIVATE) on QUERY
+
+                enum Scope {
+                  PUBLIC
+                  PRIVATE
+                }
+
+                type Query {
+                  a: String
+                }
+              `),
+          },
+          {
+            name: "b",
+            typeDefs: parse(/* GraphQL */ `
+                extend schema
+                  @link(
+                    url: "https://specs.apollo.dev/federation/${version}"
+                    import: ["@key", "@composeDirective"]
+                  )
+                  @link(
+                    url: "https://myspecs.dev/access/v1.0"
+                    import: ["@access"]
+                  )
+                  @composeDirective(name: "@access")
+
+                directive @access(scope: Scope! = PUBLIC) on QUERY
+
+                enum Scope {
+                  PUBLIC
+                  PRIVATE
+                }
+
+                type Query {
+                  b: String
+                }
+              `),
+          },
+        ]);
+
+        // This fails actually.
+        assertCompositionSuccess(result);
+        expect(result.supergraphSdl).toContainGraphQL(
+          "directive @access(scope: Scope! = PUBLIC) on QUERY",
+        );
+      });
+
+      test("collision with different default value on argument on field arugment", () => {
+        const result = composeServices([
+          {
+            name: "a",
+            typeDefs: parse(/* GraphQL */ `
                 extend schema
                   @link(url: "https://specs.apollo.dev/federation/${version}")
 
@@ -1822,10 +1903,10 @@ testImplementations((api) => {
                   hello(scope: Scope! = PUBLIC): String
                 }
               `),
-            },
-            {
-              name: "b",
-              typeDefs: parse(/* GraphQL */ `
+          },
+          {
+            name: "b",
+            typeDefs: parse(/* GraphQL */ `
                 extend schema
                   @link(url: "https://specs.apollo.dev/federation/${version}")
 
@@ -1838,16 +1919,25 @@ testImplementations((api) => {
                   hello(scope: Scope! = PRIVATE): String
                 }
               `),
-            },
-          ]);
-        } catch (e) {
-          expect(api.library).toBe("apollo");
-          result = {
-            errors: [e as any],
-          };
-        }
+          },
+        ]);
 
         assertCompositionFailure(result);
+        expect(result.errors.length).toEqual(2);
+        expect(result.errors).toContainEqual(
+          expect.objectContaining({
+            message: expect.stringContaining(
+              '"Query.hello(scope:)" has incompatible default values across subgraphs:',
+            ),
+          }),
+        );
+        expect(result.errors).toContainEqual(
+          expect.objectContaining({
+            message: expect.stringContaining(
+              'Non-shareable field "Query.hello" is resolved from multiple subgraphs',
+            ),
+          }),
+        );
       });
     });
 
