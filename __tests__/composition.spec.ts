@@ -1886,7 +1886,7 @@ testImplementations((api) => {
         );
       });
 
-      test("collision with different default value on argument on field arugment", () => {
+      test("collision with different default value on argument on field argument", () => {
         const result = composeServices([
           {
             name: "a",
