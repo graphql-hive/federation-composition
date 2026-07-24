@@ -9134,6 +9134,10 @@ testImplementations((api) => {
         `);
 
         expect(result.publicSdl).toContainGraphQL(/* GraphQL */ `
+          directive @oneOf on INPUT_OBJECT
+        `);
+
+        expect(result.publicSdl).toContainGraphQL(/* GraphQL */ `
           input HelloInput @oneOf {
             world: String
             me: String
@@ -9313,13 +9317,11 @@ testImplementations((api) => {
               `),
             },
           ]),
-        ).toThrowErrorMatchingInlineSnapshot(`
-          [GraphQLError: The schema is not a valid GraphQL schema.. Caused by:
-          Directive "@oneOf" argument "arg" of type "String!" is required, but it was not provided.]
-        `);
+        ).toThrow(`The schema is not a valid GraphQL schema.. Caused by:
+Directive "@oneOf" argument "arg" of type "String!" is required, but it was not provided.`);
       });
 
-      test("composes successfully but outputs an unbuildable public SDL when a composed manual definition widens locations invalidly", () => {
+      test("composes successfully when a composed manual definition widens specified directive locations", () => {
         const result = api.composeServices([
           {
             name: "a",
@@ -9356,6 +9358,7 @@ testImplementations((api) => {
                 )
                 @composeDirective(name: "@oneOf")
 
+              # This redefines @oneOf but since it's a widening of the definition, it's allowed
               directive @oneOf on INPUT_OBJECT | OBJECT
 
               type Hello @oneOf {
@@ -9377,15 +9380,76 @@ testImplementations((api) => {
             `directive @oneOf on INPUT_OBJECT | OBJECT`,
           );
           expect(() => buildSchema(result.supergraphSdl)).not.toThrow();
-          // Verify the public SDL is corrupted because the engine's standard core definition
-          // overwrites subgraph B's wider locations, leaving `@oneOf` dangling on an OBJECT type.
-          expect(() => buildSchema(result.publicSdl)).toThrow(
-            `Directive "@oneOf" may not be used on OBJECT.`,
+
+          expect(result.publicSdl).toContainGraphQL(
+            `directive @oneOf on INPUT_OBJECT | OBJECT`,
           );
+          expect(() => buildSchema(result.publicSdl)).not.toThrow();
         }
       });
 
-      test("composes successfully but outputs an unbuildable public SDL when a single subgraph defines an invalid, composed @oneOf", () => {
+      test("composition fails when a composed directive definitions are not compatible with specified @oneOf", () => {
+        const result = api.composeServices([
+          {
+            name: "a",
+            typeDefs: parse(/* GraphQL */ `
+              extend schema
+                @link(
+                  url: "https://specs.apollo.dev/federation/v2.3"
+                  import: ["@key"]
+                )
+
+              # This subgraph implicitly defined the default @oneOf directive definition
+
+              input HelloInput @oneOf {
+                world: String
+                me: String
+              }
+
+              type Query {
+                hello(input: HelloInput): String
+              }
+            `),
+          },
+          {
+            name: "b",
+            typeDefs: parse(/* GraphQL */ `
+              extend schema
+                @link(
+                  url: "https://specs.apollo.dev/federation/v2.3"
+                  import: ["@key", "@composeDirective"]
+                )
+                @link(
+                  url: "https://spec.graphql.org/specified/v1.6"
+                  import: ["@oneOf"]
+                )
+                @composeDirective(name: "@oneOf")
+
+              # This redefines @oneOf but since it's a widening of the definition, it's allowed
+              directive @oneOf on OBJECT
+
+              type Hello @oneOf {
+                world: String
+              }
+
+              type Query {
+                greetings: [Hello]
+              }
+            `),
+          },
+        ]);
+
+        expect(result.errors).toContainEqual(
+          expect.objectContaining({
+            message: expect.stringContaining(
+              'Directive "@oneOf" has no shared locations between subgraphs',
+            ),
+          }),
+        );
+        expect(result.supergraphSdl).toBeUndefined();
+      });
+
+      test("composes successfully when a single subgraph widens a specified directive location", () => {
         const result = api.composeServices([
           {
             name: "b",
@@ -9401,6 +9465,7 @@ testImplementations((api) => {
                 )
                 @composeDirective(name: "@oneOf")
 
+              # This expands the @oneOf locations, but since no other subgraph is defined that uses it, this is allowed.
               directive @oneOf on INPUT_OBJECT | OBJECT
 
               type Hello @oneOf {
@@ -9420,12 +9485,14 @@ testImplementations((api) => {
         if (result.supergraphSdl !== undefined) {
           // The composition engine's standard internal definition overrides the public schema output
           expect(result.supergraphSdl).toContainGraphQL(
-            `directive @oneOf on INPUT_OBJECT`,
+            `directive @oneOf on INPUT_OBJECT | OBJECT`,
+          );
+          expect(result.publicSdl).toContainGraphQL(
+            `directive @oneOf on INPUT_OBJECT | OBJECT`,
           );
 
-          expect(() => buildSchema(result.publicSdl)).toThrow(
-            `Directive "@oneOf" may not be used on OBJECT.`,
-          );
+          expect(() => buildSchema(result.supergraphSdl)).not.toThrow();
+          expect(() => buildSchema(result.publicSdl)).not.toThrow();
         }
       });
 
