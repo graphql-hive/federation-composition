@@ -21,7 +21,7 @@ import {
   NamedTypeNode,
   ObjectTypeDefinitionNode,
   OperationTypeDefinitionNode,
-  OperationTypeNode,
+  type OperationTypeNode,
   parseConstValue,
   parseType,
   ScalarTypeDefinitionNode,
@@ -77,21 +77,21 @@ export function createSchemaNode(schema: {
       schema.query
         ? {
             kind: Kind.OPERATION_TYPE_DEFINITION,
-            operation: OperationTypeNode.QUERY,
+            operation: 'query' as OperationTypeNode,
             type: createNamedTypeNode(schema.query),
           }
         : [],
       schema.mutation
         ? {
             kind: Kind.OPERATION_TYPE_DEFINITION,
-            operation: OperationTypeNode.MUTATION,
+            operation: 'mutation' as OperationTypeNode,
             type: createNamedTypeNode(schema.mutation),
           }
         : [],
       schema.subscription
         ? {
             kind: Kind.OPERATION_TYPE_DEFINITION,
-            operation: OperationTypeNode.SUBSCRIPTION,
+            operation: 'subscription' as OperationTypeNode,
             type: createNamedTypeNode(schema.subscription),
           }
         : [],
