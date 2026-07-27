@@ -17,7 +17,7 @@ import {
 } from "./supergraph-spec.js";
 
 const specifiedDirectives = new Set(
-  specifiedDirectivesArray.map((d) => d.name),
+  specifiedDirectivesArray.map((d) => d.name).filter((d) => d !== "oneOf"), // don't consider oneOf a specified directive because older versions of graphql don't support it.
 );
 
 function getAdditionalDirectivesToStrip(documentNode: DocumentNode) {
