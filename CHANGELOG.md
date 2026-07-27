@@ -1,5 +1,13 @@
 # @theguild/federation-composition
 
+## 0.23.3
+
+### Patch Changes
+
+- [#315](https://github.com/graphql-hive/federation-composition/pull/315) [`45425fc`](https://github.com/graphql-hive/federation-composition/commit/45425fccf6bd8a83f94861b315a66479f7c432ba) Thanks [@jdolle](https://github.com/jdolle)! - Composition keeps `@oneOf` in the public graph, if it's defined in the supergraph
+
+  This ensures older versions of codegen and other tools that rely on the public SDL are compatible with the output.
+
 ## 0.23.2
 
 ### Patch Changes
