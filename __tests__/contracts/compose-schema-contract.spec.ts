@@ -643,96 +643,55 @@ describe("composeSchemaContract", () => {
       }"
     `);
     expect(result.supergraphSdl).toMatchInlineSnapshot(`
-      "
+      "schema @link(url: "https://specs.apollo.dev/link/v1.0")  @link(url: "https://specs.apollo.dev/join/v0.3", for: EXECUTION)  @link(url: "https://specs.apollo.dev/inaccessible/v0.2", for: SECURITY)  {
+        query: Query
+      }
 
-          schema
-          @link(url: "https://specs.apollo.dev/link/v1.0")
-          @link(url: "https://specs.apollo.dev/join/v0.3", for: EXECUTION)
-          
-          
-          @link(url: "https://specs.apollo.dev/inaccessible/v0.2", for: SECURITY)
-          
-          
-          
-          
-        {
-          query: Query
-          
-          
-        }
+      directive @join__enumValue(graph: join__Graph!)  repeatable on ENUM_VALUE
 
-        
-          directive @join__enumValue(graph: join__Graph!) repeatable on ENUM_VALUE
+      directive @join__graph(name: String!, url: String!)  on ENUM_VALUE
 
-          directive @join__graph(name: String!, url: String!) on ENUM_VALUE
+      directive @join__field(
+        graph: join__Graph
+        requires: join__FieldSet
+        provides: join__FieldSet
+        type: String
+        external: Boolean
+        override: String
+        usedOverridden: Boolean
+      ) repeatable on FIELD_DEFINITION | INPUT_FIELD_DEFINITION
 
-          
-            directive @join__field(
-              graph: join__Graph
-              requires: join__FieldSet
-              provides: join__FieldSet
-              type: String
-              external: Boolean
-              override: String
-              usedOverridden: Boolean
-              
-              
-            ) repeatable on FIELD_DEFINITION | INPUT_FIELD_DEFINITION
-          
-          
+      directive @join__implements(graph: join__Graph!, interface: String!)  repeatable on OBJECT | INTERFACE
 
-          directive @join__implements(
-            graph: join__Graph!
-            interface: String!
-          ) repeatable on OBJECT | INTERFACE
+      directive @join__type(
+        graph: join__Graph!
+        key: join__FieldSet
+        extension: Boolean! = false
+        resolvable: Boolean! = true
+        isInterfaceObject: Boolean! = false
+      ) repeatable on OBJECT | INTERFACE | UNION | ENUM | INPUT_OBJECT | SCALAR
 
-          directive @join__type(
-            graph: join__Graph!
-            key: join__FieldSet
-            extension: Boolean! = false
-            resolvable: Boolean! = true
-            isInterfaceObject: Boolean! = false
-          ) repeatable on OBJECT | INTERFACE | UNION | ENUM | INPUT_OBJECT | SCALAR
+      directive @join__unionMember(graph: join__Graph!, member: String!)  repeatable on UNION
 
-          directive @join__unionMember(
-            graph: join__Graph!
-            member: String!
-          ) repeatable on UNION
+      scalar join__FieldSet
 
-          scalar join__FieldSet
-          
-        
-        
-        directive @link(
-          url: String
-          as: String
-          for: link__Purpose
-          import: [link__Import]
-        ) repeatable on SCHEMA
+      directive @link(url: String, as: String, for: link__Purpose, import: [link__Import])  repeatable on SCHEMA
 
-        scalar link__Import
+      scalar link__Import
 
-        enum link__Purpose {
-          """
-          \`SECURITY\` features provide metadata necessary to securely resolve fields.
-          """
-          SECURITY
+      enum link__Purpose {
+        """
+        \`SECURITY\` features provide metadata necessary to securely resolve fields.
+        """
+        SECURITY
+        """
+        \`EXECUTION\` features provide metadata necessary for operation execution.
+        """
+        EXECUTION
+      }
 
-          """
-          \`EXECUTION\` features provide metadata necessary for operation execution.
-          """
-          EXECUTION
-        }
+      directive @inaccessible on FIELD_DEFINITION | OBJECT | INTERFACE | UNION | ENUM | ENUM_VALUE | SCALAR | INPUT_OBJECT | INPUT_FIELD_DEFINITION | ARGUMENT_DEFINITION
 
-        
-        
-        
-        directive @inaccessible on FIELD_DEFINITION | OBJECT | INTERFACE | UNION | ENUM | ENUM_VALUE | SCALAR | INPUT_OBJECT | INPUT_FIELD_DEFINITION | ARGUMENT_DEFINITION
-
-        
-        
-        
-        
       enum join__Graph {
         FOO_GRAPHQL @join__graph(name: "FOO_GRAPHQL", url: "https://lol.de") 
         FOO2_GRAPHQL @join__graph(name: "FOO2_GRAPHQL", url: "https://trolol.de") 
@@ -747,8 +706,7 @@ describe("composeSchemaContract", () => {
 
       type Foo @join__type(graph: FOO2_GRAPHQL)  {
         field: Brr
-      }
-          "
+      }"
     `);
 
     const line = result.supergraphSdl

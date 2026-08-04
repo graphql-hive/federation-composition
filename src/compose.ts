@@ -1,4 +1,4 @@
-import { GraphQLError, Kind, parse } from "graphql";
+import { DocumentNode, GraphQLError, Kind, parse } from "graphql";
 import { print } from "./graphql/printer.js";
 import { transformSupergraphToPublicSchema } from "./graphql/transform-supergraph-to-public-schema.js";
 import { sdl as authenticatedSDL } from "./specifications/authenticated.js";
@@ -63,7 +63,9 @@ export function composeServices(
   const usedRequiresScopesSpec = validationResult.specs.requiresScopes;
   const usedAuthenticatedSpec = validationResult.specs.authenticated;
 
+  let _publicDocumentNode: DocumentNode;
   let _publicSdl: string;
+  let _supergraphSdl: string;
 
   let costLinkImports = "";
 
@@ -105,7 +107,7 @@ export function composeServices(
     "v2.9": "v0.5",
   };
 
-  const core = `
+  const core = parse(`
     schema
     @link(url: "https://specs.apollo.dev/link/v1.0")
     @link(url: "https://specs.apollo.dev/join/${federationVersionToJoinVersion[validationResult.federationVersion]}", for: EXECUTION)
@@ -149,32 +151,32 @@ export function composeServices(
   ${usedPolicySpec ? policySDL : ""}
   ${usedRequiresScopesSpec ? requiresScopesSDL : ""}
   ${usedAuthenticatedSpec ? authenticatedSDL : ""}
-  `;
+  `);
+
+  const supergraphDocument: DocumentNode = {
+    kind: Kind.DOCUMENT,
+    definitions: [...core.definitions, ...validationResult.supergraph],
+  };
 
   return {
-    supergraphSdl: `
-${core}
-${print({
-  kind: Kind.DOCUMENT,
-  definitions: validationResult.supergraph,
-})}
-    `,
-    /**
-     *
-     */
-    get publicSdl() {
-      if (_publicSdl) {
-        return _publicSdl;
+    supergraphDocument,
+    get supergraphSdl() {
+      if (!_supergraphSdl) {
+        _supergraphSdl = print(supergraphDocument);
       }
-
-      _publicSdl = print(
-        transformSupergraphToPublicSchema({
-          kind: Kind.DOCUMENT,
-          definitions: parse(core).definitions.concat(
-            validationResult.supergraph,
-          ),
-        }),
-      );
+      return _supergraphSdl;
+    },
+    get publicDocumentNode() {
+      if (!_publicDocumentNode) {
+        _publicDocumentNode =
+          transformSupergraphToPublicSchema(supergraphDocument);
+      }
+      return _publicDocumentNode;
+    },
+    get publicSdl() {
+      if (!_publicSdl) {
+        _publicSdl = print(this.publicDocumentNode);
+      }
 
       return _publicSdl;
     },
@@ -193,12 +195,17 @@ export type CompositionResult = CompositionFailure | CompositionSuccess;
 
 export interface CompositionFailure {
   supergraphSdl?: undefined;
+  supergraph?: undefined;
+  publicSdl?: undefined;
+  publicDocumentNode?: undefined;
   errors: GraphQLError[];
 }
 
 export interface CompositionSuccess {
   supergraphSdl: string;
+  supergraphDocument: DocumentNode;
   publicSdl: string;
+  publicDocumentNode: DocumentNode;
   errors?: undefined;
 }
 
