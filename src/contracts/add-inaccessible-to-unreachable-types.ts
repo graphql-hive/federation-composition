@@ -48,8 +48,13 @@ export const addInaccessibleToUnreachableTypes = (
     excludedTypeNames: reachableTypeNames,
     directiveName: inaccessibleDirectiveName,
   });
+
+  let publicDocumentNode = transformSupergraphToPublicSchema(supergraphSDL);
+
   return {
+    supergraphDocument: supergraphSDL,
     supergraphSdl: print(supergraphSDL),
-    publicSdl: print(transformSupergraphToPublicSchema(supergraphSDL)),
+    publicDocumentNode,
+    publicSdl: print(publicDocumentNode),
   };
 };
