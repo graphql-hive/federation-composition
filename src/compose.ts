@@ -211,9 +211,10 @@ export function compositionHasErrors(
 export function createCompositionSuccessReadCacheContainer(
   supergraphDocumentNode: DocumentNode,
 ): CompositionSuccess {
+  let supergraphSdl: string;
   let publicDocumentNode: DocumentNode;
   let publicSdl: string;
-  let supergraphSdl: string;
+
   return {
     supergraphDocumentNode,
     get supergraphSdl() {
