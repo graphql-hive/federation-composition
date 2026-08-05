@@ -1,5 +1,11 @@
 # @theguild/federation-composition
 
+## 0.24.0
+
+### Minor Changes
+
+- [#317](https://github.com/graphql-hive/federation-composition/pull/317) [`62edbf4`](https://github.com/graphql-hive/federation-composition/commit/62edbf43c8b1217293e59511135c840aaf865c02) Thanks [@n1ru4l](https://github.com/n1ru4l)! - Reduce formatting of the supergraph SDL.
+
 ## 0.23.3
 
 ### Patch Changes
