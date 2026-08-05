@@ -1,5 +1,11 @@
 # @theguild/federation-composition
 
+## 0.24.1
+
+### Patch Changes
+
+- [#319](https://github.com/graphql-hive/federation-composition/pull/319) [`c0d24a3`](https://github.com/graphql-hive/federation-composition/commit/c0d24a3f6e619961c7ab24597d2e9a08f621c704) Thanks [@n1ru4l](https://github.com/n1ru4l)! - Further improve whitespace formatting and reduce overhead for `addInaccessibleToUnreachableTypes` and `composeSchemaContract` by operating on already parsed documents instead of parsing the sdl.
+
 ## 0.24.0
 
 ### Minor Changes
