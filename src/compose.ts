@@ -63,10 +63,6 @@ export function composeServices(
   const usedRequiresScopesSpec = validationResult.specs.requiresScopes;
   const usedAuthenticatedSpec = validationResult.specs.authenticated;
 
-  let _publicDocumentNode: DocumentNode;
-  let _publicSdl: string;
-  let _supergraphSdl: string;
-
   let costLinkImports = "";
 
   if (usedCostSpec.used) {
@@ -158,29 +154,7 @@ export function composeServices(
     definitions: [...core.definitions, ...validationResult.supergraph],
   };
 
-  return {
-    supergraphDocument,
-    get supergraphSdl() {
-      if (!_supergraphSdl) {
-        _supergraphSdl = print(supergraphDocument);
-      }
-      return _supergraphSdl;
-    },
-    get publicDocumentNode() {
-      if (!_publicDocumentNode) {
-        _publicDocumentNode =
-          transformSupergraphToPublicSchema(supergraphDocument);
-      }
-      return _publicDocumentNode;
-    },
-    get publicSdl() {
-      if (!_publicSdl) {
-        _publicSdl = print(this.publicDocumentNode);
-      }
-
-      return _publicSdl;
-    },
-  };
+  return createCompositionSuccessReadCacheContainer(supergraphDocument);
 }
 
 function createLinkImportValue(name: string, alias: string | null) {
@@ -195,7 +169,7 @@ export type CompositionResult = CompositionFailure | CompositionSuccess;
 
 export interface CompositionFailure {
   supergraphSdl?: undefined;
-  supergraph?: undefined;
+  supergraphDocumentNode?: undefined;
   publicSdl?: undefined;
   publicDocumentNode?: undefined;
   errors: GraphQLError[];
@@ -203,7 +177,7 @@ export interface CompositionFailure {
 
 export interface CompositionSuccess {
   supergraphSdl: string;
-  supergraphDocument: DocumentNode;
+  supergraphDocumentNode: DocumentNode;
   publicSdl: string;
   publicDocumentNode: DocumentNode;
   errors?: undefined;
@@ -231,4 +205,38 @@ export function compositionHasErrors(
   compositionResult: CompositionResult,
 ): compositionResult is CompositionFailure {
   return "errors" in compositionResult && !!compositionResult.errors;
+}
+
+/** Only compose and expose expensive properties when requested! */
+export function createCompositionSuccessReadCacheContainer(
+  supergraphDocumentNode: DocumentNode,
+): CompositionSuccess {
+  let publicDocumentNode: DocumentNode;
+  let publicSdl: string;
+  let supergraphSdl: string;
+  return {
+    supergraphDocumentNode,
+    get supergraphSdl() {
+      if (supergraphSdl == null) {
+        supergraphSdl = print(supergraphDocumentNode);
+      }
+      return supergraphSdl;
+    },
+    get publicDocumentNode() {
+      if (publicDocumentNode == null) {
+        publicDocumentNode = transformSupergraphToPublicSchema(
+          supergraphDocumentNode,
+        );
+      }
+
+      return publicDocumentNode;
+    },
+    get publicSdl() {
+      if (publicSdl == null) {
+        publicSdl = print(this.publicDocumentNode);
+      }
+
+      return publicSdl;
+    },
+  };
 }

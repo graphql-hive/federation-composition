@@ -1,10 +1,17 @@
-import { parse, print } from "graphql";
-import { CompositionSuccess } from "../compose.js";
+import { DocumentNode } from "graphql";
+import {
+  CompositionSuccess,
+  createCompositionSuccessReadCacheContainer,
+} from "../compose.js";
 import {
   addDirectiveOnTypes,
   getReachableTypes,
 } from "./reachable-type-filter.js";
-import { transformSupergraphToPublicSchema } from "../graphql/transform-supergraph-to-public-schema.js";
+
+type AddInaccessibleToUnreachableTypesInput = Pick<
+  CompositionSuccess,
+  "supergraphDocumentNode" | "publicDocumentNode"
+>;
 
 /**
  * Adds inaccessible directive to unreachable types within the supergraph and removes them from the
@@ -14,7 +21,7 @@ export const addInaccessibleToUnreachableTypes = (
   /** Implementation for resolvinf the federation type names. */
   resolveName: (identity: string, name: string) => string,
   /** The successful composition result to process. */
-  compositionResult: CompositionSuccess,
+  compositionResult: AddInaccessibleToUnreachableTypesInput,
 ): CompositionSuccess => {
   const inaccessibleDirectiveName = resolveName(
     "https://specs.apollo.dev/inaccessible",
@@ -34,7 +41,7 @@ export const addInaccessibleToUnreachableTypes = (
 
   // we retrieve the list of reachable types from the public api sdl
   const reachableTypeNames = getReachableTypes(
-    parse(compositionResult.publicSdl),
+    compositionResult.publicDocumentNode,
   );
 
   // apollo router does not like @inaccessible on federation types...
@@ -43,18 +50,11 @@ export const addInaccessibleToUnreachableTypes = (
   }
 
   // then we apply the filter to the supergraph SDL (which is the source for the public api sdl)
-  const supergraphSDL = addDirectiveOnTypes({
-    documentNode: parse(compositionResult.supergraphSdl),
+  const supergraphNode = addDirectiveOnTypes({
+    documentNode: compositionResult.supergraphDocumentNode,
     excludedTypeNames: reachableTypeNames,
     directiveName: inaccessibleDirectiveName,
   });
 
-  let publicDocumentNode = transformSupergraphToPublicSchema(supergraphSDL);
-
-  return {
-    supergraphDocument: supergraphSDL,
-    supergraphSdl: print(supergraphSDL),
-    publicDocumentNode,
-    publicSdl: print(publicDocumentNode),
-  };
+  return createCompositionSuccessReadCacheContainer(supergraphNode);
 };

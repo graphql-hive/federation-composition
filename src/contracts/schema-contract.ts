@@ -5,7 +5,6 @@ import {
 import { type ServiceDefinition } from "../types.js";
 import { composeServices } from "../compose.js";
 import { extractLinkImplementations } from "../utils/link/index.js";
-import { parse } from "graphql";
 import { addInaccessibleToUnreachableTypes } from "./add-inaccessible-to-unreachable-types.js";
 
 /** Compose a federation schema contract using a filter. */
@@ -22,11 +21,11 @@ export function composeSchemaContract(
 
   if (
     !compositionResult.errors &&
-    compositionResult.supergraphSdl &&
+    compositionResult.supergraphDocumentNode &&
     removeUnreachableTypes
   ) {
     const { resolveImportName } = extractLinkImplementations(
-      parse(compositionResult.supergraphSdl),
+      compositionResult.supergraphDocumentNode,
     );
     return addInaccessibleToUnreachableTypes(
       resolveImportName,
