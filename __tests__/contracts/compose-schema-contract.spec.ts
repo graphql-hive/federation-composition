@@ -33,13 +33,13 @@ describe("composeSchemaContract", () => {
 
     expect(result.errors).toEqual(undefined);
     expect(result.supergraphSdl).toMatchInlineSnapshot(`
-      "schema @link(url: "https://specs.apollo.dev/link/v1.0")  @link(url: "https://specs.apollo.dev/join/v0.3", for: EXECUTION)  @link(url: "https://specs.apollo.dev/inaccessible/v0.2", for: SECURITY)  {
+      "schema @link(url: "https://specs.apollo.dev/link/v1.0") @link(url: "https://specs.apollo.dev/join/v0.3", for: EXECUTION) @link(url: "https://specs.apollo.dev/inaccessible/v0.2", for: SECURITY) {
         query: Query
       }
 
-      directive @join__enumValue(graph: join__Graph!)  repeatable on ENUM_VALUE
+      directive @join__enumValue(graph: join__Graph!) repeatable on ENUM_VALUE
 
-      directive @join__graph(name: String!, url: String!)  on ENUM_VALUE
+      directive @join__graph(name: String!, url: String!) on ENUM_VALUE
 
       directive @join__field(
         graph: join__Graph
@@ -51,7 +51,7 @@ describe("composeSchemaContract", () => {
         usedOverridden: Boolean
       ) repeatable on FIELD_DEFINITION | INPUT_FIELD_DEFINITION
 
-      directive @join__implements(graph: join__Graph!, interface: String!)  repeatable on OBJECT | INTERFACE
+      directive @join__implements(graph: join__Graph!, interface: String!) repeatable on OBJECT | INTERFACE
 
       directive @join__type(
         graph: join__Graph!
@@ -61,11 +61,11 @@ describe("composeSchemaContract", () => {
         isInterfaceObject: Boolean! = false
       ) repeatable on OBJECT | INTERFACE | UNION | ENUM | INPUT_OBJECT | SCALAR
 
-      directive @join__unionMember(graph: join__Graph!, member: String!)  repeatable on UNION
+      directive @join__unionMember(graph: join__Graph!, member: String!) repeatable on UNION
 
       scalar join__FieldSet
 
-      directive @link(url: String, as: String, for: link__Purpose, import: [link__Import])  repeatable on SCHEMA
+      directive @link(url: String, as: String, for: link__Purpose, import: [link__Import]) repeatable on SCHEMA
 
       scalar link__Import
 
@@ -83,13 +83,13 @@ describe("composeSchemaContract", () => {
       directive @inaccessible on FIELD_DEFINITION | OBJECT | INTERFACE | UNION | ENUM | ENUM_VALUE | SCALAR | INPUT_OBJECT | INPUT_FIELD_DEFINITION | ARGUMENT_DEFINITION
 
       enum join__Graph {
-        A @join__graph(name: "a", url: "") 
-        B @join__graph(name: "b", url: "") 
+        A @join__graph(name: "a", url: "")
+        B @join__graph(name: "b", url: "")
       }
 
-      type Query @join__type(graph: A)  @join__type(graph: B)  {
-        a: String @join__field(graph: A) 
-        b: String @join__field(graph: B)  @inaccessible
+      type Query @join__type(graph: A) @join__type(graph: B) {
+        a: String @join__field(graph: A)
+        b: String @join__field(graph: B) @inaccessible
       }"
     `);
     expect((result as CompositionSuccess).publicSdl).toMatchInlineSnapshot(`
@@ -166,14 +166,14 @@ describe("composeSchemaContract", () => {
       }"
     `);
     expect(result.supergraphSdl).toMatchInlineSnapshot(`
-      "schema @link(url: "https://specs.apollo.dev/link/v1.0")  @link(url: "https://specs.apollo.dev/join/v0.3", for: EXECUTION)  @link(url: "https://specs.apollo.dev/inaccessible/v0.2", for: SECURITY)  {
+      "schema @link(url: "https://specs.apollo.dev/link/v1.0") @link(url: "https://specs.apollo.dev/join/v0.3", for: EXECUTION) @link(url: "https://specs.apollo.dev/inaccessible/v0.2", for: SECURITY) {
         query: Query
         mutation: Mutation
       }
 
-      directive @join__enumValue(graph: join__Graph!)  repeatable on ENUM_VALUE
+      directive @join__enumValue(graph: join__Graph!) repeatable on ENUM_VALUE
 
-      directive @join__graph(name: String!, url: String!)  on ENUM_VALUE
+      directive @join__graph(name: String!, url: String!) on ENUM_VALUE
 
       directive @join__field(
         graph: join__Graph
@@ -185,7 +185,7 @@ describe("composeSchemaContract", () => {
         usedOverridden: Boolean
       ) repeatable on FIELD_DEFINITION | INPUT_FIELD_DEFINITION
 
-      directive @join__implements(graph: join__Graph!, interface: String!)  repeatable on OBJECT | INTERFACE
+      directive @join__implements(graph: join__Graph!, interface: String!) repeatable on OBJECT | INTERFACE
 
       directive @join__type(
         graph: join__Graph!
@@ -195,11 +195,11 @@ describe("composeSchemaContract", () => {
         isInterfaceObject: Boolean! = false
       ) repeatable on OBJECT | INTERFACE | UNION | ENUM | INPUT_OBJECT | SCALAR
 
-      directive @join__unionMember(graph: join__Graph!, member: String!)  repeatable on UNION
+      directive @join__unionMember(graph: join__Graph!, member: String!) repeatable on UNION
 
       scalar join__FieldSet
 
-      directive @link(url: String, as: String, for: link__Purpose, import: [link__Import])  repeatable on SCHEMA
+      directive @link(url: String, as: String, for: link__Purpose, import: [link__Import]) repeatable on SCHEMA
 
       scalar link__Import
 
@@ -217,18 +217,18 @@ describe("composeSchemaContract", () => {
       directive @inaccessible on FIELD_DEFINITION | OBJECT | INTERFACE | UNION | ENUM | ENUM_VALUE | SCALAR | INPUT_OBJECT | INPUT_FIELD_DEFINITION | ARGUMENT_DEFINITION
 
       enum join__Graph {
-        FOO_GRAPHQL @join__graph(name: "FOO_GRAPHQL", url: "https://lol.de") 
-        FOO2_GRAPHQL @join__graph(name: "FOO2_GRAPHQL", url: "https://trolol.de") 
+        FOO_GRAPHQL @join__graph(name: "FOO_GRAPHQL", url: "https://lol.de")
+        FOO2_GRAPHQL @join__graph(name: "FOO2_GRAPHQL", url: "https://trolol.de")
       }
 
-      type Query @join__type(graph: FOO_GRAPHQL)  @join__type(graph: FOO2_GRAPHQL)  {
-        field1: String! @join__field(graph: FOO_GRAPHQL) 
-        field2: String! @join__field(graph: FOO2_GRAPHQL) 
+      type Query @join__type(graph: FOO_GRAPHQL) @join__type(graph: FOO2_GRAPHQL) {
+        field1: String! @join__field(graph: FOO_GRAPHQL)
+        field2: String! @join__field(graph: FOO2_GRAPHQL)
       }
 
-      type Mutation @join__type(graph: FOO_GRAPHQL)  @join__type(graph: FOO2_GRAPHQL)  @inaccessible {
-        field1: ID! @join__field(graph: FOO_GRAPHQL)  @inaccessible
-        field2: ID! @join__field(graph: FOO2_GRAPHQL)  @inaccessible
+      type Mutation @join__type(graph: FOO_GRAPHQL) @join__type(graph: FOO2_GRAPHQL) @inaccessible {
+        field1: ID! @join__field(graph: FOO_GRAPHQL) @inaccessible
+        field2: ID! @join__field(graph: FOO2_GRAPHQL) @inaccessible
       }"
     `);
   });
@@ -304,14 +304,14 @@ describe("composeSchemaContract", () => {
       }"
     `);
     expect((result as CompositionSuccess).supergraphSdl).toMatchInlineSnapshot(`
-      "schema @link(url: "https://specs.apollo.dev/link/v1.0")  @link(url: "https://specs.apollo.dev/join/v0.3", for: EXECUTION)  @link(url: "https://specs.apollo.dev/inaccessible/v0.2", for: SECURITY)  {
+      "schema @link(url: "https://specs.apollo.dev/link/v1.0") @link(url: "https://specs.apollo.dev/join/v0.3", for: EXECUTION) @link(url: "https://specs.apollo.dev/inaccessible/v0.2", for: SECURITY) {
         query: Query
         mutation: Mutation
       }
 
-      directive @join__enumValue(graph: join__Graph!)  repeatable on ENUM_VALUE
+      directive @join__enumValue(graph: join__Graph!) repeatable on ENUM_VALUE
 
-      directive @join__graph(name: String!, url: String!)  on ENUM_VALUE
+      directive @join__graph(name: String!, url: String!) on ENUM_VALUE
 
       directive @join__field(
         graph: join__Graph
@@ -323,7 +323,7 @@ describe("composeSchemaContract", () => {
         usedOverridden: Boolean
       ) repeatable on FIELD_DEFINITION | INPUT_FIELD_DEFINITION
 
-      directive @join__implements(graph: join__Graph!, interface: String!)  repeatable on OBJECT | INTERFACE
+      directive @join__implements(graph: join__Graph!, interface: String!) repeatable on OBJECT | INTERFACE
 
       directive @join__type(
         graph: join__Graph!
@@ -333,11 +333,11 @@ describe("composeSchemaContract", () => {
         isInterfaceObject: Boolean! = false
       ) repeatable on OBJECT | INTERFACE | UNION | ENUM | INPUT_OBJECT | SCALAR
 
-      directive @join__unionMember(graph: join__Graph!, member: String!)  repeatable on UNION
+      directive @join__unionMember(graph: join__Graph!, member: String!) repeatable on UNION
 
       scalar join__FieldSet
 
-      directive @link(url: String, as: String, for: link__Purpose, import: [link__Import])  repeatable on SCHEMA
+      directive @link(url: String, as: String, for: link__Purpose, import: [link__Import]) repeatable on SCHEMA
 
       scalar link__Import
 
@@ -355,18 +355,18 @@ describe("composeSchemaContract", () => {
       directive @inaccessible on FIELD_DEFINITION | OBJECT | INTERFACE | UNION | ENUM | ENUM_VALUE | SCALAR | INPUT_OBJECT | INPUT_FIELD_DEFINITION | ARGUMENT_DEFINITION
 
       enum join__Graph {
-        FOO_GRAPHQL @join__graph(name: "FOO_GRAPHQL", url: "https://lol.de") 
-        FOO2_GRAPHQL @join__graph(name: "FOO2_GRAPHQL", url: "https://trolol.de") 
+        FOO_GRAPHQL @join__graph(name: "FOO_GRAPHQL", url: "https://lol.de")
+        FOO2_GRAPHQL @join__graph(name: "FOO2_GRAPHQL", url: "https://trolol.de")
       }
 
-      type Query @join__type(graph: FOO_GRAPHQL)  @join__type(graph: FOO2_GRAPHQL)  {
-        field1: String! @join__field(graph: FOO_GRAPHQL) 
-        field2: String! @join__field(graph: FOO2_GRAPHQL) 
+      type Query @join__type(graph: FOO_GRAPHQL) @join__type(graph: FOO2_GRAPHQL) {
+        field1: String! @join__field(graph: FOO_GRAPHQL)
+        field2: String! @join__field(graph: FOO2_GRAPHQL)
       }
 
-      type Mutation @join__type(graph: FOO_GRAPHQL)  @join__type(graph: FOO2_GRAPHQL)  {
-        field1: ID! @join__field(graph: FOO_GRAPHQL)  @inaccessible
-        field2: ID! @join__field(graph: FOO2_GRAPHQL) 
+      type Mutation @join__type(graph: FOO_GRAPHQL) @join__type(graph: FOO2_GRAPHQL) {
+        field1: ID! @join__field(graph: FOO_GRAPHQL) @inaccessible
+        field2: ID! @join__field(graph: FOO2_GRAPHQL)
       }"
     `);
   });
@@ -438,14 +438,14 @@ describe("composeSchemaContract", () => {
       }"
     `);
     expect(result.supergraphSdl).toMatchInlineSnapshot(`
-      "schema @link(url: "https://specs.apollo.dev/link/v1.0")  @link(url: "https://specs.apollo.dev/join/v0.3", for: EXECUTION)  @link(url: "https://specs.apollo.dev/inaccessible/v0.2", for: SECURITY)  {
+      "schema @link(url: "https://specs.apollo.dev/link/v1.0") @link(url: "https://specs.apollo.dev/join/v0.3", for: EXECUTION) @link(url: "https://specs.apollo.dev/inaccessible/v0.2", for: SECURITY) {
         query: Query
         mutation: Mutation
       }
 
-      directive @join__enumValue(graph: join__Graph!)  repeatable on ENUM_VALUE
+      directive @join__enumValue(graph: join__Graph!) repeatable on ENUM_VALUE
 
-      directive @join__graph(name: String!, url: String!)  on ENUM_VALUE
+      directive @join__graph(name: String!, url: String!) on ENUM_VALUE
 
       directive @join__field(
         graph: join__Graph
@@ -457,7 +457,7 @@ describe("composeSchemaContract", () => {
         usedOverridden: Boolean
       ) repeatable on FIELD_DEFINITION | INPUT_FIELD_DEFINITION
 
-      directive @join__implements(graph: join__Graph!, interface: String!)  repeatable on OBJECT | INTERFACE
+      directive @join__implements(graph: join__Graph!, interface: String!) repeatable on OBJECT | INTERFACE
 
       directive @join__type(
         graph: join__Graph!
@@ -467,11 +467,11 @@ describe("composeSchemaContract", () => {
         isInterfaceObject: Boolean! = false
       ) repeatable on OBJECT | INTERFACE | UNION | ENUM | INPUT_OBJECT | SCALAR
 
-      directive @join__unionMember(graph: join__Graph!, member: String!)  repeatable on UNION
+      directive @join__unionMember(graph: join__Graph!, member: String!) repeatable on UNION
 
       scalar join__FieldSet
 
-      directive @link(url: String, as: String, for: link__Purpose, import: [link__Import])  repeatable on SCHEMA
+      directive @link(url: String, as: String, for: link__Purpose, import: [link__Import]) repeatable on SCHEMA
 
       scalar link__Import
 
@@ -489,18 +489,18 @@ describe("composeSchemaContract", () => {
       directive @inaccessible on FIELD_DEFINITION | OBJECT | INTERFACE | UNION | ENUM | ENUM_VALUE | SCALAR | INPUT_OBJECT | INPUT_FIELD_DEFINITION | ARGUMENT_DEFINITION
 
       enum join__Graph {
-        FOO_GRAPHQL @join__graph(name: "FOO_GRAPHQL", url: "https://lol.de") 
-        FOO2_GRAPHQL @join__graph(name: "FOO2_GRAPHQL", url: "https://trolol.de") 
+        FOO_GRAPHQL @join__graph(name: "FOO_GRAPHQL", url: "https://lol.de")
+        FOO2_GRAPHQL @join__graph(name: "FOO2_GRAPHQL", url: "https://trolol.de")
       }
 
-      type Query @join__type(graph: FOO_GRAPHQL)  @join__type(graph: FOO2_GRAPHQL)  {
-        field1: String! @join__field(graph: FOO_GRAPHQL) 
-        field2: String! @join__field(graph: FOO2_GRAPHQL) 
+      type Query @join__type(graph: FOO_GRAPHQL) @join__type(graph: FOO2_GRAPHQL) {
+        field1: String! @join__field(graph: FOO_GRAPHQL)
+        field2: String! @join__field(graph: FOO2_GRAPHQL)
       }
 
-      type Mutation @join__type(graph: FOO_GRAPHQL)  @join__type(graph: FOO2_GRAPHQL)  @inaccessible {
-        field1: ID! @join__field(graph: FOO_GRAPHQL)  @inaccessible
-        field2: ID! @join__field(graph: FOO2_GRAPHQL)  @inaccessible
+      type Mutation @join__type(graph: FOO_GRAPHQL) @join__type(graph: FOO2_GRAPHQL) @inaccessible {
+        field1: ID! @join__field(graph: FOO_GRAPHQL) @inaccessible
+        field2: ID! @join__field(graph: FOO2_GRAPHQL) @inaccessible
       }"
     `);
   });
@@ -576,14 +576,14 @@ describe("composeSchemaContract", () => {
       }"
     `);
     expect(result.supergraphSdl).toMatchInlineSnapshot(`
-      "schema @link(url: "https://specs.apollo.dev/link/v1.0")  @link(url: "https://specs.apollo.dev/join/v0.3", for: EXECUTION)  @link(url: "https://specs.apollo.dev/inaccessible/v0.2", for: SECURITY)  {
+      "schema @link(url: "https://specs.apollo.dev/link/v1.0") @link(url: "https://specs.apollo.dev/join/v0.3", for: EXECUTION) @link(url: "https://specs.apollo.dev/inaccessible/v0.2", for: SECURITY) {
         query: Query
         mutation: Mutation
       }
 
-      directive @join__enumValue(graph: join__Graph!)  repeatable on ENUM_VALUE
+      directive @join__enumValue(graph: join__Graph!) repeatable on ENUM_VALUE
 
-      directive @join__graph(name: String!, url: String!)  on ENUM_VALUE
+      directive @join__graph(name: String!, url: String!) on ENUM_VALUE
 
       directive @join__field(
         graph: join__Graph
@@ -595,7 +595,7 @@ describe("composeSchemaContract", () => {
         usedOverridden: Boolean
       ) repeatable on FIELD_DEFINITION | INPUT_FIELD_DEFINITION
 
-      directive @join__implements(graph: join__Graph!, interface: String!)  repeatable on OBJECT | INTERFACE
+      directive @join__implements(graph: join__Graph!, interface: String!) repeatable on OBJECT | INTERFACE
 
       directive @join__type(
         graph: join__Graph!
@@ -605,11 +605,11 @@ describe("composeSchemaContract", () => {
         isInterfaceObject: Boolean! = false
       ) repeatable on OBJECT | INTERFACE | UNION | ENUM | INPUT_OBJECT | SCALAR
 
-      directive @join__unionMember(graph: join__Graph!, member: String!)  repeatable on UNION
+      directive @join__unionMember(graph: join__Graph!, member: String!) repeatable on UNION
 
       scalar join__FieldSet
 
-      directive @link(url: String, as: String, for: link__Purpose, import: [link__Import])  repeatable on SCHEMA
+      directive @link(url: String, as: String, for: link__Purpose, import: [link__Import]) repeatable on SCHEMA
 
       scalar link__Import
 
@@ -627,18 +627,18 @@ describe("composeSchemaContract", () => {
       directive @inaccessible on FIELD_DEFINITION | OBJECT | INTERFACE | UNION | ENUM | ENUM_VALUE | SCALAR | INPUT_OBJECT | INPUT_FIELD_DEFINITION | ARGUMENT_DEFINITION
 
       enum join__Graph {
-        FOO_GRAPHQL @join__graph(name: "FOO_GRAPHQL", url: "https://lol.de") 
-        FOO2_GRAPHQL @join__graph(name: "FOO2_GRAPHQL", url: "https://trolol.de") 
+        FOO_GRAPHQL @join__graph(name: "FOO_GRAPHQL", url: "https://lol.de")
+        FOO2_GRAPHQL @join__graph(name: "FOO2_GRAPHQL", url: "https://trolol.de")
       }
 
-      type Query @join__type(graph: FOO_GRAPHQL)  @join__type(graph: FOO2_GRAPHQL)  {
-        field1: String! @join__field(graph: FOO_GRAPHQL) 
-        field2: String! @join__field(graph: FOO2_GRAPHQL) 
+      type Query @join__type(graph: FOO_GRAPHQL) @join__type(graph: FOO2_GRAPHQL) {
+        field1: String! @join__field(graph: FOO_GRAPHQL)
+        field2: String! @join__field(graph: FOO2_GRAPHQL)
       }
 
-      type Mutation @join__type(graph: FOO_GRAPHQL)  @join__type(graph: FOO2_GRAPHQL)  {
-        field1: ID! @join__field(graph: FOO_GRAPHQL)  @inaccessible
-        field2: ID! @join__field(graph: FOO2_GRAPHQL) 
+      type Mutation @join__type(graph: FOO_GRAPHQL) @join__type(graph: FOO2_GRAPHQL) {
+        field1: ID! @join__field(graph: FOO_GRAPHQL) @inaccessible
+        field2: ID! @join__field(graph: FOO2_GRAPHQL)
       }"
     `);
   });
@@ -713,13 +713,13 @@ describe("composeSchemaContract", () => {
       }"
     `);
     expect(result.supergraphSdl).toMatchInlineSnapshot(`
-      "schema @link(url: "https://specs.apollo.dev/link/v1.0")  @link(url: "https://specs.apollo.dev/join/v0.3", for: EXECUTION)  @link(url: "https://specs.apollo.dev/inaccessible/v0.2", for: SECURITY)  {
+      "schema @link(url: "https://specs.apollo.dev/link/v1.0") @link(url: "https://specs.apollo.dev/join/v0.3", for: EXECUTION) @link(url: "https://specs.apollo.dev/inaccessible/v0.2", for: SECURITY) {
         query: Query
       }
 
-      directive @join__enumValue(graph: join__Graph!)  repeatable on ENUM_VALUE
+      directive @join__enumValue(graph: join__Graph!) repeatable on ENUM_VALUE
 
-      directive @join__graph(name: String!, url: String!)  on ENUM_VALUE
+      directive @join__graph(name: String!, url: String!) on ENUM_VALUE
 
       directive @join__field(
         graph: join__Graph
@@ -731,7 +731,7 @@ describe("composeSchemaContract", () => {
         usedOverridden: Boolean
       ) repeatable on FIELD_DEFINITION | INPUT_FIELD_DEFINITION
 
-      directive @join__implements(graph: join__Graph!, interface: String!)  repeatable on OBJECT | INTERFACE
+      directive @join__implements(graph: join__Graph!, interface: String!) repeatable on OBJECT | INTERFACE
 
       directive @join__type(
         graph: join__Graph!
@@ -741,11 +741,11 @@ describe("composeSchemaContract", () => {
         isInterfaceObject: Boolean! = false
       ) repeatable on OBJECT | INTERFACE | UNION | ENUM | INPUT_OBJECT | SCALAR
 
-      directive @join__unionMember(graph: join__Graph!, member: String!)  repeatable on UNION
+      directive @join__unionMember(graph: join__Graph!, member: String!) repeatable on UNION
 
       scalar join__FieldSet
 
-      directive @link(url: String, as: String, for: link__Purpose, import: [link__Import])  repeatable on SCHEMA
+      directive @link(url: String, as: String, for: link__Purpose, import: [link__Import]) repeatable on SCHEMA
 
       scalar link__Import
 
@@ -763,18 +763,18 @@ describe("composeSchemaContract", () => {
       directive @inaccessible on FIELD_DEFINITION | OBJECT | INTERFACE | UNION | ENUM | ENUM_VALUE | SCALAR | INPUT_OBJECT | INPUT_FIELD_DEFINITION | ARGUMENT_DEFINITION
 
       enum join__Graph {
-        FOO_GRAPHQL @join__graph(name: "FOO_GRAPHQL", url: "https://lol.de") 
-        FOO2_GRAPHQL @join__graph(name: "FOO2_GRAPHQL", url: "https://trolol.de") 
+        FOO_GRAPHQL @join__graph(name: "FOO_GRAPHQL", url: "https://lol.de")
+        FOO2_GRAPHQL @join__graph(name: "FOO2_GRAPHQL", url: "https://trolol.de")
       }
 
-      scalar Brr @join__type(graph: FOO_GRAPHQL)  @join__type(graph: FOO2_GRAPHQL) 
+      scalar Brr @join__type(graph: FOO_GRAPHQL) @join__type(graph: FOO2_GRAPHQL)
 
-      type Query @join__type(graph: FOO_GRAPHQL)  @join__type(graph: FOO2_GRAPHQL)  {
-        c: Int @join__field(graph: FOO_GRAPHQL) 
-        field1: Foo! @join__field(graph: FOO2_GRAPHQL)  @inaccessible
+      type Query @join__type(graph: FOO_GRAPHQL) @join__type(graph: FOO2_GRAPHQL) {
+        c: Int @join__field(graph: FOO_GRAPHQL)
+        field1: Foo! @join__field(graph: FOO2_GRAPHQL) @inaccessible
       }
 
-      type Foo @join__type(graph: FOO2_GRAPHQL)  {
+      type Foo @join__type(graph: FOO2_GRAPHQL) {
         field: Brr
       }"
     `);
@@ -783,7 +783,7 @@ describe("composeSchemaContract", () => {
       ?.split("\n")
       .find((line) => line.includes("scalar Brr"));
     expect(line).toEqual(
-      `scalar Brr @join__type(graph: FOO_GRAPHQL)  @join__type(graph: FOO2_GRAPHQL) `,
+      `scalar Brr @join__type(graph: FOO_GRAPHQL) @join__type(graph: FOO2_GRAPHQL)`,
     );
   });
 });
