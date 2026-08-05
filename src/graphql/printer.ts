@@ -316,7 +316,7 @@ function printArgs(
   }
 
   const args = nodes.map(print);
-  const argsLine = "(" + args.join(", ") + ") ";
+  const argsLine = "(" + args.join(", ") + ")";
   return argsLine.length > 80
     ? "(\n  " + args.join("\n").replace(/\n/g, "\n  ") + "\n)"
     : argsLine;
