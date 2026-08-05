@@ -207,7 +207,7 @@ export function compositionHasErrors(
   return "errors" in compositionResult && !!compositionResult.errors;
 }
 
-/** Only compose and expose expensive properties when requested! */
+/** Only print sdl and construct public document node when requested! */
 export function createCompositionSuccessReadCacheContainer(
   supergraphDocumentNode: DocumentNode,
 ): CompositionSuccess {
