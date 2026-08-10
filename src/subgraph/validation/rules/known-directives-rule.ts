@@ -5,7 +5,7 @@ import {
   DocumentNode,
   GraphQLError,
   Kind,
-  OperationTypeNode,
+  type OperationTypeNode,
   specifiedDirectives,
 } from "graphql";
 
@@ -135,11 +135,11 @@ function getDirectiveLocationForOperation(
   operation: OperationTypeNode,
 ): DirectiveLocation {
   switch (operation) {
-    case OperationTypeNode.QUERY:
+    case 'query' as OperationTypeNode.QUERY:
       return DirectiveLocation.QUERY;
-    case OperationTypeNode.MUTATION:
+    case 'mutation' as OperationTypeNode.MUTATION:
       return DirectiveLocation.MUTATION;
-    case OperationTypeNode.SUBSCRIPTION:
+    case 'subscription' as OperationTypeNode.SUBSCRIPTION:
       return DirectiveLocation.SUBSCRIPTION;
   }
 }

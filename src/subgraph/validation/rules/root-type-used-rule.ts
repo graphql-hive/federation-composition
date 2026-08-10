@@ -3,7 +3,7 @@ import {
   DefinitionNode,
   GraphQLError,
   isTypeDefinitionNode,
-  OperationTypeNode,
+  type OperationTypeNode,
   SchemaDefinitionNode,
   SchemaExtensionNode,
 } from "graphql";
@@ -26,13 +26,13 @@ function findDefaultRootTypes(definitions: readonly DefinitionNode[]) {
     if (isTypeDefinitionNode(definition)) {
       if (definition.name.value === "Query") {
         foundRootTypes.query = "Query";
-        found.add(OperationTypeNode.QUERY);
+        found.add('query' as OperationTypeNode);
       } else if (definition.name.value === "Mutation") {
         foundRootTypes.mutation = "Mutation";
-        found.add(OperationTypeNode.MUTATION);
+        found.add('mutation' as OperationTypeNode);
       } else if (definition.name.value === "Subscription") {
         foundRootTypes.subscription = "Subscription";
-        found.add(OperationTypeNode.SUBSCRIPTION);
+        found.add('subscription' as OperationTypeNode);
       }
     }
   }
