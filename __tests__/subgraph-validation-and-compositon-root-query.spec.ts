@@ -3,6 +3,7 @@ import { describe, expect, test } from "vitest";
 import { assertCompositionSuccess, composeServices } from "../src/compose.js";
 import { ServiceDefinition } from "../src/types.js";
 import { validate } from "../src/validate.js";
+import { containsSupergraphSpec } from "../src/graphql/contains-supergraph-spec.js";
 
 const serviceA: ServiceDefinition = {
   name: "serviceA",
@@ -51,8 +52,7 @@ describe("Test to validate custom root query is treated as Query", () => {
     const hasCustomRootQueryAsObjectType = supergraph.some(
       (def) =>
         def.kind === Kind.OBJECT_TYPE_DEFINITION &&
-        (def.name.value === "RootQuery" ||
-          def.name.value === "CustomQueryName"),
+        (def.name.value === "RootQuery" || def.name.value === "CustomQueryName")
     );
 
     expect(hasCustomRootQueryAsObjectType).eq(false);
@@ -74,5 +74,25 @@ describe("Test to validate custom root query is treated as Query", () => {
     for (const expectedField of expectedQueryFields) {
       expect(compositionResult.supergraphSdl).include(expectedField);
     }
+  });
+});
+
+describe("Test to validate monolith schema is not treated as supergraph spec", () => {
+  test("Shouldn't treat properties with spec directive names as supergraph spec", () => {
+    const isSupergraph = containsSupergraphSpec(`#graphql
+      schema {
+        query: RootQueryType
+      }
+
+      type Link {
+        link: String
+      }
+
+      type RootQueryType {
+        foo: Link
+      }
+    `);
+
+    expect(isSupergraph).eq(false);
   });
 });
