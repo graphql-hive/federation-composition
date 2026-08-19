@@ -1,5 +1,11 @@
 # @theguild/federation-composition
 
+## 0.25.0
+
+### Minor Changes
+
+- [#322](https://github.com/graphql-hive/federation-composition/pull/322) [`7bf6ee5`](https://github.com/graphql-hive/federation-composition/commit/7bf6ee597c06c723ca744837aad219099d9ccda4) Thanks [@n1ru4l](https://github.com/n1ru4l)! - Support GraphQL.js 17 as a peer dependency alongside GraphQL.js 16.
+
 ## 0.24.1
 
 ### Patch Changes

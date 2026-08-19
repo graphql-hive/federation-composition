@@ -1,6 +1,6 @@
 {
   "name": "@theguild/federation-composition",
-  "version": "0.24.1",
+  "version": "0.25.0",
   "type": "module",
   "description": "Open Source Composition library for Apollo Federation",
   "repository": {
