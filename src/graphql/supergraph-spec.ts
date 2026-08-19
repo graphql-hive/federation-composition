@@ -16,8 +16,13 @@ import { sdl as policySdl } from "../specifications/policy.js";
 import { sdl as requiresSdl } from "../specifications/requires-scopes.js";
 import { sdl as tagSdl } from "../specifications/tag.js";
 
+type SupergraphSpecNodes = readonly {
+  name: string;
+  kind: Kind;
+}[];
+
 // For the sake of optimization, we cache the supergraph spec nodes and only compute them when needed.
-let supergraphSpecNodes: readonly { name: string; kind: Kind }[] | null = null;
+let supergraphSpecNodes: SupergraphSpecNodes;
 
 /**
  * Names of inputs, enums and scalars that are part of the supergraph spec,
@@ -38,11 +43,8 @@ export const extraFederationDirectiveNames = new Set([
   "context", // from Federation v2.8 - we don't support it yet
 ]);
 
-export function getSupergraphSpecNodes(): readonly {
-  name: string;
-  kind: Kind;
-}[] {
-  if (supergraphSpecNodes !== null) {
+export function getSupergraphSpecNodes(): SupergraphSpecNodes {
+  if (supergraphSpecNodes !== undefined) {
     return supergraphSpecNodes;
   }
 
@@ -69,7 +71,7 @@ export function getSupergraphSpecNodes(): readonly {
           kind: d.kind,
         })),
     )
-    .flat();
+    .flat() as SupergraphSpecNodes;
 
   return supergraphSpecNodes;
 }
