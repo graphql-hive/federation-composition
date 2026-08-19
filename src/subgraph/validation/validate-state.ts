@@ -1,10 +1,12 @@
 import {
+  ConstValueNode,
   GraphQLError,
   introspectionTypes,
   Kind,
   parseValue,
   specifiedScalarTypes,
   ValueNode,
+  versionInfo,
 } from "graphql";
 import { andList } from "../../utils/format.js";
 import {
@@ -403,16 +405,13 @@ function isValidateDefaultValue(
     try {
       // graphql-js 17 keeps legacy coercion in parseLiteral; its strict replacement
       // is unavailable in graphql-js 16, which we continue to support.
-      const coerceInputLiteral = (
-        specifiedScalar as unknown as {
-          coerceInputLiteral?: (value: ValueNode) => unknown;
-        }
-      ).coerceInputLiteral;
-
-      if (coerceInputLiteral) {
-        coerceInputLiteral.call(specifiedScalar, value);
-      } else {
+      if (versionInfo.major < 17) {
         specifiedScalar.parseLiteral(value, undefined);
+      } else {
+        if (value.kind === Kind.VARIABLE) {
+          return false;
+        }
+        specifiedScalar.coerceInputLiteral?.(value as ConstValueNode);
       }
       return true;
     } catch (error) {
