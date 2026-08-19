@@ -174,7 +174,7 @@ describe("applyTagFilterToInaccessibleTransformOnSubgraphSchema", () => {
         ).typeDefs,
       );
       expect(outputSdl).toMatchInlineSnapshot(`
-        "schema @link(url: "https://specs.apollo.dev/federation/v2.0", import: [{name: "@inaccessible", as: "@inaccessible__federation"}]) {
+        "schema @link(url: "https://specs.apollo.dev/federation/v2.0", import: [{ name: "@inaccessible", as: "@inaccessible__federation" }]) {
           query: Query
         }
 

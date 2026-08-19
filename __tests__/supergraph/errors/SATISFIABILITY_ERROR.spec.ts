@@ -802,7 +802,7 @@ testVersions((api, version) => {
             message: expect.stringContaining(
               "The following supergraph API query:\n" +
                 "{\n" +
-                '  users(filter: {limit: 0, after: "<any id>"}, role: ADMIN) {\n' +
+                '  users(filter: { limit: 0, after: "<any id>" }, role: ADMIN) {\n' +
                 "    age\n" +
                 "  }\n" +
                 "}\n" +

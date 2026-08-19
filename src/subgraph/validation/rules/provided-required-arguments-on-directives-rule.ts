@@ -3,6 +3,7 @@ import {
   GraphQLError,
   InputValueDefinitionNode,
   Kind,
+  versionInfo,
 } from "graphql";
 import { print } from "../../../graphql/printer.js";
 import type { SimpleValidationContext } from "../validation-context.js";
@@ -41,16 +42,17 @@ export function ProvidedRequiredArgumentsOnDirectivesRule(
           for (const [argName, argDef] of Object.entries(requiredArgs)) {
             if (!argNodeMap.has(argName)) {
               const argType = print(argDef.type);
+              const message =
+                versionInfo.major < 17
+                  ? `Directive "@${directiveName}" argument "${argName}" of type "${argType}" is required, but it was not provided.`
+                  : `Argument "@${directiveName}(${argName}:)" of type "${argType}" is required, but it was not provided.`;
               context.reportError(
-                new GraphQLError(
-                  `Directive "@${directiveName}" argument "${argName}" of type "${argType}" is required, but it was not provided.`,
-                  {
-                    nodes: directiveNode,
-                    extensions: {
-                      code: "INVALID_GRAPHQL",
-                    },
+                new GraphQLError(message, {
+                  nodes: directiveNode,
+                  extensions: {
+                    code: "INVALID_GRAPHQL",
                   },
-                ),
+                }),
               );
             }
           }

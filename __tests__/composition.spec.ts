@@ -1744,7 +1744,7 @@ testImplementations((api) => {
         expect(result.errors).toContainEqual(
           expect.objectContaining({
             message: expect.stringContaining(
-              'Directive "@access" argument "scope" of type "Scope!" is required, but it was not provided.',
+              'Argument "@access(scope:)" of type "Scope!" is required, but it was not provided.',
             ),
           }),
         );
@@ -8493,7 +8493,7 @@ testImplementations((api) => {
     ]);
     expect(result.errors).toHaveLength(1);
     expect(result.errors?.at(0)?.message).toContain(
-      `Directive "@tag" argument "name" of type "String!" is required, but it was not provided.`,
+      `Argument "@tag(name:)" of type "String!" is required, but it was not provided.`,
     );
   });
 
@@ -9318,7 +9318,7 @@ testImplementations((api) => {
             },
           ]),
         ).toThrow(`The schema is not a valid GraphQL schema.. Caused by:
-Directive "@oneOf" argument "arg" of type "String!" is required, but it was not provided.`);
+Argument "@oneOf(arg:)" of type "String!" is required, but it was not provided.`);
       });
 
       test("composes successfully when a composed manual definition widens specified directive locations", () => {

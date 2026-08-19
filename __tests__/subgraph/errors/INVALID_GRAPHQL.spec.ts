@@ -84,7 +84,7 @@ testVersions((api, version) => {
           expect.objectContaining({
             message: expect.stringContaining(
               // TODO: federation__FieldSet for Apollo `String!` for guild but it should be the same
-              `Directive "@provides" argument "fields" of type "${
+              `Argument "@provides(fields:)" of type "${
                 api.library === "guild" ? "FieldSet" : "federation__FieldSet"
               }!" is required, but it was not provided.`,
             ),
