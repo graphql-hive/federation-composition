@@ -43,7 +43,7 @@ export function ProvidedRequiredArgumentsOnDirectivesRule(
               const argType = print(argDef.type);
               context.reportError(
                 new GraphQLError(
-                  `Directive "@${directiveName}" argument "${argName}" of type "${argType}" is required, but it was not provided.`,
+                  `Argument "@${directiveName}(${argName}:)" of type "${argType}" is required, but it was not provided.`,
                   {
                     nodes: directiveNode,
                     extensions: {

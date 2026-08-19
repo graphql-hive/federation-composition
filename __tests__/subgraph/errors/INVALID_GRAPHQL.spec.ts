@@ -84,7 +84,7 @@ testVersions((api, version) => {
           expect.objectContaining({
             message: expect.stringContaining(
               // TODO: federation__FieldSet for Apollo `String!` for guild but it should be the same
-              `Directive "@provides" argument "fields" of type "${
+              `Argument "@provides(fields:)" of type "${
                 api.library === "guild" ? "FieldSet" : "federation__FieldSet"
               }!" is required, but it was not provided.`,
             ),
@@ -149,7 +149,7 @@ testVersions((api, version) => {
             users(role: Role = "Oopsie"): [User]
             allUsers(role: Role = OOPSIE): [User]
             usersByIDs(ids: [ID!]! = []): [User]
-            usersByID(id: ID! = NULL): [User]
+            usersByID(id: ID! = null): [User]
             usersByID2(id: ID! = null): [User]
             filterUsers(filter: Filter = {
               role: "Oopsie"

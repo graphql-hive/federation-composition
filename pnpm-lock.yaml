@@ -26,10 +26,10 @@ importers:
     devDependencies:
       '@apollo/composition':
         specifier: 2.13.2
-        version: 2.13.2(graphql@16.13.1)
+        version: 2.13.2(graphql@17.0.2)
       '@apollo/federation-internals':
         specifier: 2.13.2
-        version: 2.13.2(graphql@16.13.1)
+        version: 2.13.2(graphql@17.0.2)
       '@changesets/changelog-github':
         specifier: 1.0.0
         version: 1.0.0
@@ -52,8 +52,8 @@ importers:
         specifier: 7.0.1
         version: 7.0.1(typescript@5.9.3)
       graphql:
-        specifier: 16.13.1
-        version: 16.13.1
+        specifier: 17.0.2
+        version: 17.0.2
       mitata:
         specifier: 1.0.34
         version: 1.0.34
@@ -781,9 +781,9 @@ packages:
   graceful-fs@4.2.11:
     resolution: {integrity: sha512-RbJ5/jmFcNNCcDV5o9eTnBLJ/HszWV0P73bc+Ff4nS/rJj+YaS6IGyiOL0VoBYX+l1Wrl3k63h/KrH+nhJ0XvQ==}
 
-  graphql@16.13.1:
-    resolution: {integrity: sha512-gGgrVCoDKlIZ8fIqXBBb0pPKqDgki0Z/FSKNiQzSGj2uEYHr1tq5wmBegGwJx6QB5S5cM0khSBpi/JFHMCvsmQ==}
-    engines: {node: ^12.22.0 || ^14.16.0 || ^16.0.0 || >=17.0.0}
+  graphql@17.0.2:
+    resolution: {integrity: sha512-FRWbddMxfkjiB7z+aQDWIR+E34xo9I8c9mtK2RPv8PmMzKRvrdsreHL/Ui/TmwHJfhHChEtsFPyMHKI+xuarQQ==}
+    engines: {node: ^22.0.0 || ^24.0.0 || ^25.0.0 || >=26.0.0}
 
   has-bigints@1.1.0:
     resolution: {integrity: sha512-R3pbpkcIqv2Pm3dUwgjclDRVmWpTJW2DcMzcIhEXEx1oh/CEMObMm3KLmRJOdvhM7o4uQBnwr8pzRK2sJWIqfg==}
@@ -1474,25 +1474,25 @@ packages:
 
 snapshots:
 
-  '@apollo/composition@2.13.2(graphql@16.13.1)':
+  '@apollo/composition@2.13.2(graphql@17.0.2)':
     dependencies:
-      '@apollo/federation-internals': 2.13.2(graphql@16.13.1)
-      '@apollo/query-graphs': 2.13.2(graphql@16.13.1)
-      graphql: 16.13.1
+      '@apollo/federation-internals': 2.13.2(graphql@17.0.2)
+      '@apollo/query-graphs': 2.13.2(graphql@17.0.2)
+      graphql: 17.0.2
 
-  '@apollo/federation-internals@2.13.2(graphql@16.13.1)':
+  '@apollo/federation-internals@2.13.2(graphql@17.0.2)':
     dependencies:
       '@types/uuid': 9.0.8
       chalk: 4.1.2
-      graphql: 16.13.1
+      graphql: 17.0.2
       js-levenshtein: 1.1.6
       uuid: 9.0.1
 
-  '@apollo/query-graphs@2.13.2(graphql@16.13.1)':
+  '@apollo/query-graphs@2.13.2(graphql@17.0.2)':
     dependencies:
-      '@apollo/federation-internals': 2.13.2(graphql@16.13.1)
+      '@apollo/federation-internals': 2.13.2(graphql@17.0.2)
       deep-equal: 2.2.3
-      graphql: 16.13.1
+      graphql: 17.0.2
       ts-graphviz: 1.8.2
       uuid: 9.0.1
 
@@ -2176,7 +2176,7 @@ snapshots:
 
   graceful-fs@4.2.11: {}
 
-  graphql@16.13.1: {}
+  graphql@17.0.2: {}
 
   has-bigints@1.1.0: {}
 
