@@ -149,7 +149,7 @@ testVersions((api, version) => {
             users(role: Role = "Oopsie"): [User]
             allUsers(role: Role = OOPSIE): [User]
             usersByIDs(ids: [ID!]! = []): [User]
-            usersByID(id: ID! = null): [User]
+            usersByID(id: ID! = NULL): [User]
             usersByID2(id: ID! = null): [User]
             filterUsers(filter: Filter = {
               role: "Oopsie"

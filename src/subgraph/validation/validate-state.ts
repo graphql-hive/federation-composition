@@ -401,7 +401,19 @@ function isValidateDefaultValue(
     )!;
 
     try {
-      specifiedScalar.parseLiteral(value);
+      // graphql-js 17 keeps legacy coercion in parseLiteral; its strict replacement
+      // is unavailable in graphql-js 16, which we continue to support.
+      const coerceInputLiteral = (
+        specifiedScalar as unknown as {
+          coerceInputLiteral?: (value: ValueNode) => unknown;
+        }
+      ).coerceInputLiteral;
+
+      if (coerceInputLiteral) {
+        coerceInputLiteral.call(specifiedScalar, value);
+      } else {
+        specifiedScalar.parseLiteral(value, undefined);
+      }
       return true;
     } catch (error) {
       return false;
