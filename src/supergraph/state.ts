@@ -53,6 +53,7 @@ export type SupergraphState = {
   >; // TODO: change it to a Link with no types (only directives) + reduce this type to minimum (no need for name property...)
   specs: {
     tag: boolean;
+    context: boolean;
     cost: {
       used: boolean;
       names: {
@@ -84,6 +85,7 @@ export function createSupergraphStateBuilder() {
     links: [],
     specs: {
       tag: false,
+      context: false,
       cost: {
         used: false,
         names: {
@@ -180,6 +182,10 @@ export function createSupergraphStateBuilder() {
 
       if (subgraphState.specs.tag) {
         state.specs.tag = true;
+      }
+
+      if (subgraphState.specs.context) {
+        state.specs.context = true;
       }
 
       if (subgraphState.specs.inaccessible) {

@@ -84,6 +84,9 @@ export function objectTypeBuilder(): TypeBuilder<ObjectType, ObjectTypeState> {
       const objectTypeState = getOrCreateObjectType(state, typeName);
 
       type.tags.forEach((tag) => objectTypeState.tags.add(tag));
+      type.contexts.forEach((contextName) =>
+        objectTypeState.contexts.add(`${graph.name}__${contextName}`),
+      );
 
       if (type.inaccessible) {
         objectTypeState.inaccessible = true;
@@ -337,6 +340,10 @@ export function objectTypeBuilder(): TypeBuilder<ObjectType, ObjectTypeState> {
             argState.defaultValue = arg.defaultValue;
           }
 
+          if (arg.fromContext) {
+            argState.fromContext = arg.fromContext;
+          }
+
           if (arg.cost !== null) {
             argState.cost = mathMax(arg.cost, argState.cost);
           }
@@ -348,6 +355,7 @@ export function objectTypeBuilder(): TypeBuilder<ObjectType, ObjectTypeState> {
             kind: arg.kind,
             inaccessible: arg.inaccessible,
             defaultValue: arg.defaultValue,
+            fromContext: arg.fromContext,
             version: graph.version,
           });
         }
@@ -511,6 +519,26 @@ export function objectTypeBuilder(): TypeBuilder<ObjectType, ObjectTypeState> {
         }
       }
 
+      function buildContextArguments(
+        graphId: string,
+        field: ObjectTypeFieldState,
+      ) {
+        return Array.from(field.args.values())
+          .map((arg) => {
+            const fromContext = arg.byGraph.get(graphId)?.fromContext;
+
+            return fromContext
+              ? {
+                  name: arg.name,
+                  type: arg.type,
+                  context: `${graphs.get(graphId)!.graph.name}__${fromContext.context}`,
+                  selection: fromContext.selection,
+                }
+              : null;
+          })
+          .filter(isDefined);
+      }
+
       function shouldSetExternalOnJoinField(
         fieldStateInGraph: FieldStateInGraph,
         graphId: string,
@@ -600,11 +628,14 @@ export function objectTypeBuilder(): TypeBuilder<ObjectType, ObjectTypeState> {
             const provides = meta.provides ?? undefined;
             const requires = meta.requires ?? undefined;
 
+            const contextArguments = buildContextArguments(graphId, field);
+
             const hasAnyJoinFieldMetadata =
               !!type ||
               !!override ||
               !!provides ||
               !!requires ||
+              contextArguments.length > 0 ||
               !!usedOverridden;
             const isRequiredOrProvided =
               meta.provided || isEffectivelyRequired(graphId, meta);
@@ -650,6 +681,8 @@ export function objectTypeBuilder(): TypeBuilder<ObjectType, ObjectTypeState> {
               external,
               provides,
               requires,
+              contextArguments:
+                contextArguments.length > 0 ? contextArguments : undefined,
             };
           })
           .filter(isDefined);
@@ -698,6 +731,8 @@ export function objectTypeBuilder(): TypeBuilder<ObjectType, ObjectTypeState> {
         external: boolean | undefined,
         usedOverridden: boolean | undefined,
       ): JoinFieldAST {
+        const contextArguments = buildContextArguments(graphId, field);
+
         return {
           graph: graphId,
           override: meta.override ?? undefined,
@@ -715,6 +750,8 @@ export function objectTypeBuilder(): TypeBuilder<ObjectType, ObjectTypeState> {
           external,
           provides: meta.provides ?? undefined,
           requires: meta.requires ?? undefined,
+          contextArguments:
+            contextArguments.length > 0 ? contextArguments : undefined,
         };
       }
 
@@ -774,6 +811,7 @@ export function objectTypeBuilder(): TypeBuilder<ObjectType, ObjectTypeState> {
               external: false,
               provides: false,
               requires: false,
+              contextArguments: false,
             };
 
             for (const [graphId, meta] of fieldInGraphs) {
@@ -796,6 +834,13 @@ export function objectTypeBuilder(): TypeBuilder<ObjectType, ObjectTypeState> {
               }
               if (meta.type !== field.type) {
                 differencesBetweenGraphs.type = true;
+              }
+              if (
+                Array.from(field.args.values()).some(
+                  (arg) => !!arg.byGraph.get(graphId)?.fromContext,
+                )
+              ) {
+                differencesBetweenGraphs.contextArguments = true;
               }
             }
 
@@ -1057,6 +1102,7 @@ export function objectTypeBuilder(): TypeBuilder<ObjectType, ObjectTypeState> {
                   !joinFields[0].overrideLabel &&
                   !joinFields[0].provides &&
                   !joinFields[0].requires &&
+                  !joinFields[0].contextArguments?.length &&
                   !joinFields[0].usedOverridden &&
                   !joinFields[0].type
                     ? []
@@ -1064,6 +1110,10 @@ export function objectTypeBuilder(): TypeBuilder<ObjectType, ObjectTypeState> {
               },
               arguments: Array.from(field.args.values())
                 .filter((arg) => {
+                  if (arg.fromContext) {
+                    return false;
+                  }
+
                   // ignore the argument if it's not available in all subgraphs implementing the field
                   if (arg.byGraph.size !== field.byGraph.size) {
                     return false;
@@ -1156,6 +1206,10 @@ export function objectTypeBuilder(): TypeBuilder<ObjectType, ObjectTypeState> {
                   },
                   arguments: Array.from(field.args.values())
                     .filter((arg) => {
+                      if (arg.fromContext) {
+                        return false;
+                      }
+
                       // ignore the argument if it's not available in all subgraphs implementing the field
                       if (arg.byGraph.size !== field.byGraph.size) {
                         return false;
@@ -1197,6 +1251,7 @@ export function objectTypeBuilder(): TypeBuilder<ObjectType, ObjectTypeState> {
         authenticated: objectType.authenticated,
         policies: objectType.policies,
         scopes: objectType.scopes,
+        contexts: Array.from(objectType.contexts),
         join: {
           type: joinTypes,
           implements:
@@ -1539,6 +1594,7 @@ export type ObjectTypeState = {
   authenticated: boolean;
   policies: string[][];
   scopes: string[][];
+  contexts: Set<string>;
   cost: number | null;
   hasDefinition: boolean;
   byGraph: MapByGraph<ObjectTypeStateInGraph>;
@@ -1585,6 +1641,10 @@ export type ObjectTypeFieldArgState = {
   inaccessible: boolean;
   cost: number | null;
   defaultValue?: string;
+  fromContext?: {
+    context: string;
+    selection: string;
+  };
   byGraph: MapByGraph<ArgStateInGraph>;
   description?: Description;
   deprecated?: Deprecated;
@@ -1634,6 +1694,10 @@ type ArgStateInGraph = {
   kind: ArgumentKind;
   inaccessible: boolean;
   defaultValue?: string;
+  fromContext?: {
+    context: string;
+    selection: string;
+  };
   version: FederationVersion;
 };
 
@@ -1657,6 +1721,7 @@ function getOrCreateObjectType(
     authenticated: false,
     policies: [],
     scopes: [],
+    contexts: new Set(),
     cost: null,
     interfaces: new Set(),
     byGraph: new Map(),

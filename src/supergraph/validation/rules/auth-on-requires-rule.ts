@@ -74,12 +74,22 @@ type FieldCoordinate = `${string}.${string}`;
 type TypeCoordinate = `${string}`;
 type Coordinate = FieldCoordinate | TypeCoordinate;
 
-function ensureAccessToSelectionSet(
+export function ensureAccessToSelectionSet(
   supergraph: SupergraphState,
   currentType: ObjectTypeState | InterfaceTypeState | UnionTypeState,
   selectionSet: SelectionSetNode,
   provisionedAccess: ProvisionedAccess,
 ): Coordinate | void {
+  // For `@requires` the selection starts on the type that gives the access, so
+  // this check always passes. For `@fromContext` it starts on the context
+  // provider, which can have its own auth requirements.
+  if (
+    currentType.kind !== "union" &&
+    !provisionedAccess.canAccess(currentType)
+  ) {
+    return currentType.name;
+  }
+
   for (const selection of selectionSet.selections) {
     switch (selection.kind) {
       case Kind.FIELD: {
@@ -326,7 +336,7 @@ function createAccessRequirementError(
   );
 }
 
-class ProvisionedAccess {
+export class ProvisionedAccess {
   public scopes: string[][];
   public policies: string[][];
   public authenticated: boolean;

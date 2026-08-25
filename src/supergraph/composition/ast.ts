@@ -8,6 +8,8 @@ import {
   ASTNode,
   ConstArgumentNode,
   ConstDirectiveNode,
+  ConstObjectFieldNode,
+  ConstObjectValueNode,
   ConstValueNode,
   DirectiveDefinitionNode,
   DocumentNode,
@@ -134,6 +136,7 @@ export function createObjectTypeNode(objectType: {
   authenticated?: boolean;
   policies?: string[][];
   scopes?: string[][];
+  contexts?: string[];
   cost: Cost | null;
   description?: DescriptionAST;
   ast?: {
@@ -168,6 +171,7 @@ export function createInterfaceTypeNode(interfaceType: {
   authenticated?: boolean;
   policies?: string[][];
   scopes?: string[][];
+  contexts?: string[];
   description?: DescriptionAST;
   ast?: {
     directives?: ConstDirectiveNode[];
@@ -224,6 +228,7 @@ export function createUnionTypeNode(unionType: {
   };
   members: string[];
   inaccessible?: boolean;
+  contexts?: string[];
   description?: DescriptionAST;
   tags?: string[];
   ast?: {
@@ -598,6 +603,12 @@ function createJoinFieldDirectiveNode(join: {
   external?: boolean;
   provides?: string;
   requires?: string;
+  contextArguments?: Array<{
+    name: string;
+    type: string;
+    context: string;
+    selection: string;
+  }>;
 }): ConstDirectiveNode {
   return {
     kind: Kind.DIRECTIVE,
@@ -710,7 +721,69 @@ function createJoinFieldDirectiveNode(join: {
             },
           } as const)
         : null,
+      join.contextArguments?.length
+        ? ({
+            kind: Kind.ARGUMENT,
+            name: {
+              kind: Kind.NAME,
+              value: "contextArguments",
+            },
+            value: {
+              kind: Kind.LIST,
+              values: join.contextArguments.map(
+                (argument): ConstObjectValueNode => ({
+                  kind: Kind.OBJECT,
+                  fields: [
+                    createStringObjectFieldNode("context", argument.context),
+                    createStringObjectFieldNode("name", argument.name),
+                    createStringObjectFieldNode("type", argument.type),
+                    createStringObjectFieldNode(
+                      "selection",
+                      argument.selection,
+                    ),
+                  ],
+                }),
+              ),
+            },
+          } as const)
+        : null,
     ].filter(nonEmpty),
+  };
+}
+
+function createStringObjectFieldNode(
+  name: string,
+  value: string,
+): ConstObjectFieldNode {
+  return {
+    kind: Kind.OBJECT_FIELD,
+    name: { kind: Kind.NAME, value: name },
+    value: { kind: Kind.STRING, value },
+  };
+}
+
+function createContextDirectiveNode(context: {
+  name: string;
+}): ConstDirectiveNode {
+  return {
+    kind: Kind.DIRECTIVE,
+    name: {
+      kind: Kind.NAME,
+      value: "context",
+    },
+    arguments: [
+      {
+        kind: Kind.ARGUMENT,
+        name: {
+          kind: Kind.NAME,
+          value: "name",
+        },
+        value: {
+          kind: Kind.STRING,
+          value: context.name,
+        },
+      },
+    ],
   };
 }
 
@@ -1229,6 +1302,7 @@ function applyDirectives(common: {
   authenticated?: boolean;
   policies?: string[][];
   scopes?: string[][];
+  contexts?: string[];
   cost?: Cost | null;
   listSize?: ListSize | null;
   isOneOf?: boolean;
@@ -1253,6 +1327,7 @@ function applyDirectives(common: {
     common.join?.field?.map(createJoinFieldDirectiveNode) ?? [],
     common.join?.unionMember?.map(createJoinUnionMemberDirectiveNode) ?? [],
     common.join?.enumValue?.map(createJoinEnumValueDirectiveNode) ?? [],
+    common.contexts?.map((name) => createContextDirectiveNode({ name })) ?? [],
     common.tags?.map(createTagDirectiveNode) ?? [],
     common.inaccessible ? [createInaccessibleDirectiveNode()] : [],
     common.authenticated ? [createAuthenticatedDirectiveNode()] : [],

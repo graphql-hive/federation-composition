@@ -88,6 +88,7 @@ export interface ObjectType {
   kind: TypeKind.OBJECT;
   name: string;
   fields: Map<string, Field>;
+  contexts: Set<string>;
   extension: boolean;
   extensionType?: "@extends" | "extend";
   external: boolean;
@@ -113,6 +114,7 @@ export interface InterfaceType {
   kind: TypeKind.INTERFACE;
   name: string;
   fields: Map<string, Field>;
+  contexts: Set<string>;
   fieldsUsedAsKeys: Set<string>;
   extension: boolean;
   keys: Key[];
@@ -147,6 +149,7 @@ export interface UnionType {
   kind: TypeKind.UNION;
   name: string;
   members: Set<string>;
+  contexts: Set<string>;
   tags: Set<string>;
   inaccessible: boolean;
   isDefinition: boolean;
@@ -241,6 +244,10 @@ export interface Argument {
   tags: Set<string>;
   cost: number | null;
   defaultValue?: string;
+  fromContext?: {
+    context: string;
+    selection: string;
+  };
   description?: Description;
   deprecated?: Deprecated;
   ast: {
@@ -295,6 +302,7 @@ export interface SubgraphState {
   links: readonly Link[];
   specs: {
     tag: boolean;
+    context: boolean;
     inaccessible: boolean;
     cost: {
       used: boolean;
@@ -351,6 +359,7 @@ export function createSubgraphStateBuilder(
     links: linksWithDirective,
     specs: {
       tag: false,
+      context: false,
       cost: {
         used: false,
         names: {
@@ -1466,6 +1475,15 @@ function objectTypeFactory(
         directive,
       );
     },
+    addContext(typeName: string, contextName: string) {
+      if (isInterfaceObject(typeName)) {
+        return interfaceTypeBuilder.addContext(typeName, contextName);
+      }
+
+      getOrCreateObjectType(state, renameObject, typeName).contexts.add(
+        contextName,
+      );
+    },
     field: {
       setType(typeName: string, fieldName: string, fieldType: string) {
         if (isInterfaceObject(typeName)) {
@@ -1931,6 +1949,29 @@ function objectTypeFactory(
             argName,
           ).inaccessible = true;
         },
+        setFromContext(
+          typeName: string,
+          fieldName: string,
+          argName: string,
+          fromContext: { context: string; selection: string },
+        ) {
+          if (isInterfaceObject(typeName)) {
+            return interfaceTypeBuilder.field.arg.setFromContext(
+              typeName,
+              fieldName,
+              argName,
+              fromContext,
+            );
+          }
+
+          getOrCreateObjectFieldArgument(
+            state,
+            renameObject,
+            typeName,
+            fieldName,
+            argName,
+          ).fromContext = fromContext;
+        },
         setTag(
           typeName: string,
           fieldName: string,
@@ -2029,6 +2070,9 @@ function interfaceTypeFactory(state: SubgraphState) {
     },
     setDirective(typeName: string, directive: DirectiveNode) {
       getOrCreateInterfaceType(state, typeName).ast.directives.push(directive);
+    },
+    addContext(typeName: string, contextName: string) {
+      getOrCreateInterfaceType(state, typeName).contexts.add(contextName);
     },
     setDescription(typeName: string, description: Description) {
       getOrCreateInterfaceType(state, typeName).description = description;
@@ -2230,6 +2274,19 @@ function interfaceTypeFactory(state: SubgraphState) {
             argName,
           ).ast.directives.push(directive);
         },
+        setFromContext(
+          typeName: string,
+          fieldName: string,
+          argName: string,
+          fromContext: { context: string; selection: string },
+        ) {
+          getOrCreateInterfaceFieldArgument(
+            state,
+            typeName,
+            fieldName,
+            argName,
+          ).fromContext = fromContext;
+        },
       },
     },
   };
@@ -2366,6 +2423,9 @@ function unionTypeFactory(state: SubgraphState) {
     },
     setDirective(typeName: string, directive: DirectiveNode) {
       getOrCreateUnionType(state, typeName).ast.directives.push(directive);
+    },
+    addContext(typeName: string, contextName: string) {
+      getOrCreateUnionType(state, typeName).contexts.add(contextName);
     },
   };
 }
@@ -2582,6 +2642,7 @@ function getOrCreateObjectType(
     kind: TypeKind.OBJECT,
     name: typeName,
     fields: new Map(),
+    contexts: new Set(),
     fieldsUsedAsKeys: new Set(),
     extension: false,
     external: false,
@@ -2623,6 +2684,7 @@ function getOrCreateInterfaceType(
     kind: TypeKind.INTERFACE,
     name: typeName,
     fields: new Map(),
+    contexts: new Set(),
     fieldsUsedAsKeys: new Set(),
     extension: false,
     keys: [],
@@ -2728,6 +2790,7 @@ function getOrCreateUnionType(
     kind: TypeKind.UNION,
     name: typeName,
     members: new Set(),
+    contexts: new Set(),
     inaccessible: false,
     tags: new Set(),
     isDefinition: false,

@@ -10,6 +10,9 @@ export function unionTypeBuilder(): TypeBuilder<UnionType, UnionTypeState> {
       const unionTypeState = getOrCreateUnionType(state, typeName);
 
       type.tags.forEach((tag) => unionTypeState.tags.add(tag));
+      type.contexts.forEach((contextName) =>
+        unionTypeState.contexts.add(`${graph.name}__${contextName}`),
+      );
 
       if (type.inaccessible) {
         unionTypeState.inaccessible = true;
@@ -61,6 +64,7 @@ export function unionTypeBuilder(): TypeBuilder<UnionType, UnionTypeState> {
         ast: {
           directives: convertToConst(unionType.ast.directives),
         },
+        contexts: Array.from(unionType.contexts),
       });
     },
   };
@@ -73,6 +77,7 @@ export type UnionTypeState = {
   hasDefinition: boolean;
   description?: Description;
   inaccessible: boolean;
+  contexts: Set<string>;
   byGraph: MapByGraph<UnionTypeInGraph>;
   members: Set<string>;
   ast: {
@@ -101,6 +106,7 @@ function getOrCreateUnionType(
     members: new Set(),
     tags: new Set(),
     inaccessible: false,
+    contexts: new Set(),
     hasDefinition: false,
     byGraph: new Map(),
     ast: {

@@ -2,6 +2,8 @@ import type { SubgraphState } from "../../subgraph/state.js";
 import { visitSupergraphState } from "../composition/visitor.js";
 import type { SupergraphStateBuilder } from "../state.js";
 import { AuthOnRequiresRule } from "./rules/auth-on-requires-rule.js";
+import { AuthOnContextRule } from "./rules/auth-on-context-rule.js";
+import { ContextualArgumentRule } from "./rules/contextual-argument-rule.js";
 import { DefaultValueUsesInaccessibleRule } from "./rules/default-value-uses-inaccessible-rule.js";
 import { DirectiveCompositionRule } from "./rules/directive-composition-rule.js";
 import { EnumValuesRule } from "./rules/enum-values-rule.js";
@@ -96,7 +98,9 @@ export function validateSupergraph(
     InterfaceSubtypeRule,
     NoInaccessibleOnImplementedInterfaceFieldsRule,
     ListSizeSlicingArgumentsRule,
+    ContextualArgumentRule,
     AuthOnRequiresRule,
+    AuthOnContextRule,
   ];
 
   const supergraph = state.getSupergraphState();
