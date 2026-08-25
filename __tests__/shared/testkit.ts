@@ -56,6 +56,7 @@ function composeServicesFactory(
     }>,
     __internal?: {
       disableValidationRules?: string[];
+      enableContextDirectives?: boolean;
     },
     debug = false,
   ) {

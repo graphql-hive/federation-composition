@@ -31,12 +31,18 @@ import {
 import { SubgraphStateBuilder } from "../state.js";
 import { AuthenticatedRule } from "./rules/elements/authenticated.js";
 import { ComposeDirectiveRules } from "./rules/elements/compose-directive.js";
-import { ContextDirectiveRules } from "./rules/elements/context.js";
+import {
+  ContextDirectiveRules,
+  UnsupportedContextDirectiveRule,
+} from "./rules/elements/context.js";
 import { CostRule } from "./rules/elements/cost.js";
 import { ExtendsRules } from "./rules/elements/extends.js";
 import { ExternalRules } from "./rules/elements/external.js";
 import { FieldSetRules } from "./rules/elements/field-set.js";
-import { FromContextDirectiveRules } from "./rules/elements/from-context.js";
+import {
+  FromContextDirectiveRules,
+  UnsupportedFromContextDirectiveRule,
+} from "./rules/elements/from-context.js";
 import { InaccessibleRules } from "./rules/elements/inaccessible.js";
 import { InterfaceObjectRules } from "./rules/elements/interface-object.js";
 import { KeyRules } from "./rules/elements/key.js";
@@ -112,6 +118,13 @@ export function validateSubgraph(
   },
   __internal?: {
     disableValidationRules?: string[];
+    /**
+     * Enables `@context` and `@fromContext` (contextual arguments).
+     * The support is experimental, so it is off by default.
+     * When it is off, a subgraph that imports either directive is rejected with
+     * `UNSUPPORTED_FEATURE`.
+     */
+    enableContextDirectives?: boolean;
   },
 ) {
   subgraph.typeDefs = cleanSubgraphTypeDefsFromSubgraphSpec(subgraph.typeDefs);
@@ -165,8 +178,9 @@ export function validateSubgraph(
     CostRule,
     ListSizeRule,
     OverrideRules,
-    ContextDirectiveRules,
-    FromContextDirectiveRules,
+    ...(__internal?.enableContextDirectives
+      ? [ContextDirectiveRules, FromContextDirectiveRules]
+      : [UnsupportedContextDirectiveRule, UnsupportedFromContextDirectiveRule]),
     ExtendsRules,
     QueryRootTypeInaccessibleRule,
     KnownTypeNamesRule,

@@ -80,3 +80,27 @@ export function ContextDirectiveRules(
     },
   };
 }
+
+/**
+ * The rule that applies when `enableContextDirectives` is off.
+ */
+export function UnsupportedContextDirectiveRule(
+  context: SubgraphValidationContext,
+): ASTVisitor {
+  if (
+    context.satisfiesVersionRange(">= v2.8") &&
+    context.federationImports.some(
+      (i) => i.name === "@context" && i.kind === "directive",
+    )
+  ) {
+    context.reportError(
+      new GraphQLError("@context directive is not yet supported.", {
+        extensions: {
+          code: "UNSUPPORTED_FEATURE",
+        },
+      }),
+    );
+  }
+
+  return {};
+}

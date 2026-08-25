@@ -193,6 +193,12 @@ Your feedback and bug reports are welcome and appreciated.
 - ✅ `LINK_IMPORT_NAME_MISMATCH`
 - ✅ `IMPLEMENTED_BY_INACCESSIBLE`
 - ✅ `MISSING_TRANSITIVE_AUTH_REQUIREMENTS`
+
+### Validation rules behind `enableContextDirectives`
+
+`@context` and `@fromContext` are experimental. Pass
+`composeServices(services, { enableContextDirectives: true })` to turn them on.
+
 - ✅ `CONTEXT_NAME_INVALID`
 - ✅ `CONTEXT_NOT_SET`
 - ✅ `CONTEXT_NO_RESOLVABLE_KEY`

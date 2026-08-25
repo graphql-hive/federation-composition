@@ -181,6 +181,13 @@ export function validate(
   }>,
   __internal?: {
     disableValidationRules?: string[];
+    /**
+     * Enables `@context` and `@fromContext` (contextual arguments).
+     * The support is experimental, so it is off by default.
+     * When it is off, a subgraph that imports either directive is rejected with
+     * `UNSUPPORTED_FEATURE`.
+     */
+    enableContextDirectives?: boolean;
   },
 ) {
   const graphList = buildGraphList(subgraphs);
