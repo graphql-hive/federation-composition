@@ -7,6 +7,7 @@ import {
   type TypeDefinitionNode,
 } from "graphql";
 import { sdl as authenticatedSdl } from "../specifications/authenticated.js";
+import { sdl as contextSdl } from "../specifications/context.js";
 import { sdl as costSdl } from "../specifications/cost.js";
 import { getLatestFederationVersion } from "../specifications/federation.js";
 import { sdl as inaccessibleSdl } from "../specifications/inaccessible.js";
@@ -52,6 +53,7 @@ export function getSupergraphSpecNodes(): SupergraphSpecNodes {
 
   supergraphSpecNodes = [
     authenticatedSdl,
+    contextSdl,
     costSdl({
       cost: "cost",
       listSize: "listSize",

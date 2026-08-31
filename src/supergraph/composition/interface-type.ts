@@ -28,6 +28,9 @@ export function interfaceTypeBuilder(): TypeBuilder<
       const interfaceTypeState = getOrCreateInterfaceType(state, typeName);
 
       type.tags.forEach((tag) => interfaceTypeState.tags.add(tag));
+      type.contexts.forEach((contextName) =>
+        interfaceTypeState.contexts.add(`${graph.name}__${contextName}`),
+      );
 
       if (type.inaccessible) {
         interfaceTypeState.inaccessible = true;
@@ -198,6 +201,10 @@ export function interfaceTypeBuilder(): TypeBuilder<
             argState.defaultValue = arg.defaultValue;
           }
 
+          if (arg.fromContext) {
+            argState.fromContext = arg.fromContext;
+          }
+
           if (arg.cost !== null) {
             argState.cost = mathMax(arg.cost, argState.cost);
           }
@@ -212,6 +219,7 @@ export function interfaceTypeBuilder(): TypeBuilder<
             type: arg.type,
             kind: arg.kind,
             defaultValue: arg.defaultValue,
+            fromContext: arg.fromContext,
             version: graph.version,
           });
         }
@@ -321,6 +329,10 @@ export function interfaceTypeBuilder(): TypeBuilder<
             },
             arguments: Array.from(field.args.values())
               .filter((arg) => {
+                if (arg.fromContext) {
+                  return false;
+                }
+
                 // ignore the argument if it's not available in all subgraphs implementing the field
                 if (arg.byGraph.size !== field.byGraph.size) {
                   return false;
@@ -362,6 +374,7 @@ export function interfaceTypeBuilder(): TypeBuilder<
         authenticated: interfaceType.authenticated,
         policies: interfaceType.policies,
         scopes: interfaceType.scopes,
+        contexts: Array.from(interfaceType.contexts),
         description: interfaceType.description,
         interfaces: Array.from(interfaceType.interfaces),
         ast: {
@@ -419,6 +432,7 @@ export type InterfaceTypeState = {
   authenticated: boolean;
   policies: string[][];
   scopes: string[][];
+  contexts: Set<string>;
   hasDefinition: boolean;
   description?: Description;
   byGraph: MapByGraph<InterfaceTypeInGraph>;
@@ -459,6 +473,10 @@ export type InterfaceTypeFieldArgState = {
   kind: ArgumentKind;
   tags: Set<string>;
   defaultValue?: string;
+  fromContext?: {
+    context: string;
+    selection: string;
+  };
   cost: number | null;
   description?: Description;
   deprecated?: Deprecated;
@@ -496,6 +514,10 @@ type ArgStateInGraph = {
   type: string;
   kind: ArgumentKind;
   defaultValue?: string;
+  fromContext?: {
+    context: string;
+    selection: string;
+  };
   version: FederationVersion;
 };
 
@@ -517,6 +539,7 @@ function getOrCreateInterfaceType(
     authenticated: false,
     policies: [],
     scopes: [],
+    contexts: new Set(),
     hasDefinition: false,
     hasInterfaceObject: false,
     isEntity: false,

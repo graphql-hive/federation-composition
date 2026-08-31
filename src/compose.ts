@@ -2,6 +2,7 @@ import { DocumentNode, GraphQLError, Kind, parse } from "graphql";
 import { print } from "./graphql/printer.js";
 import { transformSupergraphToPublicSchema } from "./graphql/transform-supergraph-to-public-schema.js";
 import { sdl as authenticatedSDL } from "./specifications/authenticated.js";
+import { sdl as contextSDL } from "./specifications/context.js";
 import { sdl as costSDL } from "./specifications/cost.js";
 import { FederationVersion } from "./specifications/federation.js";
 import { sdl as inaccessibleSDL } from "./specifications/inaccessible.js";
@@ -57,6 +58,7 @@ export function composeServices(
   }
 
   const usedTagSpec = validationResult.specs.tag;
+  const usedContextSpec = validationResult.specs.context;
   const usedCostSpec = validationResult.specs.cost;
   const usedInaccessibleSpec = validationResult.specs.inaccessible;
   const usedPolicySpec = validationResult.specs.policy;
@@ -107,6 +109,7 @@ export function composeServices(
     schema
     @link(url: "https://specs.apollo.dev/link/v1.0")
     @link(url: "https://specs.apollo.dev/join/${federationVersionToJoinVersion[validationResult.federationVersion]}", for: EXECUTION)
+    ${usedContextSpec ? '@link(url: "https://specs.apollo.dev/context/v0.1", for: SECURITY)' : ""}
     ${usedTagSpec ? '@link(url: "https://specs.apollo.dev/tag/v0.3")' : ""}
     ${usedCostSpec.used ? `@link(url: "https://specs.apollo.dev/cost/v0.1"${costLinkImports})` : ""}
     ${
@@ -133,6 +136,7 @@ export function composeServices(
   }
 
   ${joinSDL(validationResult.federationVersion)}
+  ${usedContextSpec ? contextSDL : ""}
   ${linkSDL}
   ${usedTagSpec ? tagSDL : ""}
   ${
