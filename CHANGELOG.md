@@ -1,5 +1,11 @@
 # @theguild/federation-composition
 
+## 0.26.0
+
+### Minor Changes
+
+- [#324](https://github.com/graphql-hive/federation-composition/pull/324) [`340c2ea`](https://github.com/graphql-hive/federation-composition/commit/340c2ea21dc23f4a49387c3e176d3b7c7e9bf150) Thanks [@kamilkisiela](https://github.com/kamilkisiela)! - Support for `@context` and `@fromContext`
+
 ## 0.25.0
 
 ### Minor Changes
