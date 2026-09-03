@@ -1276,6 +1276,7 @@ export function cleanSubgraphStateFromFederationSpec(
   state.types.delete("federation__FieldSet");
   state.types.delete("federation__Policy");
   state.types.delete("federation__Scope");
+  state.types.delete("federation__ContextFieldValue");
 
   return state;
 }
