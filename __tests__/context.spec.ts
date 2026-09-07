@@ -1454,6 +1454,30 @@ testVersions((api, version) => {
     });
   });
   describe("supergraph", () => {
+    test("does not leak federation__ContextFieldValue from service SDL", () => {
+      const result = compose([
+        subgraph(
+          "accounts",
+          graphql`
+              scalar federation__ContextFieldValue
+
+              type Query {
+                account: Account
+              }
+
+              type Account @context(name: "accountCtx") {
+                locale: String!
+              }
+            `,
+        ),
+      ]);
+
+      assertCompositionSuccess(result);
+      expect(result.supergraphSdl).not.toContain(
+        "scalar federation__ContextFieldValue",
+      );
+    });
+
     const materializedContextCases = [
       {
         title: "writes a nested scalar selection to the join metadata",
