@@ -99,6 +99,53 @@ describe("composeSchemaContract", () => {
     `);
   });
 
+  test("keeps types referenced by composed directives when removing unreachable types", () => {
+    const result = composeSchemaContract(
+      [
+        {
+          name: "products",
+          url: "https://products.example.com/graphql",
+          typeDefs: parse(/* GraphQL */ `
+            extend schema
+              @link(
+                url: "https://specs.apollo.dev/federation/v2.5"
+                import: ["@key", "@tag", "@composeDirective"]
+              )
+              @link(url: "https://myspecs.dev/meta/v1.0", import: ["@meta"])
+              @composeDirective(name: "@meta")
+
+            directive @meta(options: MetaOptions) repeatable on FIELD_DEFINITION
+
+            scalar MetaOptions
+
+            type Product @key(fields: "id") {
+              id: ID!
+              name: String @meta(options: {}) @tag(name: "internal")
+              secret: String @tag(name: "internal")
+            }
+
+            type Query {
+              product: Product
+            }
+          `),
+        },
+      ],
+      {
+        include: new Set(),
+        exclude: new Set(["internal"]),
+      },
+      true,
+    );
+
+    expect(result.errors).toEqual(undefined);
+    expect((result as CompositionSuccess).publicSdl).toContain(
+      "directive @meta(options: MetaOptions) repeatable on FIELD_DEFINITION",
+    );
+    expect((result as CompositionSuccess).publicSdl).toContain(
+      "scalar MetaOptions",
+    );
+  });
+
   test("contract: mutation type is not part of the public schema if all fields are excluded", () => {
     const sdl = /* GraphQL */ `
       schema
