@@ -6,6 +6,7 @@ import {
   isInterfaceType,
   isObjectType,
   isScalarType,
+  isSpecifiedDirective,
   isUnionType,
   Kind,
   specifiedScalarTypes,
@@ -14,6 +15,7 @@ import {
   type DocumentNode,
   type EnumTypeDefinitionNode,
   type GraphQLNamedType,
+  type GraphQLSchema,
   type GraphQLType,
   type InputObjectTypeDefinitionNode,
   type InterfaceTypeDefinitionNode,
@@ -24,28 +26,13 @@ import {
 
 const specifiedScalarNames = new Set(specifiedScalarTypes.map((t) => t.name));
 
-/**
- * Retrieve a named list of all types that are reachable from the root types.
- */
-export function getReachableTypes(documentNode: DocumentNode): Set<string> {
+function walkReachableTypes(
+  schema: GraphQLSchema,
+  types: Iterable<GraphQLNamedType>,
+): Set<string> {
   const reachableTypeNames = new Set<string>();
-  const schema = buildASTSchema(documentNode);
   const didVisitType = new Set<GraphQLType>();
   const typeQueue: Array<GraphQLNamedType> = [];
-
-  const queryType = schema.getQueryType();
-  const mutationType = schema.getMutationType();
-  const subscriptionType = schema.getSubscriptionType();
-
-  if (queryType) {
-    processNamedType(queryType);
-  }
-  if (mutationType) {
-    processNamedType(mutationType);
-  }
-  if (subscriptionType) {
-    processNamedType(subscriptionType);
-  }
 
   function processNamedType(tType: GraphQLNamedType) {
     if (didVisitType.has(tType) || specifiedScalarNames.has(tType.name)) {
@@ -54,6 +41,10 @@ export function getReachableTypes(documentNode: DocumentNode): Set<string> {
     didVisitType.add(tType);
     typeQueue.push(tType);
     reachableTypeNames.add(tType.name);
+  }
+
+  for (const type of types) {
+    processNamedType(type);
   }
 
   let currentType: GraphQLNamedType | undefined;
@@ -90,6 +81,31 @@ export function getReachableTypes(documentNode: DocumentNode): Set<string> {
   }
 
   return reachableTypeNames;
+}
+
+/**
+ * Retrieve a named list of all types that are reachable from the root types.
+ */
+export function getReachableTypes(documentNode: DocumentNode): Set<string> {
+  const schema = buildASTSchema(documentNode);
+
+  const rootTypes = [
+    schema.getQueryType(),
+    schema.getMutationType(),
+    schema.getSubscriptionType(),
+  ].filter((type): type is NonNullable<typeof type> => !!type);
+
+  const directiveArgumentTypes: GraphQLNamedType[] = [];
+  for (const directive of schema.getDirectives()) {
+    if (isSpecifiedDirective(directive)) {
+      continue;
+    }
+    for (const arg of directive.args) {
+      directiveArgumentTypes.push(getNamedType(arg.type));
+    }
+  }
+
+  return walkReachableTypes(schema, [...rootTypes, ...directiveArgumentTypes]);
 }
 
 /**

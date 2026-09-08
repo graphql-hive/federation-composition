@@ -113,6 +113,53 @@ test("Filters based on tags", async () => {
   `);
 });
 
+test("Inaccessible is not added to a custom directive (or its custom scalar argument) included via @composeDirective", async () => {
+  let compositionResult = composeServices([
+    {
+      name: "user",
+      url: "https://user-example.graphql-hive.com",
+      typeDefs: parse(`
+        extend schema
+          @link(url: "https://specs.apollo.dev/federation/v2.9", import: ["@composeDirective"])
+          @link(url: "https://myspecs.dev/custom/v1.0", import: ["@custom"])
+          @composeDirective(name: "@custom")
+
+        scalar CustomScalar
+
+        directive @custom(arg: CustomScalar) on FIELD_DEFINITION
+
+        type Query {
+          user: User
+        }
+        type User {
+          id: ID!
+          name: String @custom(arg: "foo")
+        }
+      `),
+    },
+  ]);
+
+  expect(compositionResult.errors).toBe(undefined);
+  expect(compositionResult.supergraphSdl).not.toBe(undefined);
+  const { resolveImportName } = extractLinkImplementations(
+    parse(compositionResult.supergraphSdl!),
+  );
+
+  compositionResult = addInaccessibleToUnreachableTypes(
+    resolveImportName,
+    compositionResult as CompositionSuccess,
+  );
+  expect(compositionResult.supergraphSdl).to.include(
+    "directive @custom(arg: CustomScalar) on FIELD_DEFINITION",
+  );
+  expect(compositionResult.supergraphSdl).to.include(
+    "scalar CustomScalar @join__type(graph: USER)",
+  );
+  expect(compositionResult.supergraphSdl).to.not.include(
+    "scalar CustomScalar @join__type(graph: USER) @inaccessible",
+  );
+});
+
 test("Inaccessible is not added on built-in Federation types ContextArgument and FieldValue", async () => {
   const sdl = /* GraphQL */ `
     extend schema
