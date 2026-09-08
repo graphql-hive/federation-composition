@@ -47,6 +47,12 @@ export function getReachableTypes(documentNode: DocumentNode): Set<string> {
     processNamedType(subscriptionType);
   }
 
+  for (const directive of schema.getDirectives()) {
+    for (const arg of directive.args) {
+      processNamedType(getNamedType(arg.type));
+    }
+  }
+
   function processNamedType(tType: GraphQLNamedType) {
     if (didVisitType.has(tType) || specifiedScalarNames.has(tType.name)) {
       return;
