@@ -1,5 +1,13 @@
 # @theguild/federation-composition
 
+## 0.26.1
+
+### Patch Changes
+
+- [#329](https://github.com/graphql-hive/federation-composition/pull/329) [`396442a`](https://github.com/graphql-hive/federation-composition/commit/396442a30dd8262560b38a67fb307aeb690541d5) Thanks [@n1ru4l](https://github.com/n1ru4l)! - Preserve types referenced by directive arguments when removing unreachable types from schema contracts.
+
+- [#328](https://github.com/graphql-hive/federation-composition/pull/328) [`332a10a`](https://github.com/graphql-hive/federation-composition/commit/332a10a67005ed848e6878ca242cb60fd885dd7b) Thanks [@robbin-norberg-vcc](https://github.com/robbin-norberg-vcc)! - Prevent `federation__ContextFieldValue` declared in a subgraph's `_service.sdl` from leaking into the supergraph.
+
 ## 0.26.0
 
 ### Minor Changes
