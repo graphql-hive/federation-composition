@@ -6,6 +6,7 @@ import {
   isInterfaceType,
   isObjectType,
   isScalarType,
+  isSpecifiedDirective,
   isUnionType,
   Kind,
   specifiedScalarTypes,
@@ -45,6 +46,16 @@ export function getReachableTypes(documentNode: DocumentNode): Set<string> {
   }
   if (subscriptionType) {
     processNamedType(subscriptionType);
+  }
+
+  for (const directive of schema.getDirectives()) {
+    if (isSpecifiedDirective(directive)) {
+      continue;
+    }
+
+    for (const arg of directive.args) {
+      processNamedType(getNamedType(arg.type));
+    }
   }
 
   function processNamedType(tType: GraphQLNamedType) {

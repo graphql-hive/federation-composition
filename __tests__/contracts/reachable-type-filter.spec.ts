@@ -161,6 +161,24 @@ describe("getReachableTypes", () => {
     expect(reachableTypes.has("Hello")).toEqual(true);
     expect(reachableTypes.has("World")).toEqual(true);
   });
+  test("includes types referenced by directive arguments", () => {
+    const documentNode = parse(/* GraphQL */ `
+      directive @meta(options: MetaOptions) on FIELD_DEFINITION
+      input MetaOptions {
+        visibility: Visibility
+      }
+      enum Visibility {
+        PUBLIC
+        PRIVATE
+      }
+      type Query {
+        hello: String
+      }
+    `);
+    const reachableTypes = getReachableTypes(documentNode);
+    expect(reachableTypes.has("MetaOptions")).toEqual(true);
+    expect(reachableTypes.has("Visibility")).toEqual(true);
+  });
 });
 
 describe("addDirectiveOnTypes", () => {
