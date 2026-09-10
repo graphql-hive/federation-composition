@@ -113,17 +113,21 @@ test("Filters based on tags", async () => {
   `);
 });
 
-test("Inaccessible is not added on built-in Federation types ContextArgument and FieldValue", async () => {
+test("Inaccessible is not added on built-in Federation and context types", async () => {
   const sdl = /* GraphQL */ `
     extend schema
-      @link(url: "https://specs.apollo.dev/federation/v2.9", import: ["@key"])
+      @link(
+        url: "https://specs.apollo.dev/federation/v2.9"
+        import: ["@context", "@fromContext", "@key"]
+      )
 
     type Query {
       me: Me
     }
 
-    type Me @key(fields: "id") {
+    type Me @key(fields: "id") @context(name: "me") {
       id: ID!
+      contextualField(value: ID @fromContext(field: "$me { id }")): String
     }
   `;
 
@@ -157,5 +161,11 @@ test("Inaccessible is not added on built-in Federation types ContextArgument and
   );
   expect(compositionResult.supergraphSdl).to.include(
     "input join__ContextArgument {\n",
+  );
+  expect(compositionResult.supergraphSdl).to.include(
+    "scalar context__ContextFieldValue\n",
+  );
+  expect(compositionResult.supergraphSdl).to.not.include(
+    "scalar context__ContextFieldValue @inaccessible",
   );
 });
