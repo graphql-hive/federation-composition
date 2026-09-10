@@ -1,4 +1,3 @@
-import { DocumentNode } from "graphql";
 import {
   CompositionSuccess,
   createCompositionSuccessReadCacheContainer,
@@ -37,6 +36,7 @@ export const addInaccessibleToUnreachableTypes = (
     resolveName("https://specs.apollo.dev/join", "DirectiveArguments"),
     resolveName("https://specs.apollo.dev/join", "ContextArgument"),
     resolveName("https://specs.apollo.dev/join", "FieldValue"),
+    resolveName("https://specs.apollo.dev/context", "ContextFieldValue"),
   ]);
 
   // we retrieve the list of reachable types from the public api sdl
