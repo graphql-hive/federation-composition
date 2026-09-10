@@ -15,7 +15,7 @@ export function containsSupergraphSpec(sdl: string): boolean {
   const patterns: string[] = [];
 
   for (const { name, kind } of getSupergraphSpecNodes()) {
-    if (kind === Kind.DIRECTIVE) {
+    if (kind === Kind.DIRECTIVE || kind === Kind.DIRECTIVE_DEFINITION) {
       // "@NAME" for directives
       patterns.push(`@${name}`);
     } else {
