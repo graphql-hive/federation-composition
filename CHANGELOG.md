@@ -1,5 +1,11 @@
 # @theguild/federation-composition
 
+## 0.26.2
+
+### Patch Changes
+
+- [#332](https://github.com/graphql-hive/federation-composition/pull/332) [`3b1028e`](https://github.com/graphql-hive/federation-composition/commit/3b1028e43aee6d1c39d836ece13fcb510f88888a) Thanks [@n1ru4l](https://github.com/n1ru4l)! - Fix scalar `ContextFieldValue` being annotated with `@inaccessible` within the supergraph when composing a contract schema.
+
 ## 0.26.1
 
 ### Patch Changes
