@@ -31,6 +31,10 @@ export class FieldMove implements Move {
       str += `, on: ${this.override.value})`;
     }
 
+    if (this.requiredContexts !== 0n) {
+      str += ` @fromContext(mask: ${this.requiredContexts})`;
+    }
+
     return str;
   });
 
@@ -45,6 +49,11 @@ export class FieldMove implements Move {
       value: boolean;
     } | null = null,
     public provided: boolean = false,
+    /**
+     * Mask of contexts that have to be set by an ancestor,
+     * for the field's `@fromContext` arguments to be resolvable.
+     */
+    public requiredContexts: bigint = 0n,
   ) {}
 
   get override(): FieldMoveOverride {

@@ -5,8 +5,6 @@ import {
   GraphQLError,
   InputValueDefinitionNode,
   Kind,
-  parseType,
-  SelectionNode,
   SelectionSetNode,
   TypeNode,
 } from "graphql";
@@ -20,6 +18,14 @@ import {
 import type { SubgraphValidationContext } from "../../validation-context.js";
 
 type ContextOwnerName = string;
+
+const typenameType: TypeNode = {
+  kind: Kind.NON_NULL_TYPE,
+  type: {
+    kind: Kind.NAMED_TYPE,
+    name: { kind: Kind.NAME, value: "String" },
+  },
+};
 
 type SelectableType =
   | {
@@ -36,13 +42,18 @@ type SelectableType =
       directives: readonly ConstDirectiveNode[];
     };
 
-type SelectionLayout =
-  | { kind: "direct" }
-  | { kind: "conditional"; typeConditions: Set<string> }
+/** A field path or a type-conditioned alternative, without GraphQL syntax. */
+type ContextValue =
+  | { field: string; next?: ContextValue[] }
+  | { onType: string | null; next: ContextValue[] };
+
+type ContextSelection =
+  | { kind: "direct"; values: ContextValue[] }
+  | { kind: "conditional"; branches: Map<string, ContextValue[]> }
   | { kind: "invalid"; reason: string };
 
 type SelectionTypeResult =
-  | { kind: "resolved"; type: string }
+  | { kind: "resolved"; type: TypeNode }
   | { kind: "unresolved" }
   | { kind: "unknownField"; owner: string; field: string }
   | { kind: "interfaceObject"; typeName: string };
@@ -400,7 +411,7 @@ function validateSelection(input: {
 
   function resolveSelectedType(
     currentType: SelectableType,
-    selectionSet: SelectionSetNode,
+    selections: ContextValue[],
   ): SelectionTypeResult {
     if (
       currentType.kind === "OBJECT" &&
@@ -409,9 +420,9 @@ function validateSelection(input: {
       return { kind: "interfaceObject", typeName: currentType.name };
     }
 
-    let resolvedType: string | undefined;
+    let resolvedType: TypeNode | undefined;
 
-    for (const selection of selectionSet.selections) {
+    for (const selection of selections) {
       const next = resolveSelectionType(currentType, selection);
 
       if (next.kind !== "resolved") {
@@ -423,7 +434,11 @@ function validateSelection(input: {
         continue;
       }
 
-      if (resolvedType !== next.type) {
+      // Compatibility in both directions requires identical list/nullability shape.
+      if (
+        !matchesArgType(resolvedType, next.type) ||
+        !matchesArgType(next.type, resolvedType)
+      ) {
         return { kind: "unresolved" };
       }
     }
@@ -435,44 +450,40 @@ function validateSelection(input: {
 
   function resolveSelectionType(
     currentType: SelectableType,
-    selection: SelectionNode,
+    selection: ContextValue,
   ): SelectionTypeResult {
-    if (selection.kind === Kind.FRAGMENT_SPREAD) {
-      return { kind: "unresolved" };
-    }
-
-    if (selection.kind === Kind.INLINE_FRAGMENT) {
-      const fragmentType = selection.typeCondition
-        ? getSelectableType(selection.typeCondition.name.value)
+    if ("onType" in selection) {
+      const fragmentType = selection.onType
+        ? getSelectableType(selection.onType)
         : null;
 
       return fragmentType
-        ? resolveSelectedType(fragmentType, selection.selectionSet)
+        ? resolveSelectedType(fragmentType, selection.next)
         : { kind: "unresolved" };
     }
 
-    if (selection.name.value === "__typename") {
-      return { kind: "resolved", type: "String!" };
+    if (selection.field === "__typename") {
+      return { kind: "resolved", type: typenameType };
     }
 
     if (currentType.kind === "UNION") {
       return { kind: "unresolved" };
     }
 
-    const field = getFieldDefinition(currentType, selection.name.value);
+    const field = getFieldDefinition(currentType, selection.field);
 
     if (!field) {
       return {
         kind: "unknownField",
         owner: currentType.name,
-        field: selection.name.value,
+        field: selection.field,
       };
     }
 
-    markFieldAsUsed(context, currentType, selection.name.value);
+    markFieldAsUsed(context, currentType, selection.field);
 
-    if (!selection.selectionSet) {
-      return { kind: "resolved", type: removeNonNullWrappers(field.type) };
+    if (!selection.next) {
+      return { kind: "resolved", type: nullableType(field.type) };
     }
 
     const childType = getSelectableType(
@@ -483,7 +494,7 @@ function validateSelection(input: {
       return { kind: "unresolved" };
     }
 
-    const nested = resolveSelectedType(childType, selection.selectionSet);
+    const nested = resolveSelectedType(childType, selection.next);
 
     if (nested.kind !== "resolved") {
       return nested;
@@ -513,9 +524,9 @@ function validateSelection(input: {
       return false;
     }
 
-    if (!matchesArgType(parseType(result.type), argDef.type)) {
+    if (!matchesArgType(result.type, argDef.type)) {
       invalid(
-        `the type of the selection "${result.type}" does not match the expected type "${printOutputType(argDef.type)}"`,
+        `the type of the selection "${printOutputType(result.type)}" does not match the expected type "${printOutputType(argDef.type)}"`,
       );
       return false;
     }
@@ -525,25 +536,13 @@ function validateSelection(input: {
 
   function validateConditionalSelections(
     owner: SelectableType,
-    selectionSet: SelectionSetNode,
+    branches: Map<string, ContextValue[]>,
     touchedTypeConditions: Set<string>,
   ) {
     let sawApplicableBranch = false;
     const runtimeTypes = runtimeSetFor(owner);
 
-    for (const selection of selectionSet.selections) {
-      // `classifySelectionLayout()` runs before this function. It rejects
-      // mixed selections and inline fragments that have no type condition.
-      // Therefore each selection here is an inline fragment with a type
-      // condition.
-      if (selection.kind !== Kind.INLINE_FRAGMENT || !selection.typeCondition) {
-        throw new Error(
-          "Expected conditional @fromContext selections to contain only inline fragments with type conditions",
-        );
-      }
-
-      const branchName = selection.typeCondition.name.value;
-
+    for (const [branchName, selections] of branches) {
       // If no branch applies, this function reports that no type condition
       // matches the location. If a branch applies, a later step reports each
       // unused type condition.
@@ -561,11 +560,7 @@ function validateSelection(input: {
         return false;
       }
 
-      if (
-        !validateSelectedType(
-          resolveSelectedType(branchType, selection.selectionSet),
-        )
-      ) {
+      if (!validateSelectedType(resolveSelectedType(branchType, selections))) {
         return false;
       }
     }
@@ -578,21 +573,7 @@ function validateSelection(input: {
     return true;
   }
 
-  const selectionSet = parseFields(input.selection);
-
-  if (!selectionSet) {
-    invalid("no selection is made");
-    return;
-  }
-
-  const unsupportedSyntax = findUnsupportedSelectionSyntax(selectionSet);
-
-  if (unsupportedSyntax) {
-    invalid(unsupportedSyntax);
-    return;
-  }
-
-  const layout = classifySelectionLayout(selectionSet);
+  const layout = parseContextSelection(input.selection);
 
   if (layout.kind === "invalid") {
     invalid(layout.reason);
@@ -610,10 +591,10 @@ function validateSelection(input: {
 
     const isValid =
       layout.kind === "direct"
-        ? validateSelectedType(resolveSelectedType(owner, selectionSet))
+        ? validateSelectedType(resolveSelectedType(owner, layout.values))
         : validateConditionalSelections(
             owner,
-            selectionSet,
+            layout.branches,
             touchedTypeConditions,
           );
 
@@ -623,7 +604,7 @@ function validateSelection(input: {
   }
 
   if (layout.kind === "conditional") {
-    for (const typeCondition of layout.typeConditions) {
+    for (const typeCondition of layout.branches.keys()) {
       if (!touchedTypeConditions.has(typeCondition)) {
         invalid(`type condition "${typeCondition}" is never used.`);
         return;
@@ -685,7 +666,7 @@ function reportInterfaceObject(
 ) {
   context.reportError(
     new GraphQLError(
-      `Context is used in "${argCoordinate(context)}" but the selection is invalid: One of the types in the selection is an interfaceObject: "${typeName}"`,
+      `Context "${contextName}" is used in "${argCoordinate(context)}" but the selection is invalid: One of the types in the selection is an interfaceObject: "${typeName}"`,
       {
         extensions: { code: "CONTEXT_INVALID_SELECTION" },
       },
@@ -693,44 +674,48 @@ function reportInterfaceObject(
   );
 }
 
-function classifySelectionLayout(
-  selectionSet: SelectionSetNode,
-): SelectionLayout {
-  const [firstSelection, ...remainingSelections] = selectionSet.selections;
+function parseContextSelection(source: string): ContextSelection {
+  const selectionSet = parseFields(source);
+  if (!selectionSet) {
+    return { kind: "invalid", reason: "no selection is made" };
+  }
+
+  const compiled = compileContextValues(selectionSet);
+  if (compiled.kind === "invalid") {
+    return compiled;
+  }
+
+  const [firstSelection, ...remainingSelections] = compiled.values;
 
   if (!firstSelection) {
     return { kind: "invalid", reason: "no selection is made" };
   }
 
-  if (firstSelection.kind === Kind.FIELD) {
+  if ("field" in firstSelection) {
     return remainingSelections.length === 0
-      ? { kind: "direct" }
+      ? { kind: "direct", values: compiled.values }
       : { kind: "invalid", reason: "multiple selections are made" };
   }
 
-  if (firstSelection.kind !== Kind.INLINE_FRAGMENT) {
-    return { kind: "invalid", reason: "fragment spread is not allowed" };
-  }
+  const branches = new Map<string, ContextValue[]>();
 
-  const typeConditions = new Set<string>();
-
-  for (const selection of selectionSet.selections) {
-    if (selection.kind !== Kind.INLINE_FRAGMENT) {
+  for (const selection of compiled.values) {
+    if ("field" in selection) {
       return { kind: "invalid", reason: "multiple fields could be selected" };
     }
 
-    if (!selection.typeCondition) {
+    if (!selection.onType) {
       return {
         kind: "invalid",
         reason: "inline fragments must have type conditions",
       };
     }
 
-    typeConditions.add(selection.typeCondition.name.value);
+    branches.set(selection.onType, selection.next);
   }
 
-  return typeConditions.size === selectionSet.selections.length
-    ? { kind: "conditional", typeConditions }
+  return branches.size === compiled.values.length
+    ? { kind: "conditional", branches }
     : { kind: "invalid", reason: "type conditions have same name" };
 }
 
@@ -790,21 +775,17 @@ function hasInterfaceObjectDirective(
   );
 }
 
-function removeNonNullWrappers(type: TypeNode): string {
-  if (type.kind === Kind.NON_NULL_TYPE) {
-    return removeNonNullWrappers(type.type);
-  }
-
-  return printOutputType(type);
+function nullableType(type: TypeNode): TypeNode {
+  return type.kind === Kind.NON_NULL_TYPE ? type.type : type;
 }
 
-function wrapListModifiers(type: TypeNode, resolvedType: string): string {
-  if (type.kind === Kind.NON_NULL_TYPE) {
-    return wrapListModifiers(type.type, resolvedType);
-  }
-
+function wrapListModifiers(type: TypeNode, resolvedType: TypeNode): TypeNode {
+  type = nullableType(type);
   if (type.kind === Kind.LIST_TYPE) {
-    return `[${wrapListModifiers(type.type, resolvedType)}]`;
+    return {
+      kind: Kind.LIST_TYPE,
+      type: wrapListModifiers(type.type, resolvedType),
+    };
   }
 
   return resolvedType;
@@ -837,29 +818,46 @@ function matchesArgType(selectType: TypeNode, argType: TypeNode): boolean {
   return selectType.name.value === argType.name.value;
 }
 
-function findUnsupportedSelectionSyntax(
+function compileContextValues(
   selectionSet: SelectionSetNode,
-): string | null {
+):
+  | { kind: "values"; values: ContextValue[] }
+  | { kind: "invalid"; reason: string } {
+  const values: ContextValue[] = [];
   for (const selection of selectionSet.selections) {
     if (selection.kind === Kind.FRAGMENT_SPREAD) {
-      return "fragment spread is not allowed";
+      return { kind: "invalid", reason: "fragment spread is not allowed" };
     }
 
     if (selection.kind === Kind.FIELD && Boolean(selection.alias)) {
-      return "aliases are not allowed in the selection";
+      return {
+        kind: "invalid",
+        reason: "aliases are not allowed in the selection",
+      };
     }
 
     if (selection.directives && selection.directives.length) {
-      return "directives are not allowed in the selection";
+      return {
+        kind: "invalid",
+        reason: "directives are not allowed in the selection",
+      };
     }
 
-    if (selection.selectionSet) {
-      let reason = findUnsupportedSelectionSyntax(selection.selectionSet);
-      if (reason) {
-        return reason;
-      }
+    const nested = selection.selectionSet
+      ? compileContextValues(selection.selectionSet)
+      : undefined;
+    if (nested?.kind === "invalid") {
+      return nested;
     }
+    values.push(
+      selection.kind === Kind.FIELD
+        ? { field: selection.name.value, next: nested?.values }
+        : {
+            onType: selection.typeCondition?.name.value ?? null,
+            next: nested?.values ?? [],
+          },
+    );
   }
 
-  return null;
+  return { kind: "values", values };
 }

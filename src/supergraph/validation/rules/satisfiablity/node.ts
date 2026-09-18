@@ -29,6 +29,12 @@ export class Node {
       | null,
     public graphId: string,
     public graphName: string,
+    /**
+     * Contexts (`@context(name:)`) set by this type, including the ones inherited
+     * from implemented interfaces and from unions this type is a member of.
+     * Zero when the type sets no context.
+     */
+    public readonly contexts: bigint = 0n,
   ) {
     if (this.typeState === undefined) {
       throw new Error(

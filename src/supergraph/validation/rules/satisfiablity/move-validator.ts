@@ -1,5 +1,11 @@
 import type { Logger } from "../../../../utils/logger.js";
-import { Edge, isAbstractEdge, isEntityEdge, isFieldEdge } from "./edge.js";
+import {
+  Edge,
+  isAbstractEdge,
+  isEntityEdge,
+  isFieldEdge,
+  type EdgeResolvabilityResult,
+} from "./edge.js";
 import { LazyErrors, SatisfiabilityError } from "./errors.js";
 import {
   concatIfNotExistsFields,
@@ -7,7 +13,7 @@ import {
   PathFinder,
 } from "./finder.js";
 import type { Graph } from "./graph.js";
-import { lazy, OverrideLabels, type Lazy } from "./helpers.js";
+import { lazy, OverrideLabels } from "./helpers.js";
 import { FieldMove } from "./moves.js";
 import { OperationPath } from "./operation-path.js";
 import type { Field, Fragment, Selection, SelectionNode } from "./selection.js";
@@ -438,17 +444,71 @@ export class MoveValidator {
     visitedGraphs: string[],
     visitedFields: Selection[],
     labelValues: OverrideLabels,
-  ):
-    | {
-        success: true;
-        error: undefined;
-      }
-    | {
-        success: false;
-        error: Lazy<SatisfiabilityError>;
-      } {
+  ): EdgeResolvabilityResult {
     this.logger.group(() => "Checking resolvability of " + edge);
     this.logger.log(() => "Visited graphs: " + visitedGraphs.join(","));
+
+    // Access guards always run and are never cached.
+    // Keep this order so override/external errors are reported before context errors.
+    if (isFieldEdge(edge)) {
+      if (!this.canAccessFieldWithOverride(edge, labelValues)) {
+        this.logger.groupEnd(
+          () =>
+            "Cannot move to " +
+            edge +
+            " because it requirement of the override is not met",
+        );
+        return {
+          success: false,
+          error: lazy(() =>
+            SatisfiabilityError.forMissingField(
+              edge.tail.graphName,
+              edge.move.typeName,
+              edge.move.fieldName,
+            ),
+          ),
+        };
+      }
+
+      if (this.isExternal(edge)) {
+        this.logger.groupEnd(
+          () =>
+            "Cannot move to " +
+            edge +
+            " because it is external and cross-graph",
+        );
+        return {
+          success: false,
+          error: lazy(() =>
+            SatisfiabilityError.forExternal(
+              edge.head.graphName,
+              edge.move.typeName,
+              edge.move.fieldName,
+            ),
+          ),
+        };
+      }
+
+      if (!path.hasContexts(edge.move.requiredContexts)) {
+        this.logger.groupEnd(
+          () =>
+            "Cannot move to " +
+            edge +
+            " because an ancestor context is missing",
+        );
+        return {
+          success: false,
+          error: lazy(() =>
+            SatisfiabilityError.forRequiredContext(
+              edge.head.graphName,
+              edge.move.typeName,
+              edge.move.fieldName,
+            ),
+          ),
+        };
+      }
+    }
+
     const resolvability = edge.getResolvability(
       concatIfNotExistsString(visitedGraphs, edge.tail.graphName),
       labelValues,
@@ -465,48 +525,6 @@ export class MoveValidator {
     }
 
     if (isFieldEdge(edge)) {
-      if (!this.canAccessFieldWithOverride(edge, labelValues)) {
-        this.logger.groupEnd(
-          () =>
-            "Cannot move to " +
-            edge +
-            " because it requirement of the override is not met",
-        );
-        return edge.setResolvable(
-          false,
-          visitedGraphs,
-          labelValues,
-          lazy(() =>
-            SatisfiabilityError.forMissingField(
-              edge.tail.graphName,
-              edge.move.typeName,
-              edge.move.fieldName,
-            ),
-          ),
-        );
-      }
-
-      if (this.isExternal(edge)) {
-        this.logger.groupEnd(
-          () =>
-            "Cannot move to " +
-            edge +
-            " because it is external and cross-graph",
-        );
-        return edge.setResolvable(
-          false,
-          visitedGraphs,
-          labelValues,
-          lazy(() =>
-            SatisfiabilityError.forExternal(
-              edge.head.graphName,
-              edge.move.typeName,
-              edge.move.fieldName,
-            ),
-          ),
-        );
-      }
-
       if (edge.move.requires) {
         this.logger.log(() => "Detected @requires");
 
@@ -521,7 +539,8 @@ export class MoveValidator {
         if (
           this.canResolveSelectionSet(
             edge.move.requires.selectionSet,
-            path,
+            // A `@requires` selection starts with no ancestor contexts in scope.
+            path.withoutContexts(),
             visitedEdges.concat(edge),
             newVisitedGraphs,
             newVisitedFields,

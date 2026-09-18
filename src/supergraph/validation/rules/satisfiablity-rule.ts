@@ -212,6 +212,13 @@ function printQueryPath(
       }
 
       const args = Array.from(fieldState.args)
+        // Print the arguments as they appear in the public schema.
+        // A `@fromContext` argument is resolved by the router, it's not part of the query.
+        .filter(
+          ([, argState]) =>
+            !argState.fromContext &&
+            argState.byGraph.size === fieldState.byGraph.size,
+        )
         .map(
           ([name, argState]) =>
             `${name}: ${print(createEmptyValueNode(argState.type, supergraphState))}`,

@@ -31,26 +31,55 @@ export class OperationPath {
 
     return str;
   });
-  private previousNodes: Node[] = [];
   private previousEdges: Edge[] = [];
-  private previousSteps: Step[] = [];
+  /**
+   * Contexts set by the types we moved out of (the ancestors of the path's tail).
+   * A `@fromContext` argument can only read a context set by an ancestor,
+   * never one set by the field's own parent type.
+   */
+  private contextsInScope = 0n;
+
+  get contexts() {
+    return this.contextsInScope;
+  }
 
   constructor(private _rootNode: Node) {}
 
   move(edge: Edge): OperationPath {
     this._toString.invalidate();
-    this.advance(edge);
+    this.previousEdges.push(edge);
+
+    // Only field moves turn the head into an ancestor.
+    // Key and abstract moves stay at the same level and preserve the context scope.
+    if (isFieldEdge(edge) && edge.head.contexts !== 0n) {
+      this.contextsInScope |= edge.head.contexts;
+    }
     return this;
   }
 
   clone() {
     const newPath = new OperationPath(this._rootNode);
 
-    newPath.previousNodes = this.previousNodes.slice();
     newPath.previousEdges = this.previousEdges.slice();
-    newPath.previousSteps = this.previousSteps.slice();
+    newPath.contextsInScope = this.contextsInScope;
 
     return newPath;
+  }
+
+  /**
+   * A `@requires` selection is resolved as its own fetch
+   * starting from the requiring type, so it starts with no contexts in scope.
+   */
+  withoutContexts() {
+    const newPath = this.clone();
+
+    newPath.contextsInScope = 0n;
+
+    return newPath;
+  }
+
+  hasContexts(required: bigint) {
+    return (this.contextsInScope & required) === required;
   }
 
   depth() {
@@ -62,7 +91,11 @@ export class OperationPath {
   }
 
   steps(): Step[] {
-    return this.previousSteps;
+    return this.previousEdges.map((edge) =>
+      isFieldEdge(edge)
+        ? { typeName: edge.move.typeName, fieldName: edge.move.fieldName }
+        : { typeName: edge.tail.typeName },
+    );
   }
 
   tail(): Node | undefined {
@@ -79,21 +112,5 @@ export class OperationPath {
 
   toString() {
     return this._toString.get();
-  }
-
-  private advance(edge: Edge) {
-    this.previousEdges.push(edge);
-    this.previousNodes.push(edge.head);
-
-    if (isFieldEdge(edge)) {
-      this.previousSteps.push({
-        typeName: edge.move.typeName,
-        fieldName: edge.move.fieldName,
-      });
-    } else {
-      this.previousSteps.push({
-        typeName: edge.tail.typeName,
-      });
-    }
   }
 }
