@@ -1,6 +1,6 @@
 import { GraphQLError } from "graphql";
 import { andList } from "../../../utils/format.js";
-import { isFederationExtension } from "../../composition/object-type.js";
+import { isExternalInGraph } from "../../composition/object-type.js";
 import type { SupergraphVisitorMap } from "../../composition/visitor.js";
 import type { SupergraphValidationContext } from "../validation-context.js";
 
@@ -18,16 +18,11 @@ export function ExternalTypeMismatchRule(
       const graphsWithEqualType: string[] = [];
 
       for (const [graphId, field] of fieldState.byGraph) {
-        const graphVersion =
-          context.subgraphStates.get(graphId)!.federation.version;
-        const isExternal =
-          graphVersion === "v1.0"
-            ? field.external &&
-              isFederationExtension(
-                objectTypeState.byGraph.get(graphId)!,
-                graphVersion,
-              )
-            : field.external;
+        const isExternal = isExternalInGraph(
+          field.external,
+          objectTypeState.byGraph.get(graphId)!,
+          context.subgraphStates.get(graphId)!.federation.version,
+        );
         if (!isExternal) {
           graphsWithEqualType.push(graphId);
 

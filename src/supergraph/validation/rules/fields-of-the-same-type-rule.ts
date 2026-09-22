@@ -1,5 +1,6 @@
 import { GraphQLError } from "graphql";
 import { TypeKind } from "../../../subgraph/state.js";
+import { isExternalInGraph } from "../../composition/object-type.js";
 import { SupergraphVisitorMap } from "../../composition/visitor.js";
 import { SupergraphValidationContext } from "../validation-context.js";
 
@@ -80,6 +81,20 @@ export function FieldsOfTheSameTypeRule(
       const typeNameToPossibleTypeNames = new Map<string, Set<string>>();
 
       fieldState.byGraph.forEach((field, graphName) => {
+        // An @external declaration only mirrors the field it points at, it does not take part in
+        // merging its type. ExternalTypeMismatchRule compares those against the merged type and
+        // reports EXTERNAL_TYPE_MISMATCH - except for key fields, which it skips, so we keep those.
+        if (
+          !fieldState.usedAsKey &&
+          isExternalInGraph(
+            field.external,
+            objectTypeState.byGraph.get(graphName)!,
+            context.subgraphStates.get(graphName)!.federation.version,
+          )
+        ) {
+          return;
+        }
+
         const typeName = field.type
           .replaceAll("!", "")
           .replaceAll("[", "")

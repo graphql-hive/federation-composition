@@ -237,7 +237,8 @@ testVersions((api, version) => {
       ]),
     ).toEqual(
       expect.objectContaining({
-        errors: expect.arrayContaining([
+        // exactly one error: the @external declaration does not also produce a FIELD_TYPE_MISMATCH
+        errors: [
           expect.objectContaining({
             message: expect.stringContaining(
               `Type of field "Product.variant" is incompatible across subgraphs (where marked @external): it has type "VariantV1!" in subgraph "products" but type "VariantV2" in subgraph "pricing"`,
@@ -246,7 +247,7 @@ testVersions((api, version) => {
               code: "EXTERNAL_TYPE_MISMATCH",
             }),
           }),
-        ]),
+        ],
       }),
     );
   });

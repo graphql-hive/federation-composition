@@ -62,6 +62,20 @@ export function isFederationExtension(
   return false;
 }
 
+/**
+ * A field is only truly @external in Federation v1 when its type is an extension,
+ * as v1 subgraphs mark every field of an extended type as @external.
+ */
+export function isExternalInGraph(
+  external: boolean,
+  meta: ObjectTypeStateInGraph,
+  version: FederationVersion,
+) {
+  return version === "v1.0"
+    ? external && isFederationExtension(meta, version)
+    : external;
+}
+
 export function objectTypeBuilder(): TypeBuilder<ObjectType, ObjectTypeState> {
   let requiresUsageIndex: RequiresFieldUsageIndex | null = null;
 
@@ -172,11 +186,11 @@ export function objectTypeBuilder(): TypeBuilder<ObjectType, ObjectTypeState> {
         }
 
         // It's the first time we visited a non-external field, we should force the type on that field to match the local type
-        const isExternal =
-          graph.version === "v1.0"
-            ? field.external &&
-              isFederationExtension(typeInGraph, graph.version)
-            : field.external;
+        const isExternal = isExternalInGraph(
+          field.external,
+          typeInGraph,
+          graph.version,
+        );
         const shouldForceType =
           // If it's not an external field and it's first time we visited a non-external field,
           // we should force the type but only if it's not used as a key
