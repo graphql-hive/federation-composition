@@ -92,29 +92,49 @@ export function validateSupergraph(
     InterfaceKeyMissingImplementationTypeRule,
     ExternalTypeMismatchRule,
     InvalidFieldSharingRule,
-    SatisfiabilityRule,
     SubgraphNameRule,
     RequiredArgumentOrFieldIsNotInaccessibleRule,
     InterfaceSubtypeRule,
     NoInaccessibleOnImplementedInterfaceFieldsRule,
     ListSizeSlicingArgumentsRule,
     ContextualArgumentRule,
+  ];
+
+  // These resolve @key/@requires/@provides/@fromContext selection sets against the merged
+  // supergraph state. A selection set is written against a single subgraph, so when subgraphs
+  // disagree on a field's type (FIELD_TYPE_MISMATCH, EXTERNAL_TYPE_MISMATCH, TYPE_KIND_MISMATCH...)
+  // it may point at fields the merged type does not have, and these rules throw instead of
+  // reporting. Composition already failed at that point, so run them only on a coherent state.
+  const selectionDependentRules = [
+    SatisfiabilityRule,
     AuthOnRequiresRule,
     AuthOnContextRule,
   ];
 
   const supergraph = state.getSupergraphState();
 
-  visitSupergraphState(
-    supergraph,
-    postSupergraphRules.map((rule) => {
-      if (rulesToSkip.includes(rule.name)) {
-        return {};
-      }
+  function runRules(rules: typeof postSupergraphRules) {
+    visitSupergraphState(
+      supergraph,
+      rules.map((rule) => {
+        if (rulesToSkip.includes(rule.name)) {
+          return {};
+        }
 
-      return rule(context, supergraph);
-    }),
-  );
+        return rule(context, supergraph);
+      }),
+    );
+  }
+
+  runRules(postSupergraphRules);
+
+  const errors = context.collectReportedErrors();
+
+  if (errors.length > 0) {
+    return errors;
+  }
+
+  runRules(selectionDependentRules);
 
   return context.collectReportedErrors();
 }
