@@ -1,5 +1,13 @@
 # @theguild/federation-composition
 
+## 0.26.3
+
+### Patch Changes
+
+- [#336](https://github.com/graphql-hive/federation-composition/pull/336) [`12a4834`](https://github.com/graphql-hive/federation-composition/commit/12a483458b29f6b6abd83bbfb0ada332b2815a8e) Thanks [@kamilkisiela](https://github.com/kamilkisiela)! - Report composition errors instead of throwing when `@requires`, `@key`, `@provides`, or `@fromContext` selections cannot be resolved against the merged supergraph.
+
+  Selection-dependent validation now runs only after the other supergraph rules confirm the merged state is valid.
+
 ## 0.26.2
 
 ### Patch Changes
