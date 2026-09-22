@@ -192,4 +192,62 @@ testVersions((api, version) => {
       }
     `);
   });
+  test("EXTERNAL_TYPE_MISMATCH on a field selected by @requires", () => {
+    // The @requires selection set is written against "pricing"'s VariantV2,
+    // but the merged Product.variant points at VariantV1, which has no "sku".
+    // Composition has to report the mismatch, not blow up while resolving the selection set.
+    expect(
+      api.composeServices([
+        {
+          name: "products",
+          typeDefs: graphql`
+            extend schema @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@key"])
+
+            type Query {
+              product: Product
+            }
+
+            type Product @key(fields: "id") {
+              id: ID!
+              variant: VariantV1!
+            }
+
+            type VariantV1 @key(fields: "id") {
+              id: ID!
+            }
+          `,
+        },
+        {
+          name: "pricing",
+          typeDefs: graphql`
+            extend schema @link(url: "https://specs.apollo.dev/federation/${version}", import: ["@key", "@external", "@requires"])
+
+            type Product @key(fields: "id") {
+              id: ID!
+              variant: VariantV2 @external
+              price: Float @requires(fields: "variant { sku }")
+            }
+
+            type VariantV2 @key(fields: "id") {
+              id: ID!
+              sku: String!
+            }
+          `,
+        },
+      ]),
+    ).toEqual(
+      expect.objectContaining({
+        errors: expect.arrayContaining([
+          expect.objectContaining({
+            message: expect.stringContaining(
+              `Type of field "Product.variant" is incompatible across subgraphs (where marked @external): it has type "VariantV1!" in subgraph "products" but type "VariantV2" in subgraph "pricing"`,
+            ),
+            extensions: expect.objectContaining({
+              code: "EXTERNAL_TYPE_MISMATCH",
+            }),
+          }),
+        ]),
+      }),
+    );
+  });
 });
