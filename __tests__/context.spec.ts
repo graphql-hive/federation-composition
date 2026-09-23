@@ -4,7 +4,7 @@ import { sortSDL } from "../src/graphql/sort-sdl.js";
 import {
   assertCompositionFailure,
   assertCompositionSuccess,
-  graphql,
+  normalizeErrorMessage,
   satisfiesVersionRange,
   testVersions,
 } from "./shared/testkit.js";
@@ -48,52 +48,56 @@ function federationSchema(
 
 testVersions((api, version) => {
   const compose = api.composeServices;
-  const subgraph = (
-    name: string,
-    typeDefs: DocumentNode,
-    extraImports?: string[],
-  ) => ({
-    name,
-    typeDefs: federationSchema(version, typeDefs, extraImports),
-  });
   const expectContextSpecDefinitions = (supergraphSdl: string) => {
-    expect(supergraphSdl).toContainGraphQL(graphql`
+    expect(supergraphSdl).toContainGraphQL(
+      parse(/* GraphQL */ `
         schema
           @link(for: EXECUTION, url: "https://specs.apollo.dev/join/v0.5")
           @link(for: SECURITY, url: "https://specs.apollo.dev/context/v0.1")
           @link(url: "https://specs.apollo.dev/link/v1.0") {
           query: Query
         }
-      `);
-    expect(supergraphSdl).toContainGraphQL(graphql`
+      `),
+    );
+    expect(supergraphSdl).toContainGraphQL(
+      parse(/* GraphQL */ `
         directive @context(
           name: String!
         ) repeatable on INTERFACE | OBJECT | UNION
-      `);
-    expect(supergraphSdl).toContainGraphQL(graphql`
+      `),
+    );
+    expect(supergraphSdl).toContainGraphQL(
+      parse(/* GraphQL */ `
         scalar context__ContextFieldValue
-      `);
-    expect(supergraphSdl).toContainGraphQL(graphql`
+      `),
+    );
+    expect(supergraphSdl).toContainGraphQL(
+      parse(/* GraphQL */ `
         directive @context__fromContext(
           field: context__ContextFieldValue
         ) on ARGUMENT_DEFINITION
-      `);
-    expect(supergraphSdl).toContainGraphQL(graphql`
+      `),
+    );
+    expect(supergraphSdl).toContainGraphQL(
+      parse(/* GraphQL */ `
         input join__ContextArgument {
           name: String!
           type: String!
           context: String!
           selection: join__FieldValue!
         }
-      `);
+      `),
+    );
   };
 
   if (satisfiesVersionRange("< v2.8", version)) {
     test("rejects the context directives before federation 2.8", () => {
       const result = compose([
-        subgraph(
-          "orders",
-          graphql`
+        {
+          name: "orders",
+          typeDefs: federationSchema(
+            version,
+            parse(/* GraphQL */ `
               type Customer @key(fields: "id") @context(name: "customerCtx") {
                 id: ID!
                 segment: String!
@@ -102,8 +106,9 @@ testVersions((api, version) => {
               type Query {
                 customer(id: ID!): Customer
               }
-            `,
-        ),
+            `),
+          ),
+        },
       ]);
 
       assertCompositionFailure(result);
@@ -121,11 +126,44 @@ testVersions((api, version) => {
 
   describe("@context and @fromContext location", () => {
     describe("the context name", () => {
+      test("rejects an empty context name", () => {
+        const result = compose([
+          {
+            name: "accounts",
+            typeDefs: federationSchema(
+              version,
+              parse(/* GraphQL */ `
+                type Account @key(fields: "id") @context(name: "") {
+                  id: ID!
+                }
+
+                type Query {
+                  account(id: ID!): Account
+                }
+              `),
+            ),
+          },
+        ]);
+
+        assertCompositionFailure(result);
+        expect(result.errors).toContainEqual(
+          expect.objectContaining({
+            message:
+              '[accounts] Context name "" is invalid. It should have only alphanumeric characters.',
+            extensions: expect.objectContaining({
+              code: "CONTEXT_NAME_INVALID",
+            }),
+          }),
+        );
+      });
+
       test("rejects a context name that has an underscore", () => {
         const result = compose([
-          subgraph(
-            "accounts",
-            graphql`
+          {
+            name: "accounts",
+            typeDefs: federationSchema(
+              version,
+              parse(/* GraphQL */ `
                 type Account @key(fields: "id") @context(name: "bad_name") {
                   id: ID!
                 }
@@ -133,8 +171,9 @@ testVersions((api, version) => {
                 type Query {
                   account(id: ID!): Account
                 }
-              `,
-          ),
+              `),
+            ),
+          },
         ]);
 
         assertCompositionFailure(result);
@@ -150,42 +189,16 @@ testVersions((api, version) => {
           }),
         );
       });
-
-      test("rejects an empty context name", () => {
-        const result = compose([
-          subgraph(
-            "accounts",
-            graphql`
-                type Account @key(fields: "id") @context(name: "") {
-                  id: ID!
-                }
-
-                type Query {
-                  account(id: ID!): Account
-                }
-              `,
-          ),
-        ]);
-
-        assertCompositionFailure(result);
-        expect(result.errors).toContainEqual(
-          expect.objectContaining({
-            message:
-              '[accounts] Context name "" is invalid. It should have only alphanumeric characters.',
-            extensions: expect.objectContaining({
-              code: "CONTEXT_NAME_INVALID",
-            }),
-          }),
-        );
-      });
     });
 
     describe("argument", () => {
       test("rejects @fromContext on argument that has a default value", () => {
         const result = compose([
-          subgraph(
-            "accounts",
-            graphql`
+          {
+            name: "accounts",
+            typeDefs: federationSchema(
+              version,
+              parse(/* GraphQL */ `
                 type Account @key(fields: "id") @context(name: "accountCtx") {
                   id: ID!
                   locale: String!
@@ -196,14 +209,15 @@ testVersions((api, version) => {
                   format(
                     locale: String = "en-US"
                       @fromContext(field: "$accountCtx { locale }")
-                  ): Int!
+                  ): Float!
                 }
 
                 type Query {
                   account(id: ID!): Account
                 }
-              `,
-          ),
+              `),
+            ),
+          },
         ]);
 
         assertCompositionFailure(result);
@@ -218,9 +232,11 @@ testVersions((api, version) => {
 
       test("rejects @fromContext on the argument of a directive", () => {
         const result = compose([
-          subgraph(
-            "accounts",
-            graphql`
+          {
+            name: "accounts",
+            typeDefs: federationSchema(
+              version,
+              parse(/* GraphQL */ `
                 directive @tenant(
                   locale: String @fromContext(field: "$accountCtx { locale }")
                 ) on FIELD_DEFINITION
@@ -233,8 +249,9 @@ testVersions((api, version) => {
                 type Query {
                   account(id: ID!): Account
                 }
-              `,
-          ),
+              `),
+            ),
+          },
         ]);
 
         assertCompositionFailure(result);
@@ -249,9 +266,11 @@ testVersions((api, version) => {
 
       test("rejects @fromContext if the parent type is abstract", () => {
         const result = compose([
-          subgraph(
-            "devices",
-            graphql`
+          {
+            name: "devices",
+            typeDefs: federationSchema(
+              version,
+              parse(/* GraphQL */ `
                 interface MeteredDevice
                   @key(fields: "id")
                   @context(name: "meterCtx") {
@@ -259,20 +278,21 @@ testVersions((api, version) => {
                   voltage: Float!
                   trip(
                     v: Float @fromContext(field: "$meterCtx { voltage }")
-                  ): Int!
+                  ): Boolean!
                 }
 
                 type Sensor implements MeteredDevice @key(fields: "id") {
                   id: ID!
                   voltage: Float!
-                  trip(v: Float): Int!
+                  trip(v: Float): Boolean!
                 }
 
                 type Query {
                   device: MeteredDevice
                 }
-              `,
-          ),
+              `),
+            ),
+          },
         ]);
 
         assertCompositionFailure(result);
@@ -287,12 +307,14 @@ testVersions((api, version) => {
 
       test("rejects @fromContext on a field that implements an interface field", () => {
         const result = compose([
-          subgraph(
-            "accounts",
-            graphql`
+          {
+            name: "accounts",
+            typeDefs: federationSchema(
+              version,
+              parse(/* GraphQL */ `
                 interface Renderable {
                   id: ID!
-                  render(locale: String): Int!
+                  render(locale: String): Float!
                 }
 
                 type Account @key(fields: "id") @context(name: "accountCtx") {
@@ -304,14 +326,15 @@ testVersions((api, version) => {
                   id: ID!
                   render(
                     locale: String @fromContext(field: "$accountCtx { locale }")
-                  ): Int!
+                  ): Float!
                 }
 
                 type Query {
                   account(id: ID!): Account
                 }
-              `,
-          ),
+              `),
+            ),
+          },
         ]);
 
         assertCompositionFailure(result);
@@ -326,12 +349,14 @@ testVersions((api, version) => {
 
       test("rejects @fromContext on an implementation if the interface field has no argument", () => {
         const result = compose([
-          subgraph(
-            "accounts",
-            graphql`
+          {
+            name: "accounts",
+            typeDefs: federationSchema(
+              version,
+              parse(/* GraphQL */ `
                 interface Renderable {
                   id: ID!
-                  render: Int!
+                  render: Boolean!
                 }
 
                 type Account @key(fields: "id") @context(name: "accountCtx") {
@@ -344,14 +369,15 @@ testVersions((api, version) => {
                   id: ID!
                   render(
                     locale: String @fromContext(field: "$accountCtx { locale }")
-                  ): Int!
+                  ): Boolean!
                 }
 
                 type Query {
                   account(id: ID!): Account
                 }
-              `,
-          ),
+              `),
+            ),
+          },
         ]);
 
         assertCompositionFailure(result);
@@ -368,34 +394,37 @@ testVersions((api, version) => {
   describe("invalid references and unsupported selection syntax", () => {
     test("rejects a selected field that the provider type does not have", () => {
       const result = compose([
-        subgraph(
-          "reviews",
-          graphql`
-              type Review @key(fields: "id") @context(name: "reviewCtx") {
+        {
+          name: "invoices",
+          typeDefs: federationSchema(
+            version,
+            parse(/* GraphQL */ `
+              type Invoice @key(fields: "id") @context(name: "invoiceCtx") {
                 id: ID!
-                sentiment: String!
+                reference: String!
               }
 
-              type ReviewScorer @key(fields: "id") {
+              type InvoiceAuditor @key(fields: "id") {
                 id: ID!
-                score(
-                  language: String
-                    @fromContext(field: "$reviewCtx { language }")
-                ): Int!
+                audit(
+                  reference: String
+                    @fromContext(field: "$invoiceCtx { amount }")
+                ): Float!
               }
 
               type Query {
-                review(id: ID!): Review
+                invoice(id: ID!): Invoice
               }
-            `,
-        ),
+            `),
+          ),
+        },
       ]);
 
       assertCompositionFailure(result);
       expect(result.errors).toContainEqual(
         expect.objectContaining({
           message:
-            '[reviews] Context "reviewCtx" is used in "ReviewScorer.score(language:)" but the selection is invalid for type Review. Error: Cannot query field "language" on type "Review".',
+            '[invoices] Context "invoiceCtx" is used in "InvoiceAuditor.audit(reference:)" but the selection is invalid for type Invoice. Error: Cannot query field "amount" on type "Invoice".',
           extensions: expect.objectContaining({
             code: "CONTEXT_INVALID_SELECTION",
           }),
@@ -403,155 +432,61 @@ testVersions((api, version) => {
       );
     });
 
-    describe("the context reference", () => {
-      test("rejects @fromContext when there's no @context", () => {
-        const result = compose([
-          subgraph(
-            "reviews",
-            graphql`
-                type Review @key(fields: "id") {
-                  id: ID!
-                  sentiment: String!
-                  score(
-                    sentiment: String
-                      @fromContext(field: "$reviewCtx { sentiment }")
-                  ): Int!
-                }
-
-                type Query {
-                  review(id: ID!): Review
-                }
-              `,
-          ),
-        ]);
-
-        assertCompositionFailure(result);
-        expect(result.errors).toContainEqual(
-          expect.objectContaining({
-            message:
-              '[reviews] Context "reviewCtx" is used at location "Review.score(sentiment:)" but is never set.',
-            extensions: expect.objectContaining({ code: "CONTEXT_NOT_SET" }),
-          }),
-        );
-      });
-
-      test("rejects a @fromContext that starts with a selection", () => {
-        const result = compose([
-          subgraph(
-            "reviews",
-            graphql`
-                type Review @key(fields: "id") @context(name: "reviewCtx") {
-                  id: ID!
-                  sentiment: String!
-                }
-
-                type ReviewScorer @key(fields: "id") {
-                  id: ID!
-                  score(
-                    sentiment: String @fromContext(field: "{ sentiment }")
-                  ): Int!
-                }
-
-                type Query {
-                  review(id: ID!): Review
-                }
-              `,
-          ),
-        ]);
-
-        assertCompositionFailure(result);
-        expect(result.errors).toContainEqual(
-          expect.objectContaining({
-            message:
-              '[reviews] @fromContext argument does not reference a context "{ sentiment }".',
-            extensions: expect.objectContaining({
-              code: "NO_CONTEXT_IN_SELECTION",
-            }),
-          }),
-        );
-      });
-
-      test("rejects a @fromContext that is only a field name", () => {
-        const result = compose([
-          subgraph(
-            "reviews",
-            graphql`
-                type Review @key(fields: "id") @context(name: "reviewCtx") {
-                  id: ID!
-                  sentiment: String!
-                }
-
-                type ReviewScorer @key(fields: "id") {
-                  id: ID!
-                  score(
-                    sentiment: String @fromContext(field: "sentiment")
-                  ): Int!
-                }
-
-                type Query {
-                  review(id: ID!): Review
-                }
-              `,
-          ),
-        ]);
-
-        assertCompositionFailure(result);
-        expect(result.errors).toContainEqual(
-          expect.objectContaining({
-            message:
-              '[reviews] @fromContext argument does not reference a context "sentiment".',
-            extensions: expect.objectContaining({
-              code: "NO_CONTEXT_IN_SELECTION",
-            }),
-          }),
-        );
-      });
-    });
-
     describe("unsupported selection syntax", () => {
       const rejectedSelectionShapes = [
         {
           title: "two sibling fields",
-          source: "$reviewCtx { sentiment language }",
+          source: "$invoiceCtx { reference amount }",
           message:
-            '[reviews] Context "reviewCtx" is used in "ReviewScorer.score(sentiment:)" but the selection is invalid: multiple selections are made',
+            '[invoices] Context "invoiceCtx" is used in "InvoiceAuditor.audit(reference:)" but the selection is invalid: multiple selections are made',
         },
         {
           title: "a field alias",
-          source: "$reviewCtx { value: sentiment }",
+          source: "$invoiceCtx { value: reference }",
           message:
-            '[reviews] Context "reviewCtx" is used in "ReviewScorer.score(sentiment:)" but the selection is invalid: aliases are not allowed in the selection',
+            '[invoices] Context "invoiceCtx" is used in "InvoiceAuditor.audit(reference:)" but the selection is invalid: aliases are not allowed in the selection',
         },
         {
           title: "a query directive",
-          source: "$reviewCtx { sentiment @skip(if: true) }",
+          source: "$invoiceCtx { reference @skip(if: true) }",
           message:
-            '[reviews] Context "reviewCtx" is used in "ReviewScorer.score(sentiment:)" but the selection is invalid: directives are not allowed in the selection',
+            '[invoices] Context "invoiceCtx" is used in "InvoiceAuditor.audit(reference:)" but the selection is invalid: directives are not allowed in the selection',
+        },
+        {
+          title: "unsupported syntax before reporting multiple selections",
+          source: "$invoiceCtx { reference amount @skip(if: true) }",
+          message:
+            api.library === "apollo"
+              ? '[invoices] Context "invoiceCtx" is used in "InvoiceAuditor.audit(reference:)" but the selection is invalid: multiple selections are made'
+              : '[invoices] Context "invoiceCtx" is used in "InvoiceAuditor.audit(reference:)" but the selection is invalid: directives are not allowed in the selection',
         },
       ];
 
       for (const testCase of rejectedSelectionShapes) {
         test(`rejects ${testCase.title} inside @fromContext`, () => {
           const result = compose([
-            subgraph(
-              "reviews",
-              graphql`
-                  type Review @key(fields: "id") @context(name: "reviewCtx") {
+            {
+              name: "invoices",
+              typeDefs: federationSchema(
+                version,
+                parse(/* GraphQL */ `
+                  type Invoice @key(fields: "id") @context(name: "invoiceCtx") {
                     id: ID!
-                    sentiment: String!
-                    language: String!
+                    reference: String!
+                    amount: Float!
                   }
 
-                  type ReviewScorer @key(fields: "id") {
+                  type InvoiceAuditor @key(fields: "id") {
                     id: ID!
-                    score(sentiment: String @fromContext(field: "${testCase.source}")): Int!
+                    audit(reference: String @fromContext(field: "${testCase.source}")): Boolean!
                   }
 
                   type Query {
-                    review(id: ID!): Review
+                    invoice(id: ID!): Invoice
                   }
-                `,
-            ),
+                `),
+              ),
+            },
           ]);
 
           assertCompositionFailure(result);
@@ -568,34 +503,37 @@ testVersions((api, version) => {
 
       test("rejects fragment spreads inside a @fromContext", () => {
         const result = compose([
-          subgraph(
-            "reviews",
-            graphql`
-                type Review @key(fields: "id") @context(name: "reviewCtx") {
+          {
+            name: "invoices",
+            typeDefs: federationSchema(
+              version,
+              parse(/* GraphQL */ `
+                type Invoice @key(fields: "id") @context(name: "invoiceCtx") {
                   id: ID!
-                  sentiment: String!
+                  reference: String!
                 }
 
-                type ReviewScorer @key(fields: "id") {
+                type InvoiceAuditor @key(fields: "id") {
                   id: ID!
-                  score(
-                    sentiment: String
-                      @fromContext(field: "$reviewCtx { ...SentimentFragment }")
+                  audit(
+                    reference: String
+                      @fromContext(field: "$invoiceCtx { ...InvoiceFragment }")
                   ): Int!
                 }
 
                 type Query {
-                  review(id: ID!): Review
+                  invoice(id: ID!): Invoice
                 }
-              `,
-          ),
+              `),
+            ),
+          },
         ]);
 
         assertCompositionFailure(result);
         expect(result.errors).toContainEqual(
           expect.objectContaining({
             message:
-              '[reviews] Context "reviewCtx" is used in "ReviewScorer.score(sentiment:)" but the selection is invalid: fragment spread is not allowed',
+              '[invoices] Context "invoiceCtx" is used in "InvoiceAuditor.audit(reference:)" but the selection is invalid: fragment spread is not allowed',
             extensions: expect.objectContaining({
               code: "CONTEXT_INVALID_SELECTION",
             }),
@@ -605,9 +543,11 @@ testVersions((api, version) => {
 
       test("rejects @fromContext that mixes fields and inline fragments", () => {
         const result = compose([
-          subgraph(
-            "devices",
-            graphql`
+          {
+            name: "devices",
+            typeDefs: federationSchema(
+              version,
+              parse(/* GraphQL */ `
                 union DeviceSource = Sensor
 
                 type Sensor @key(fields: "id") @context(name: "deviceCtx") {
@@ -628,8 +568,9 @@ testVersions((api, version) => {
                 type Query {
                   source: DeviceSource
                 }
-              `,
-          ),
+              `),
+            ),
+          },
         ]);
 
         assertCompositionFailure(result);
@@ -646,9 +587,11 @@ testVersions((api, version) => {
 
       test("rejects a field with an inline fragment in @fromContext", () => {
         const result = compose([
-          subgraph(
-            "devices",
-            graphql`
+          {
+            name: "devices",
+            typeDefs: federationSchema(
+              version,
+              parse(/* GraphQL */ `
                 union DeviceSource = Sensor
 
                 type Sensor @key(fields: "id") @context(name: "deviceCtx") {
@@ -669,8 +612,9 @@ testVersions((api, version) => {
                 type Query {
                   source: DeviceSource
                 }
-              `,
-          ),
+              `),
+            ),
+          },
         ]);
 
         assertCompositionFailure(result);
@@ -686,12 +630,128 @@ testVersions((api, version) => {
       });
     });
 
+    describe("the context reference", () => {
+      test("rejects a @fromContext that starts with a selection", () => {
+        const result = compose([
+          {
+            name: "invoices",
+            typeDefs: federationSchema(
+              version,
+              parse(/* GraphQL */ `
+                type Invoice @key(fields: "id") @context(name: "invoiceCtx") {
+                  id: ID!
+                  reference: String!
+                }
+
+                type InvoiceAuditor @key(fields: "id") {
+                  id: ID!
+                  audit(
+                    reference: String @fromContext(field: "{ reference }")
+                  ): Int!
+                }
+
+                type Query {
+                  invoice(id: ID!): Invoice
+                }
+              `),
+            ),
+          },
+        ]);
+
+        assertCompositionFailure(result);
+        expect(result.errors).toContainEqual(
+          expect.objectContaining({
+            message:
+              '[invoices] @fromContext argument does not reference a context "{ reference }".',
+            extensions: expect.objectContaining({
+              code: "NO_CONTEXT_IN_SELECTION",
+            }),
+          }),
+        );
+      });
+
+      test("rejects @fromContext when there's no @context", () => {
+        const result = compose([
+          {
+            name: "invoices",
+            typeDefs: federationSchema(
+              version,
+              parse(/* GraphQL */ `
+                type Invoice @key(fields: "id") {
+                  id: ID!
+                  reference: String!
+                  audit(
+                    reference: String
+                      @fromContext(field: "$invoiceCtx { reference }")
+                  ): Float!
+                }
+
+                type Query {
+                  invoice(id: ID!): Invoice
+                }
+              `),
+            ),
+          },
+        ]);
+
+        assertCompositionFailure(result);
+        expect(result.errors).toContainEqual(
+          expect.objectContaining({
+            message:
+              '[invoices] Context "invoiceCtx" is used at location "Invoice.audit(reference:)" but is never set.',
+            extensions: expect.objectContaining({ code: "CONTEXT_NOT_SET" }),
+          }),
+        );
+      });
+
+      test("rejects a @fromContext that is only a field name", () => {
+        const result = compose([
+          {
+            name: "invoices",
+            typeDefs: federationSchema(
+              version,
+              parse(/* GraphQL */ `
+                type Invoice @key(fields: "id") @context(name: "invoiceCtx") {
+                  id: ID!
+                  reference: String!
+                }
+
+                type InvoiceAuditor @key(fields: "id") {
+                  id: ID!
+                  audit(
+                    reference: String @fromContext(field: "reference")
+                  ): Int!
+                }
+
+                type Query {
+                  invoice(id: ID!): Invoice
+                }
+              `),
+            ),
+          },
+        ]);
+
+        assertCompositionFailure(result);
+        expect(result.errors).toContainEqual(
+          expect.objectContaining({
+            message:
+              '[invoices] @fromContext argument does not reference a context "reference".',
+            extensions: expect.objectContaining({
+              code: "NO_CONTEXT_IN_SELECTION",
+            }),
+          }),
+        );
+      });
+    });
+
     describe("type conditions", () => {
       test("rejects interface type conditions in inline fragments", () => {
         const result = compose([
-          subgraph(
-            "devices",
-            graphql`
+          {
+            name: "devices",
+            typeDefs: federationSchema(
+              version,
+              parse(/* GraphQL */ `
                 interface Meter {
                   id: ID!
                   voltage: Float!
@@ -717,8 +777,9 @@ testVersions((api, version) => {
                 type Query {
                   sensor: Sensor
                 }
-              `,
-          ),
+              `),
+            ),
+          },
         ]);
 
         assertCompositionFailure(result);
@@ -735,9 +796,11 @@ testVersions((api, version) => {
 
       test("rejects a type condition that the selection does not use", () => {
         const result = compose([
-          subgraph(
-            "devices",
-            graphql`
+          {
+            name: "devices",
+            typeDefs: federationSchema(
+              version,
+              parse(/* GraphQL */ `
                 union DeviceSource = Sensor | Controller
 
                 type Camera {
@@ -768,8 +831,9 @@ testVersions((api, version) => {
                 type Query {
                   source: DeviceSource
                 }
-              `,
-          ),
+              `),
+            ),
+          },
         ]);
 
         assertCompositionFailure(result);
@@ -786,9 +850,11 @@ testVersions((api, version) => {
 
       test("rejects an inline fragment branch that is not a runtime type", () => {
         const result = compose([
-          subgraph(
-            "devices",
-            graphql`
+          {
+            name: "devices",
+            typeDefs: federationSchema(
+              version,
+              parse(/* GraphQL */ `
                 union DeviceSource = Sensor | Controller
 
                 type Camera {
@@ -819,8 +885,9 @@ testVersions((api, version) => {
                 type Query {
                   source: DeviceSource
                 }
-              `,
-          ),
+              `),
+            ),
+          },
         ]);
 
         assertCompositionFailure(result);
@@ -840,12 +907,15 @@ testVersions((api, version) => {
     describe("concrete providers", () => {
       test("accepts equivalent selections from multiple concrete providers", () => {
         const result = compose([
-          subgraph(
-            "pricing",
-            graphql`
+          {
+            name: "pricing",
+            typeDefs: federationSchema(
+              version,
+              parse(/* GraphQL */ `
                 union PriceSource =
                   | RetailAccount
                   | WholesaleAccount
+                  | CorporateAccount
                   | GuestQuote
 
                 type GuestQuote {
@@ -858,6 +928,7 @@ testVersions((api, version) => {
                   @context(name: "priceCtx") {
                   id: ID!
                   currency: String!
+                  region: String!
                 }
 
                 type WholesaleAccount
@@ -865,6 +936,15 @@ testVersions((api, version) => {
                   @context(name: "priceCtx") {
                   id: ID!
                   currency: String!
+                  region: String!
+                }
+
+                type CorporateAccount
+                  @key(fields: "id")
+                  @context(name: "priceCtx") {
+                  id: ID!
+                  currency: String!
+                  region: String!
                 }
 
                 type QuoteEngine @key(fields: "serialNumber") {
@@ -878,12 +958,31 @@ testVersions((api, version) => {
                 type Query {
                   source: PriceSource
                 }
-              `,
-          ),
+              `),
+            ),
+          },
+          {
+            name: "exchange",
+            typeDefs: federationSchema(
+              version,
+              parse(/* GraphQL */ `
+                type ExchangeRate @key(fields: "code") {
+                  code: String!
+                  value: Float!
+                  convert(to: String!): Float!
+                }
+
+                type Query {
+                  exchangeRate(code: String!): ExchangeRate
+                }
+              `),
+            ),
+          },
         ]);
 
         assertCompositionSuccess(result);
-        expect(result.supergraphSdl).toContainGraphQL(graphql`
+        expect(result.supergraphSdl).toContainGraphQL(
+          parse(/* GraphQL */ `
             type QuoteEngine @join__type(graph: PRICING, key: "serialNumber") {
               serialNumber: String!
               estimateCost: Float
@@ -899,21 +998,27 @@ testVersions((api, version) => {
                   ]
                 )
             }
-          `);
+          `),
+        );
       });
 
       test("accepts __typename from an object context provider", () => {
         const result = compose([
-          subgraph(
-            "catalog",
-            graphql`
+          {
+            name: "catalog",
+            typeDefs: federationSchema(
+              version,
+              parse(/* GraphQL */ `
                 type Product @key(fields: "id") @context(name: "productCtx") {
                   id: ID!
+                  sku: String!
+                  category: String
                   inspector: ProductInspector!
                 }
 
                 type ProductInspector @key(fields: "id") {
                   id: ID!
+                  label(locale: String): String
                   identify(
                     typeName: String
                       @fromContext(field: "$productCtx { __typename }")
@@ -923,14 +1028,17 @@ testVersions((api, version) => {
                 type Query {
                   product(id: ID!): Product
                 }
-              `,
-          ),
+              `),
+            ),
+          },
         ]);
 
         assertCompositionSuccess(result);
-        expect(result.supergraphSdl).toContainGraphQL(graphql`
+        expect(result.supergraphSdl).toContainGraphQL(
+          parse(/* GraphQL */ `
             type ProductInspector @join__type(graph: CATALOG, key: "id") {
               id: ID!
+              label(locale: String): String
               identify: String!
                 @join__field(
                   graph: CATALOG
@@ -944,18 +1052,22 @@ testVersions((api, version) => {
                   ]
                 )
             }
-          `);
+          `),
+        );
       });
 
       test("rejects a selection if the value type is different between the providers", () => {
         const result = compose([
-          subgraph(
-            "pricing",
-            graphql`
+          {
+            name: "pricing",
+            typeDefs: federationSchema(
+              version,
+              parse(/* GraphQL */ `
                 union PriceSource =
                   | RetailAccount
                   | WholesaleAccount
                   | GuestQuote
+                  | CorporateAccount
 
                 type GuestQuote {
                   id: ID!
@@ -976,6 +1088,14 @@ testVersions((api, version) => {
                   currency: Int!
                 }
 
+                type CorporateAccount
+                  @key(fields: "id")
+                  @context(name: "priceCtx") {
+                  id: ID!
+                  currency: String!
+                  region: String!
+                }
+
                 type QuoteEngine @key(fields: "id") {
                   id: ID!
                   calculate(
@@ -987,8 +1107,9 @@ testVersions((api, version) => {
                 type Query {
                   source: PriceSource
                 }
-              `,
-          ),
+              `),
+            ),
+          },
         ]);
 
         assertCompositionFailure(result);
@@ -1005,9 +1126,11 @@ testVersions((api, version) => {
 
       test("rejects nullable context values for non-null @fromContext", () => {
         const result = compose([
-          subgraph(
-            "pricing",
-            graphql`
+          {
+            name: "pricing",
+            typeDefs: federationSchema(
+              version,
+              parse(/* GraphQL */ `
                 type RetailAccount
                   @key(fields: "id")
                   @context(name: "priceCtx") {
@@ -1026,8 +1149,9 @@ testVersions((api, version) => {
                 type Query {
                   account(id: ID!): RetailAccount
                 }
-              `,
-          ),
+              `),
+            ),
+          },
         ]);
 
         assertCompositionFailure(result);
@@ -1046,9 +1170,11 @@ testVersions((api, version) => {
     describe("interfaces and unions", () => {
       test("accepts __typename from an interface context provider", () => {
         const result = compose([
-          subgraph(
-            "devices",
-            graphql`
+          {
+            name: "devices",
+            typeDefs: federationSchema(
+              version,
+              parse(/* GraphQL */ `
                 interface Node @key(fields: "id") @context(name: "nodeCtx") {
                   id: ID!
                 }
@@ -1073,12 +1199,14 @@ testVersions((api, version) => {
                 type Query {
                   device: Node
                 }
-              `,
-          ),
+              `),
+            ),
+          },
         ]);
 
         assertCompositionSuccess(result);
-        expect(result.supergraphSdl).toContainGraphQL(graphql`
+        expect(result.supergraphSdl).toContainGraphQL(
+          parse(/* GraphQL */ `
             type Diagnostics @join__type(graph: DEVICES, key: "id") {
               id: ID!
               inspect: String!
@@ -1094,14 +1222,17 @@ testVersions((api, version) => {
                   ]
                 )
             }
-          `);
+          `),
+        );
       });
 
       test("accepts a context on an interface if the interface has the selected field", () => {
         const result = compose([
-          subgraph(
-            "devices",
-            graphql`
+          {
+            name: "devices",
+            typeDefs: federationSchema(
+              version,
+              parse(/* GraphQL */ `
                 interface MeteredDevice
                   @key(fields: "id")
                   @context(name: "meterCtx") {
@@ -1132,12 +1263,14 @@ testVersions((api, version) => {
                 type Query {
                   device: MeteredDevice
                 }
-              `,
-          ),
+              `),
+            ),
+          },
         ]);
 
         assertCompositionSuccess(result);
-        expect(result.supergraphSdl).toContainGraphQL(graphql`
+        expect(result.supergraphSdl).toContainGraphQL(
+          parse(/* GraphQL */ `
             interface MeteredDevice
               @join__type(graph: DEVICES, key: "id")
               @context(name: "devices__meterCtx") {
@@ -1145,14 +1278,17 @@ testVersions((api, version) => {
               voltage: Float!
               amperage: Float
             }
-          `);
+          `),
+        );
       });
 
       test("accepts an interface context that concrete branches resolve", () => {
         const result = compose([
-          subgraph(
-            "devices",
-            graphql`
+          {
+            name: "devices",
+            typeDefs: federationSchema(
+              version,
+              parse(/* GraphQL */ `
                 interface MeteredDevice
                   @key(fields: "id")
                   @context(name: "meterCtx") {
@@ -1182,8 +1318,9 @@ testVersions((api, version) => {
                 type Query {
                   device: MeteredDevice
                 }
-              `,
-          ),
+              `),
+            ),
+          },
         ]);
 
         assertCompositionSuccess(result);
@@ -1191,9 +1328,11 @@ testVersions((api, version) => {
 
       test("rejects a context field on a union if one provider does not have the field", () => {
         const result = compose([
-          subgraph(
-            "media",
-            graphql`
+          {
+            name: "media",
+            typeDefs: federationSchema(
+              version,
+              parse(/* GraphQL */ `
                 union PlayableAsset @context(name: "assetCtx") = Film | Trailer
 
                 type Film @key(fields: "id") @context(name: "assetCtx") {
@@ -1218,8 +1357,9 @@ testVersions((api, version) => {
                 type Query {
                   asset: PlayableAsset
                 }
-              `,
-          ),
+              `),
+            ),
+          },
         ]);
 
         assertCompositionFailure(result);
@@ -1240,17 +1380,25 @@ testVersions((api, version) => {
     describe("type conditions", () => {
       test("accepts explicit branch selections if the providers have different field names", () => {
         const result = compose([
-          subgraph(
-            "fulfillment",
-            graphql`
+          {
+            name: "fulfillment",
+            typeDefs: federationSchema(
+              version,
+              parse(/* GraphQL */ `
                 union DeliverySource =
                   | CourierDelivery
                   | LockerPickup
+                  | DroneDelivery
                   | StorePickup
 
                 type StorePickup {
                   id: ID!
                   desk: String
+                }
+
+                type DroneDelivery {
+                  id: ID!
+                  depot: String!
                 }
 
                 type CourierDelivery
@@ -1280,12 +1428,14 @@ testVersions((api, version) => {
                 type Query {
                   source: DeliverySource
                 }
-              `,
-          ),
+              `),
+            ),
+          },
         ]);
 
         assertCompositionSuccess(result);
-        expect(result.supergraphSdl).toContainGraphQL(graphql`
+        expect(result.supergraphSdl).toContainGraphQL(
+          parse(/* GraphQL */ `
             type RoutePlanner @join__type(graph: FULFILLMENT, key: "id") {
               id: ID!
               plan: Int!
@@ -1301,14 +1451,17 @@ testVersions((api, version) => {
                   ]
                 )
             }
-          `);
+          `),
+        );
       });
 
       test("rejects type conditions that do not include a concrete context provider", () => {
         const result = compose([
-          subgraph(
-            "devices",
-            graphql`
+          {
+            name: "devices",
+            typeDefs: federationSchema(
+              version,
+              parse(/* GraphQL */ `
                 union DeviceSource = Sensor | Controller | Camera
 
                 type Camera {
@@ -1339,8 +1492,9 @@ testVersions((api, version) => {
                 type Query {
                   source: DeviceSource
                 }
-              `,
-          ),
+              `),
+            ),
+          },
         ]);
 
         assertCompositionFailure(result);
@@ -1357,9 +1511,11 @@ testVersions((api, version) => {
 
       test("rejects a conditional selection if no inline fragment branch is a runtime type", () => {
         const result = compose([
-          subgraph(
-            "devices",
-            graphql`
+          {
+            name: "devices",
+            typeDefs: federationSchema(
+              version,
+              parse(/* GraphQL */ `
                 union DeviceSource = Sensor | Controller | Camera
 
                 type Camera {
@@ -1390,8 +1546,9 @@ testVersions((api, version) => {
                 type Query {
                   source: DeviceSource
                 }
-              `,
-          ),
+              `),
+            ),
+          },
         ]);
 
         assertCompositionFailure(result);
@@ -1408,9 +1565,11 @@ testVersions((api, version) => {
 
       test("rejects two branches that have the same type condition", () => {
         const result = compose([
-          subgraph(
-            "devices",
-            graphql`
+          {
+            name: "devices",
+            typeDefs: federationSchema(
+              version,
+              parse(/* GraphQL */ `
                 union DeviceSource = Sensor | Controller
 
                 type Sensor @key(fields: "id") @context(name: "deviceCtx") {
@@ -1436,8 +1595,9 @@ testVersions((api, version) => {
                 type Query {
                   source: DeviceSource
                 }
-              `,
-          ),
+              `),
+            ),
+          },
         ]);
 
         assertCompositionFailure(result);
@@ -1453,12 +1613,263 @@ testVersions((api, version) => {
       });
     });
   });
+
+  describe("complex query-plan-shaped context selections", () => {
+    test.each([
+      { argumentType: "[[[String]]]", valid: true },
+      { argumentType: "[[[String]]]!", valid: false },
+      { argumentType: "[[[String]!]]", valid: false },
+      { argumentType: "[[String]]", valid: false },
+    ])(
+      "checks nested list selection against $argumentType",
+      ({ argumentType, valid }) => {
+        const result = compose([
+          {
+            name: "catalog",
+            typeDefs: federationSchema(
+              version,
+              parse(/* GraphQL */ `
+                type Catalog @context(name: "catalogCtx") {
+                  products: [[Product!]!]!
+                  auditor: Auditor
+                }
+
+                type Product {
+                  codes: [String]!
+                }
+
+                type Auditor @key(fields: "id") {
+                  id: ID!
+                  audit(codes: ${argumentType} @fromContext(field: "$catalogCtx { products { codes } }")): Boolean
+                }
+
+                type Query {
+                  catalog: Catalog
+                }
+              `),
+            ),
+          },
+        ]);
+
+        if (valid) {
+          assertCompositionSuccess(result);
+        } else {
+          assertCompositionFailure(result);
+          expect(result.errors).toContainEqual(
+            expect.objectContaining({
+              message: `[catalog] Context "catalogCtx" is used in "Auditor.audit(codes:)" but the selection is invalid: the type of the selection "[[[String]]]" does not match the expected type "${argumentType}"`,
+              extensions: expect.objectContaining({
+                code: "CONTEXT_INVALID_SELECTION",
+              }),
+            }),
+          );
+        }
+      },
+    );
+
+    test("accepts nested field paths within conditional selections", () => {
+      const result = compose([
+        {
+          name: "catalog",
+          typeDefs: federationSchema(
+            version,
+            parse(/* GraphQL */ `
+              type Catalog @context(name: "catalogCtx") {
+                products: [Product!]!
+                auditor: Auditor
+              }
+
+              type Product {
+                sku: String!
+              }
+
+              type Auditor @key(fields: "id") {
+                id: ID!
+                audit(
+                  codes: [String]
+                    @fromContext(
+                      field: "$catalogCtx { ... on Catalog { products { sku } } }"
+                    )
+                ): Boolean
+              }
+
+              type Query {
+                catalog: Catalog
+              }
+            `),
+          ),
+        },
+      ]);
+
+      assertCompositionSuccess(result);
+    });
+
+    test("accepts a list context through an entity extension with multiple arguments", () => {
+      const result = compose([
+        {
+          name: "catalog",
+          typeDefs: federationSchema(
+            version,
+            parse(/* GraphQL */ `
+              type ProductCatalog
+                @key(fields: "id")
+                @context(name: "productCtx") {
+                id: ID!
+                locale: String!
+                products: [Product!]!
+                auditor: InvoiceAuditor!
+              }
+
+              type Product @key(fields: "id") {
+                id: ID!
+                sku: String!
+                category: ProductCategory!
+              }
+
+              type ProductCategory @key(fields: "id") {
+                id: ID!
+                code: String!
+              }
+
+              type InvoiceAuditor @key(fields: "id") {
+                id: ID!
+                audit(
+                  skus: [String]
+                    @fromContext(field: "$productCtx { products { sku } }")
+                  locale: String @fromContext(field: "$productCtx { locale }")
+                ): Float!
+              }
+
+              type Query {
+                catalog(id: ID!): ProductCatalog
+              }
+            `),
+          ),
+        },
+        {
+          name: "inventory",
+          typeDefs: federationSchema(
+            version,
+            parse(/* GraphQL */ `
+              extend type Product @key(fields: "id") {
+                id: ID! @external
+                stock: Int!
+                warehouse: String!
+              }
+
+              type Query {
+                inventoryStatus: String!
+              }
+            `),
+          ),
+        },
+        {
+          name: "pricing",
+          typeDefs: federationSchema(
+            version,
+            parse(/* GraphQL */ `
+              type ExchangeRate @key(fields: "code") {
+                code: String!
+                value: Float!
+                convert(to: String!): Float!
+              }
+
+              type Query {
+                exchangeRate(code: String!): ExchangeRate
+              }
+            `),
+          ),
+        },
+      ]);
+
+      assertCompositionSuccess(result);
+      expect(result.supergraphSdl).toContainGraphQL(
+        parse(/* GraphQL */ `
+          type InvoiceAuditor @join__type(graph: CATALOG, key: "id") {
+            id: ID!
+            audit: Float!
+              @join__field(
+                graph: CATALOG
+                contextArguments: [
+                  {
+                    context: "catalog__productCtx"
+                    name: "skus"
+                    type: "[String]"
+                    selection: " { products { sku } }"
+                  }
+                  {
+                    context: "catalog__productCtx"
+                    name: "locale"
+                    type: "String"
+                    selection: " { locale }"
+                  }
+                ]
+              )
+          }
+        `),
+      );
+    });
+
+    test("rejects an invalid field beneath a list context selection", () => {
+      const result = compose([
+        {
+          name: "catalog",
+          typeDefs: federationSchema(
+            version,
+            parse(/* GraphQL */ `
+              type ProductCatalog
+                @key(fields: "id")
+                @context(name: "productCtx") {
+                id: ID!
+                products: [Product!]!
+              }
+
+              type Product @key(fields: "id") {
+                id: ID!
+                sku: String!
+              }
+
+              type InvoiceAuditor @key(fields: "id") {
+                id: ID!
+                audit(
+                  skus: [String]
+                    @fromContext(
+                      field: "$productCtx { products { reference } }"
+                    )
+                ): Float!
+              }
+
+              type Query {
+                catalog(id: ID!): ProductCatalog
+              }
+            `),
+          ),
+        },
+      ]);
+
+      assertCompositionFailure(result);
+      expect(result.errors).toContainEqual(
+        expect.objectContaining({
+          message:
+            api.library === "apollo"
+              ? '[catalog] Context "productCtx" is used in "InvoiceAuditor.audit(skus:)" but the selection is invalid for type ProductCatalog. Error: Cannot query field "reference" on type "Product".'
+              : '[catalog] Context "productCtx" is used in "InvoiceAuditor.audit(skus:)" but the selection is invalid for type Product. Error: Cannot query field "reference" on type "Product".',
+          extensions: expect.objectContaining({
+            code: "CONTEXT_INVALID_SELECTION",
+          }),
+        }),
+      );
+    });
+  });
+
   describe("supergraph", () => {
     test("does not leak federation__ContextFieldValue from service SDL", () => {
       const result = compose([
-        subgraph(
-          "accounts",
-          graphql`
+        {
+          name: "accounts",
+          typeDefs: federationSchema(
+            version,
+            parse(/* GraphQL */ `
               scalar federation__ContextFieldValue
 
               type Query {
@@ -1468,8 +1879,9 @@ testVersions((api, version) => {
               type Account @context(name: "accountCtx") {
                 locale: String!
               }
-            `,
-        ),
+            `),
+          ),
+        },
       ]);
 
       assertCompositionSuccess(result);
@@ -1480,75 +1892,84 @@ testVersions((api, version) => {
 
     const materializedContextCases = [
       {
-        title: "writes a nested scalar selection to the join metadata",
+        title: "materializes a nested scalar in join metadata",
         services: [
-          subgraph(
-            "orders",
-            graphql`
-                type LoyaltyProfile @shareable {
+          {
+            name: "orders",
+            typeDefs: federationSchema(
+              version,
+              parse(/* GraphQL */ `
+                type RewardLedger @shareable {
                   id: ID!
-                  tier: String!
-                  discountCode: String
+                  level: String!
+                  voucher: String
+                  expiresAt: String
                 }
 
                 type Customer @key(fields: "id") @context(name: "customerCtx") {
                   id: ID!
-                  profile: LoyaltyProfile!
+                  profile: RewardLedger!
                   cart: Cart!
                 }
 
                 type Cart @key(fields: "id") {
                   id: ID!
                   checkout(
-                    tier: String
-                      @fromContext(field: "$customerCtx { profile { tier } }")
-                  ): Int!
+                    level: String
+                      @fromContext(field: "$customerCtx { profile { level } }")
+                  ): Float!
                 }
 
                 type Query {
                   customer(id: ID!): Customer
                 }
-              `,
-          ),
+              `),
+            ),
+          },
         ],
-        expectedPublicType: graphql`
-            type Cart {
-              id: ID!
-              checkout: Int!
-            }
-          `,
-        expectedJoinField: graphql`
-            type Cart @join__type(graph: ORDERS, key: "id") {
-              id: ID!
-              checkout: Int!
-                @join__field(
-                  graph: ORDERS
-                  contextArguments: [
-                    {
-                      context: "orders__customerCtx"
-                      name: "tier"
-                      type: "String"
-                      selection: " { profile { tier } }"
-                    }
-                  ]
-                )
-            }
-          `,
+        expectedPublicType: parse(/* GraphQL */ `
+          type Cart {
+            id: ID!
+            checkout: Float!
+          }
+        `),
+        expectedJoinField: parse(/* GraphQL */ `
+          type Cart @join__type(graph: ORDERS, key: "id") {
+            id: ID!
+            checkout: Float!
+              @join__field(
+                graph: ORDERS
+                contextArguments: [
+                  {
+                    context: "orders__customerCtx"
+                    name: "level"
+                    type: "String"
+                    selection: " { profile { level } }"
+                  }
+                ]
+              )
+          }
+        `),
       },
       {
-        title: "writes a list-valued context selection to the join metadata",
+        title: "materializes a list-valued context selection in join metadata",
         services: [
-          subgraph(
-            "warehouse",
-            graphql`
+          {
+            name: "warehouse",
+            typeDefs: federationSchema(
+              version,
+              parse(/* GraphQL */ `
                 type StockItem {
-                  sku: String!
+                  code: ID!
+                  description: String
+                  weightGrams: Int!
                 }
 
                 type Shelf
                   @key(fields: "shelfCode")
                   @context(name: "shelfCtx") {
                   shelfCode: String!
+                  aisle: String!
                   items: [StockItem!]!
                   robot: PickRobot!
                 }
@@ -1556,40 +1977,41 @@ testVersions((api, version) => {
                 type PickRobot @key(fields: "serial") {
                   serial: ID!
                   reserveItems(
-                    skus: [String]
-                      @fromContext(field: "$shelfCtx { items { sku } }")
-                  ): [String!]!
+                    skus: [ID]
+                      @fromContext(field: "$shelfCtx { items { code } }")
+                  ): [ID!]!
                 }
 
                 type Query {
                   shelf(shelfCode: String!): Shelf
                 }
-              `,
-          ),
+              `),
+            ),
+          },
         ],
-        expectedPublicType: graphql`
-            type PickRobot {
-              serial: ID!
-              reserveItems: [String!]!
-            }
-          `,
-        expectedJoinField: graphql`
-            type PickRobot @join__type(graph: WAREHOUSE, key: "serial") {
-              serial: ID!
-              reserveItems: [String!]!
-                @join__field(
-                  graph: WAREHOUSE
-                  contextArguments: [
-                    {
-                      context: "warehouse__shelfCtx"
-                      name: "skus"
-                      type: "[String]"
-                      selection: " { items { sku } }"
-                    }
-                  ]
-                )
-            }
-          `,
+        expectedPublicType: parse(/* GraphQL */ `
+          type PickRobot {
+            serial: ID!
+            reserveItems: [ID!]!
+          }
+        `),
+        expectedJoinField: parse(/* GraphQL */ `
+          type PickRobot @join__type(graph: WAREHOUSE, key: "serial") {
+            serial: ID!
+            reserveItems: [ID!]!
+              @join__field(
+                graph: WAREHOUSE
+                contextArguments: [
+                  {
+                    context: "warehouse__shelfCtx"
+                    name: "skus"
+                    type: "[ID]"
+                    selection: " { items { code } }"
+                  }
+                ]
+              )
+          }
+        `),
       },
     ];
 
@@ -1601,9 +2023,7 @@ testVersions((api, version) => {
         expect(result.publicSdl).not.toContain("@context");
         expect(result.publicSdl).not.toContain("@fromContext");
         expect(result.publicSdl).not.toContain("join__ContextArgument");
-        expect(result.publicSdl).toContainGraphQL(
-          testCase.expectedPublicType,
-        );
+        expect(result.publicSdl).toContainGraphQL(testCase.expectedPublicType);
 
         expectContextSpecDefinitions(result.supergraphSdl);
         expect(result.supergraphSdl).toContainGraphQL(
@@ -1614,9 +2034,11 @@ testVersions((api, version) => {
 
     test("adds the subgraph name to each context name", () => {
       const result = compose([
-        subgraph(
-          "invoices",
-          graphql`
+        {
+          name: "invoices",
+          typeDefs: federationSchema(
+            version,
+            parse(/* GraphQL */ `
               type Invoice @key(fields: "id") @context(name: "sourceCtx") {
                 id: ID!
                 reference: String!
@@ -1632,11 +2054,14 @@ testVersions((api, version) => {
               type Query {
                 invoice(id: ID!): Invoice
               }
-            `,
-        ),
-        subgraph(
-          "shipments",
-          graphql`
+            `),
+          ),
+        },
+        {
+          name: "shipments",
+          typeDefs: federationSchema(
+            version,
+            parse(/* GraphQL */ `
               type Parcel @key(fields: "id") @context(name: "sourceCtx") {
                 id: ID!
                 reference: String!
@@ -1652,36 +2077,43 @@ testVersions((api, version) => {
               type Query {
                 parcel(id: ID!): Parcel
               }
-            `,
-        ),
+            `),
+          ),
+        },
       ]);
 
       assertCompositionSuccess(result);
-      expect(result.supergraphSdl).toContainGraphQL(graphql`
+      expect(result.supergraphSdl).toContainGraphQL(
+        parse(/* GraphQL */ `
           type Invoice
             @join__type(graph: INVOICES, key: "id")
             @context(name: "invoices__sourceCtx") {
             id: ID!
             reference: String!
           }
-        `);
-      expect(result.supergraphSdl).toContainGraphQL(graphql`
+        `),
+      );
+      expect(result.supergraphSdl).toContainGraphQL(
+        parse(/* GraphQL */ `
           type Parcel
             @join__type(graph: SHIPMENTS, key: "id")
             @context(name: "shipments__sourceCtx") {
             id: ID!
             reference: String!
           }
-        `);
+        `),
+      );
     });
   });
   describe("context providers and the public API", () => {
     describe("type and interface extensions", () => {
       test("accepts a context on a type extension", () => {
         const result = compose([
-          subgraph(
-            "benefits",
-            graphql`
+          {
+            name: "benefits",
+            typeDefs: federationSchema(
+              version,
+              parse(/* GraphQL */ `
                 type Member @key(fields: "id") {
                   id: ID!
                   plan: String!
@@ -1701,12 +2133,14 @@ testVersions((api, version) => {
                 type Query {
                   member(id: ID!): Member
                 }
-              `,
-          ),
+              `),
+            ),
+          },
         ]);
 
         assertCompositionSuccess(result);
-        expect(result.supergraphSdl).toContainGraphQL(graphql`
+        expect(result.supergraphSdl).toContainGraphQL(
+          parse(/* GraphQL */ `
             type Member
               @join__type(graph: BENEFITS, key: "id")
               @context(name: "benefits__memberCtx") {
@@ -1714,14 +2148,17 @@ testVersions((api, version) => {
               plan: String!
               wallet: Wallet!
             }
-          `);
+          `),
+        );
       });
 
       test("accepts a context on an interface extension", () => {
         const result = compose([
-          subgraph(
-            "devices",
-            graphql`
+          {
+            name: "devices",
+            typeDefs: federationSchema(
+              version,
+              parse(/* GraphQL */ `
                 interface Node @key(fields: "id") {
                   id: ID!
                 }
@@ -1745,12 +2182,14 @@ testVersions((api, version) => {
                 type Query {
                   device: Node
                 }
-              `,
-          ),
+              `),
+            ),
+          },
         ]);
 
         assertCompositionSuccess(result);
-        expect(result.supergraphSdl).toContainGraphQL(graphql`
+        expect(result.supergraphSdl).toContainGraphQL(
+          parse(/* GraphQL */ `
             type Diagnostics @join__type(graph: DEVICES, key: "id") {
               id: ID!
               inspect: String!
@@ -1766,16 +2205,19 @@ testVersions((api, version) => {
                   ]
                 )
             }
-          `);
+          `),
+        );
       });
     });
 
     describe("resolvable keys", () => {
       test("accepts @fromContext on a type extension if the base type has a resolvable key", () => {
         const result = compose([
-          subgraph(
-            "benefits",
-            graphql`
+          {
+            name: "benefits",
+            typeDefs: federationSchema(
+              version,
+              parse(/* GraphQL */ `
                 type Member @key(fields: "id") @context(name: "memberCtx") {
                   id: ID!
                   plan: String!
@@ -1795,12 +2237,14 @@ testVersions((api, version) => {
                 type Query {
                   member(id: ID!): Member
                 }
-              `,
-          ),
+              `),
+            ),
+          },
         ]);
 
         assertCompositionSuccess(result);
-        expect(result.supergraphSdl).toContainGraphQL(graphql`
+        expect(result.supergraphSdl).toContainGraphQL(
+          parse(/* GraphQL */ `
             type Wallet @join__type(graph: BENEFITS, key: "id") {
               id: ID!
               apply: Int!
@@ -1816,14 +2260,17 @@ testVersions((api, version) => {
                   ]
                 )
             }
-          `);
+          `),
+        );
       });
 
       test("accepts @fromContext if one of the keys is not resolvable", () => {
         const result = compose([
-          subgraph(
-            "benefits",
-            graphql`
+          {
+            name: "benefits",
+            typeDefs: federationSchema(
+              version,
+              parse(/* GraphQL */ `
                 type Member @key(fields: "id") @context(name: "memberCtx") {
                   id: ID!
                   plan: String!
@@ -1842,12 +2289,14 @@ testVersions((api, version) => {
                 type Query {
                   member(id: ID!): Member
                 }
-              `,
-          ),
+              `),
+            ),
+          },
         ]);
 
         assertCompositionSuccess(result);
-        expect(result.supergraphSdl).toContainGraphQL(graphql`
+        expect(result.supergraphSdl).toContainGraphQL(
+          parse(/* GraphQL */ `
             type Wallet
               @join__type(graph: BENEFITS, key: "id", resolvable: false)
               @join__type(graph: BENEFITS, key: "legacyId") {
@@ -1866,14 +2315,17 @@ testVersions((api, version) => {
                   ]
                 )
             }
-          `);
+          `),
+        );
       });
 
       test("accepts @fromContext on a type extension if one of the base keys is not resolvable", () => {
         const result = compose([
-          subgraph(
-            "benefits",
-            graphql`
+          {
+            name: "benefits",
+            typeDefs: federationSchema(
+              version,
+              parse(/* GraphQL */ `
                 type Member @key(fields: "id") @context(name: "memberCtx") {
                   id: ID!
                   plan: String!
@@ -1896,8 +2348,9 @@ testVersions((api, version) => {
                 type Query {
                   member(id: ID!): Member
                 }
-              `,
-          ),
+              `),
+            ),
+          },
         ]);
 
         assertCompositionSuccess(result);
@@ -1905,9 +2358,11 @@ testVersions((api, version) => {
 
       test("accepts @fromContext if an extension declares a resolvable key and the base type does not", () => {
         const result = compose([
-          subgraph(
-            "benefits",
-            graphql`
+          {
+            name: "benefits",
+            typeDefs: federationSchema(
+              version,
+              parse(/* GraphQL */ `
                 type Member @key(fields: "id") @context(name: "memberCtx") {
                   id: ID!
                   plan: String!
@@ -1926,8 +2381,9 @@ testVersions((api, version) => {
                 type Query {
                   member(id: ID!): Member
                 }
-              `,
-          ),
+              `),
+            ),
+          },
         ]);
 
         assertCompositionSuccess(result);
@@ -1935,9 +2391,11 @@ testVersions((api, version) => {
 
       test("rejects @fromContext if the only key of the object is not resolvable", () => {
         const result = compose([
-          subgraph(
-            "benefits",
-            graphql`
+          {
+            name: "benefits",
+            typeDefs: federationSchema(
+              version,
+              parse(/* GraphQL */ `
                 type Member @key(fields: "id") @context(name: "memberCtx") {
                   id: ID!
                   plan: String!
@@ -1953,8 +2411,9 @@ testVersions((api, version) => {
                 type Query {
                   member(id: ID!): Member
                 }
-              `,
-          ),
+              `),
+            ),
+          },
         ]);
 
         assertCompositionFailure(result);
@@ -1971,9 +2430,11 @@ testVersions((api, version) => {
 
       test("rejects @fromContext on a type extension if the base type key is not resolvable", () => {
         const result = compose([
-          subgraph(
-            "benefits",
-            graphql`
+          {
+            name: "benefits",
+            typeDefs: federationSchema(
+              version,
+              parse(/* GraphQL */ `
                 type Member @key(fields: "id") @context(name: "memberCtx") {
                   id: ID!
                   plan: String!
@@ -1993,8 +2454,9 @@ testVersions((api, version) => {
                 type Query {
                   member(id: ID!): Member
                 }
-              `,
-          ),
+              `),
+            ),
+          },
         ]);
 
         assertCompositionFailure(result);
@@ -2011,9 +2473,11 @@ testVersions((api, version) => {
 
       test("rejects @fromContext on a base type if only the type extension declares a resolvable key", () => {
         const result = compose([
-          subgraph(
-            "benefits",
-            graphql`
+          {
+            name: "benefits",
+            typeDefs: federationSchema(
+              version,
+              parse(/* GraphQL */ `
                 type Member @key(fields: "id") @context(name: "memberCtx") {
                   id: ID!
                   plan: String!
@@ -2031,8 +2495,9 @@ testVersions((api, version) => {
                 type Query {
                   member(id: ID!): Member
                 }
-              `,
-          ),
+              `),
+            ),
+          },
         ]);
 
         assertCompositionFailure(result);
@@ -2051,9 +2516,11 @@ testVersions((api, version) => {
     describe("the public API schema", () => {
       test("removes @fromContext if another graph defines the same nullable argument", () => {
         const result = compose([
-          subgraph(
-            "benefits",
-            graphql`
+          {
+            name: "benefits",
+            typeDefs: federationSchema(
+              version,
+              parse(/* GraphQL */ `
                 type Member @key(fields: "id") @context(name: "memberCtx") {
                   id: ID!
                   plan: String!
@@ -2069,27 +2536,34 @@ testVersions((api, version) => {
                 type Query {
                   member(id: ID!): Member
                 }
-              `,
-          ),
-          subgraph(
-            "payments",
-            graphql`
+              `),
+            ),
+          },
+          {
+            name: "payments",
+            typeDefs: federationSchema(
+              version,
+              parse(/* GraphQL */ `
                 type Wallet @key(fields: "id") @shareable {
                   id: ID!
                   apply(plan: String): Int!
                 }
-              `,
-          ),
+              `),
+            ),
+          },
         ]);
 
         assertCompositionSuccess(result);
-        expect(result.publicSdl).toContainGraphQL(graphql`
+        expect(result.publicSdl).toContainGraphQL(
+          parse(/* GraphQL */ `
             type Wallet {
               id: ID!
               apply: Int!
             }
-          `);
-        expect(result.supergraphSdl).toContainGraphQL(graphql`
+          `),
+        );
+        expect(result.supergraphSdl).toContainGraphQL(
+          parse(/* GraphQL */ `
             type Wallet
               @join__type(graph: BENEFITS, key: "id")
               @join__type(graph: PAYMENTS, key: "id") {
@@ -2108,14 +2582,17 @@ testVersions((api, version) => {
                 )
                 @join__field(graph: PAYMENTS)
             }
-          `);
+          `),
+        );
       });
 
       test("removes @fromContext if another graph gives the argument a default value", () => {
         const result = compose([
-          subgraph(
-            "benefits",
-            graphql`
+          {
+            name: "benefits",
+            typeDefs: federationSchema(
+              version,
+              parse(/* GraphQL */ `
                 type Member @key(fields: "id") @context(name: "memberCtx") {
                   id: ID!
                   plan: String!
@@ -2131,33 +2608,41 @@ testVersions((api, version) => {
                 type Query {
                   member(id: ID!): Member
                 }
-              `,
-          ),
-          subgraph(
-            "payments",
-            graphql`
+              `),
+            ),
+          },
+          {
+            name: "payments",
+            typeDefs: federationSchema(
+              version,
+              parse(/* GraphQL */ `
                 type Wallet @key(fields: "id") @shareable {
                   id: ID!
                   apply(plan: String = "standard"): Int!
                 }
-              `,
-          ),
+              `),
+            ),
+          },
         ]);
 
         assertCompositionSuccess(result);
-        expect(result.publicSdl).toContainGraphQL(graphql`
+        expect(result.publicSdl).toContainGraphQL(
+          parse(/* GraphQL */ `
             type Wallet {
               id: ID!
               apply: Int!
             }
-          `);
+          `),
+        );
       });
 
       test("rejects a required argument if another graph makes the same argument contextual", () => {
         const result = compose([
-          subgraph(
-            "benefits",
-            graphql`
+          {
+            name: "benefits",
+            typeDefs: federationSchema(
+              version,
+              parse(/* GraphQL */ `
                 type Member @key(fields: "id") @context(name: "memberCtx") {
                   id: ID!
                   plan: String!
@@ -2173,17 +2658,21 @@ testVersions((api, version) => {
                 type Query {
                   member(id: ID!): Member
                 }
-              `,
-          ),
-          subgraph(
-            "payments",
-            graphql`
+              `),
+            ),
+          },
+          {
+            name: "payments",
+            typeDefs: federationSchema(
+              version,
+              parse(/* GraphQL */ `
                 type Wallet @key(fields: "id") @shareable {
                   id: ID!
                   apply(plan: String!): Int!
                 }
-              `,
-          ),
+              `),
+            ),
+          },
         ]);
 
         assertCompositionFailure(result);
@@ -2202,9 +2691,11 @@ testVersions((api, version) => {
     describe("@interfaceObject providers", () => {
       test("rejects a provider type that has @interfaceObject", () => {
         const result = compose([
-          subgraph(
-            "benefits",
-            graphql`
+          {
+            name: "benefits",
+            typeDefs: federationSchema(
+              version,
+              parse(/* GraphQL */ `
                 type Benefit
                   @interfaceObject
                   @key(fields: "id")
@@ -2224,11 +2715,14 @@ testVersions((api, version) => {
                 type Query {
                   benefit(id: ID!): Benefit
                 }
-              `,
-          ),
-          subgraph(
-            "catalog",
-            graphql`
+              `),
+            ),
+          },
+          {
+            name: "catalog",
+            typeDefs: federationSchema(
+              version,
+              parse(/* GraphQL */ `
                 interface Benefit @key(fields: "id") {
                   id: ID!
                 }
@@ -2245,26 +2739,32 @@ testVersions((api, version) => {
                 type Query {
                   noop: Int
                 }
-              `,
-          ),
+              `),
+            ),
+          },
         ]);
 
         assertCompositionFailure(result);
         expect(result.errors).toContainEqual(
           expect.objectContaining({
+            message:
+              api.library === "apollo"
+                ? '[benefits] Context "is used in "Wallet.apply(plan:)" but the selection is invalid: One of the types in the selection is an interfaceObject: "Benefit"'
+                : '[benefits] Context "benefitCtx" is used in "Wallet.apply(plan:)" but the selection is invalid: One of the types in the selection is an interfaceObject: "Benefit"',
             extensions: expect.objectContaining({
               code: "CONTEXT_INVALID_SELECTION",
             }),
           }),
         );
-        expect(result.errors?.[0]?.message).toContain("interfaceObject");
       });
 
       test("rejects a provider type extension that has @interfaceObject", () => {
         const result = compose([
-          subgraph(
-            "benefits",
-            graphql`
+          {
+            name: "benefits",
+            typeDefs: federationSchema(
+              version,
+              parse(/* GraphQL */ `
                 type Benefit @key(fields: "id") {
                   id: ID!
                 }
@@ -2286,11 +2786,14 @@ testVersions((api, version) => {
                 type Query {
                   benefit(id: ID!): Benefit
                 }
-              `,
-          ),
-          subgraph(
-            "catalog",
-            graphql`
+              `),
+            ),
+          },
+          {
+            name: "catalog",
+            typeDefs: federationSchema(
+              version,
+              parse(/* GraphQL */ `
                 interface Benefit @key(fields: "id") {
                   id: ID!
                 }
@@ -2307,26 +2810,32 @@ testVersions((api, version) => {
                 type Query {
                   noop: Int
                 }
-              `,
-          ),
+              `),
+            ),
+          },
         ]);
 
         assertCompositionFailure(result);
         expect(result.errors).toContainEqual(
           expect.objectContaining({
+            message:
+              api.library === "apollo"
+                ? '[benefits] Context "is used in "Wallet.apply(plan:)" but the selection is invalid: One of the types in the selection is an interfaceObject: "Benefit"'
+                : '[benefits] Context "benefitCtx" is used in "Wallet.apply(plan:)" but the selection is invalid: One of the types in the selection is an interfaceObject: "Benefit"',
             extensions: expect.objectContaining({
               code: "CONTEXT_INVALID_SELECTION",
             }),
           }),
         );
-        expect(result.errors?.[0]?.message).toContain("interfaceObject");
       });
 
       test("rejects a provider if @interfaceObject is on the definition and @context is on an extension", () => {
         const result = compose([
-          subgraph(
-            "benefits",
-            graphql`
+          {
+            name: "benefits",
+            typeDefs: federationSchema(
+              version,
+              parse(/* GraphQL */ `
                 type Benefit @interfaceObject @key(fields: "id") {
                   id: ID!
                 }
@@ -2346,11 +2855,14 @@ testVersions((api, version) => {
                 type Query {
                   benefit(id: ID!): Benefit
                 }
-              `,
-          ),
-          subgraph(
-            "catalog",
-            graphql`
+              `),
+            ),
+          },
+          {
+            name: "catalog",
+            typeDefs: federationSchema(
+              version,
+              parse(/* GraphQL */ `
                 interface Benefit @key(fields: "id") {
                   id: ID!
                 }
@@ -2367,26 +2879,32 @@ testVersions((api, version) => {
                 type Query {
                   noop: Int
                 }
-              `,
-          ),
+              `),
+            ),
+          },
         ]);
 
         assertCompositionFailure(result);
         expect(result.errors).toContainEqual(
           expect.objectContaining({
+            message:
+              api.library === "apollo"
+                ? '[benefits] Context "is used in "Wallet.apply(plan:)" but the selection is invalid: One of the types in the selection is an interfaceObject: "Benefit"'
+                : '[benefits] Context "benefitCtx" is used in "Wallet.apply(plan:)" but the selection is invalid: One of the types in the selection is an interfaceObject: "Benefit"',
             extensions: expect.objectContaining({
               code: "CONTEXT_INVALID_SELECTION",
             }),
           }),
         );
-        expect(result.errors?.[0]?.message).toContain("interfaceObject");
       });
 
       test("rejects a provider if @context is on the definition and @interfaceObject is on an extension", () => {
         const result = compose([
-          subgraph(
-            "benefits",
-            graphql`
+          {
+            name: "benefits",
+            typeDefs: federationSchema(
+              version,
+              parse(/* GraphQL */ `
                 type Benefit @key(fields: "id") @context(name: "benefitCtx") {
                   id: ID!
                   plan: String!
@@ -2405,11 +2923,14 @@ testVersions((api, version) => {
                 type Query {
                   benefit(id: ID!): Benefit
                 }
-              `,
-          ),
-          subgraph(
-            "catalog",
-            graphql`
+              `),
+            ),
+          },
+          {
+            name: "catalog",
+            typeDefs: federationSchema(
+              version,
+              parse(/* GraphQL */ `
                 interface Benefit @key(fields: "id") {
                   id: ID!
                 }
@@ -2426,26 +2947,32 @@ testVersions((api, version) => {
                 type Query {
                   noop: Int
                 }
-              `,
-          ),
+              `),
+            ),
+          },
         ]);
 
         assertCompositionFailure(result);
         expect(result.errors).toContainEqual(
           expect.objectContaining({
+            message:
+              api.library === "apollo"
+                ? '[benefits] Context "is used in "Wallet.apply(plan:)" but the selection is invalid: One of the types in the selection is an interfaceObject: "Benefit"'
+                : '[benefits] Context "benefitCtx" is used in "Wallet.apply(plan:)" but the selection is invalid: One of the types in the selection is an interfaceObject: "Benefit"',
             extensions: expect.objectContaining({
               code: "CONTEXT_INVALID_SELECTION",
             }),
           }),
         );
-        expect(result.errors?.[0]?.message).toContain("interfaceObject");
       });
 
       test("rejects a provider that has @interfaceObject if an extension has @fromContext", () => {
         const result = compose([
-          subgraph(
-            "benefits",
-            graphql`
+          {
+            name: "benefits",
+            typeDefs: federationSchema(
+              version,
+              parse(/* GraphQL */ `
                 type Benefit
                   @interfaceObject
                   @key(fields: "id")
@@ -2468,11 +2995,14 @@ testVersions((api, version) => {
                 type Query {
                   benefit(id: ID!): Benefit
                 }
-              `,
-          ),
-          subgraph(
-            "catalog",
-            graphql`
+              `),
+            ),
+          },
+          {
+            name: "catalog",
+            typeDefs: federationSchema(
+              version,
+              parse(/* GraphQL */ `
                 interface Benefit @key(fields: "id") {
                   id: ID!
                 }
@@ -2489,28 +3019,34 @@ testVersions((api, version) => {
                 type Query {
                   noop: Int
                 }
-              `,
-          ),
+              `),
+            ),
+          },
         ]);
 
         assertCompositionFailure(result);
         expect(result.errors).toContainEqual(
           expect.objectContaining({
+            message:
+              api.library === "apollo"
+                ? '[benefits] Context "is used in "Wallet.apply(plan:)" but the selection is invalid: One of the types in the selection is an interfaceObject: "Benefit"'
+                : '[benefits] Context "benefitCtx" is used in "Wallet.apply(plan:)" but the selection is invalid: One of the types in the selection is an interfaceObject: "Benefit"',
             extensions: expect.objectContaining({
               code: "CONTEXT_INVALID_SELECTION",
             }),
           }),
         );
-        expect(result.errors?.[0]?.message).toContain("interfaceObject");
       });
     });
   });
   describe("composition across subgraph boundaries", () => {
     test("accepts an external field if the same subgraph declares the context", () => {
       const result = compose([
-        subgraph(
-          "benefits",
-          graphql`
+        {
+          name: "benefits",
+          typeDefs: federationSchema(
+            version,
+            parse(/* GraphQL */ `
               type Member @key(fields: "id") @context(name: "memberCtx") {
                 id: ID!
                 wallet: Wallet!
@@ -2527,11 +3063,14 @@ testVersions((api, version) => {
               type Query {
                 member(id: ID!): Member
               }
-            `,
-        ),
-        subgraph(
-          "identity",
-          graphql`
+            `),
+          ),
+        },
+        {
+          name: "identity",
+          typeDefs: federationSchema(
+            version,
+            parse(/* GraphQL */ `
               type Member @key(fields: "id") {
                 id: ID!
                 plan: String!
@@ -2540,8 +3079,9 @@ testVersions((api, version) => {
               type Wallet @key(fields: "id") {
                 id: ID!
               }
-            `,
-        ),
+            `),
+          ),
+        },
       ]);
 
       assertCompositionSuccess(result);
@@ -2549,9 +3089,11 @@ testVersions((api, version) => {
 
     test("marks an external field as used if only a context selection refers to it", () => {
       const result = compose([
-        subgraph(
-          "benefits",
-          graphql`
+        {
+          name: "benefits",
+          typeDefs: federationSchema(
+            version,
+            parse(/* GraphQL */ `
               type Member @key(fields: "id") @context(name: "memberCtx") {
                 id: ID!
                 plan: String! @external
@@ -2568,11 +3110,14 @@ testVersions((api, version) => {
               type Query {
                 member(id: ID!): Member
               }
-            `,
-        ),
-        subgraph(
-          "identity",
-          graphql`
+            `),
+          ),
+        },
+        {
+          name: "identity",
+          typeDefs: federationSchema(
+            version,
+            parse(/* GraphQL */ `
               type Member @key(fields: "id") {
                 id: ID!
                 plan: String!
@@ -2585,12 +3130,14 @@ testVersions((api, version) => {
               type Query {
                 noop: Int
               }
-            `,
-        ),
+            `),
+          ),
+        },
       ]);
 
       assertCompositionSuccess(result);
-      expect(result.supergraphSdl).toContainGraphQL(graphql`
+      expect(result.supergraphSdl).toContainGraphQL(
+        parse(/* GraphQL */ `
           type Member
             @join__type(graph: BENEFITS, key: "id")
             @join__type(graph: IDENTITY, key: "id")
@@ -2601,14 +3148,17 @@ testVersions((api, version) => {
               @join__field(graph: IDENTITY)
             wallet: Wallet! @join__field(graph: BENEFITS)
           }
-        `);
+        `),
+      );
     });
 
     test("rejects a context declaration from another sybgraph", () => {
       const result = compose([
-        subgraph(
-          "identity",
-          graphql`
+        {
+          name: "identity",
+          typeDefs: federationSchema(
+            version,
+            parse(/* GraphQL */ `
               type Member @key(fields: "id") @context(name: "memberCtx") {
                 id: ID!
                 plan: String!
@@ -2617,11 +3167,14 @@ testVersions((api, version) => {
               type Query {
                 member(id: ID!): Member
               }
-            `,
-        ),
-        subgraph(
-          "benefits",
-          graphql`
+            `),
+          ),
+        },
+        {
+          name: "benefits",
+          typeDefs: federationSchema(
+            version,
+            parse(/* GraphQL */ `
               type Member @key(fields: "id") {
                 id: ID! @external
                 plan: String! @external
@@ -2634,8 +3187,9 @@ testVersions((api, version) => {
                   plan: String @fromContext(field: "$memberCtx { plan }")
                 ): Int!
               }
-            `,
-        ),
+            `),
+          ),
+        },
       ]);
 
       assertCompositionFailure(result);
@@ -2650,9 +3204,11 @@ testVersions((api, version) => {
 
     test("rejects a subgraph that uses @fromContext but does not declare the context", () => {
       const result = compose([
-        subgraph(
-          "identity",
-          graphql`
+        {
+          name: "identity",
+          typeDefs: federationSchema(
+            version,
+            parse(/* GraphQL */ `
               type Member @key(fields: "id") @context(name: "memberCtx") {
                 id: ID!
                 age: Int!
@@ -2661,11 +3217,14 @@ testVersions((api, version) => {
               type Query {
                 member(id: ID!): Member
               }
-            `,
-        ),
-        subgraph(
-          "analytics",
-          graphql`
+            `),
+          ),
+        },
+        {
+          name: "analytics",
+          typeDefs: federationSchema(
+            version,
+            parse(/* GraphQL */ `
               type Member @key(fields: "id") {
                 id: ID! @external
                 wallet: Wallet!
@@ -2677,8 +3236,9 @@ testVersions((api, version) => {
                   age: Int @fromContext(field: "$memberCtx { age }")
                 ): Int!
               }
-            `,
-        ),
+            `),
+          ),
+        },
       ]);
 
       assertCompositionFailure(result);
@@ -2695,9 +3255,11 @@ testVersions((api, version) => {
     describe("@authenticated", () => {
       test("accepts authenticated context data if the field is also authenticated", () => {
         const result = compose([
-          subgraph(
-            "identity",
-            graphql`
+          {
+            name: "identity",
+            typeDefs: federationSchema(
+              version,
+              parse(/* GraphQL */ `
                 type Member
                   @key(fields: "id")
                   @context(name: "memberCtx")
@@ -2717,12 +3279,14 @@ testVersions((api, version) => {
                 type Query {
                   member(id: ID!): Member
                 }
-              `,
-          ),
+              `),
+            ),
+          },
         ]);
 
         assertCompositionSuccess(result);
-        expect(result.supergraphSdl).toContainGraphQL(graphql`
+        expect(result.supergraphSdl).toContainGraphQL(
+          parse(/* GraphQL */ `
             type Wallet @join__type(graph: IDENTITY, key: "id") {
               id: ID!
               apply: Int!
@@ -2739,14 +3303,17 @@ testVersions((api, version) => {
                 )
                 @authenticated
             }
-          `);
+          `),
+        );
       });
 
       test("accepts authenticated conditional branches if the field is also authenticated", () => {
         const result = compose([
-          subgraph(
-            "pricing",
-            graphql`
+          {
+            name: "pricing",
+            typeDefs: federationSchema(
+              version,
+              parse(/* GraphQL */ `
                 union PriceSource =
                   | RetailAccount
                   | WholesaleAccount
@@ -2786,12 +3353,14 @@ testVersions((api, version) => {
                 type Query {
                   source: PriceSource
                 }
-              `,
-          ),
+              `),
+            ),
+          },
         ]);
 
         assertCompositionSuccess(result);
-        expect(result.supergraphSdl).toContainGraphQL(graphql`
+        expect(result.supergraphSdl).toContainGraphQL(
+          parse(/* GraphQL */ `
             type QuoteEngine @join__type(graph: PRICING, key: "id") {
               id: ID!
               calculate: Int!
@@ -2808,14 +3377,17 @@ testVersions((api, version) => {
                 )
                 @authenticated
             }
-          `);
+          `),
+        );
       });
 
       test("rejects a field that reads authenticated context data but has no auth requirement", () => {
         const result = compose([
-          subgraph(
-            "identity",
-            graphql`
+          {
+            name: "identity",
+            typeDefs: federationSchema(
+              version,
+              parse(/* GraphQL */ `
                 type Member
                   @key(fields: "id")
                   @context(name: "memberCtx")
@@ -2835,8 +3407,9 @@ testVersions((api, version) => {
                 type Query {
                   member(id: ID!): Member
                 }
-              `,
-          ),
+              `),
+            ),
+          },
         ]);
 
         assertCompositionFailure(result);
@@ -2853,9 +3426,11 @@ testVersions((api, version) => {
 
       test("rejects a field if the context provider type is authenticated", () => {
         const result = compose([
-          subgraph(
-            "identity",
-            graphql`
+          {
+            name: "identity",
+            typeDefs: federationSchema(
+              version,
+              parse(/* GraphQL */ `
                 type Member
                   @key(fields: "id")
                   @context(name: "memberCtx")
@@ -2875,8 +3450,9 @@ testVersions((api, version) => {
                 type Query {
                   member(id: ID!): Member
                 }
-              `,
-          ),
+              `),
+            ),
+          },
         ]);
 
         assertCompositionFailure(result);
@@ -2893,9 +3469,11 @@ testVersions((api, version) => {
 
       test("examines every @fromContext of a field, not only the last one", () => {
         const result = compose([
-          subgraph(
-            "identity",
-            graphql`
+          {
+            name: "identity",
+            typeDefs: federationSchema(
+              version,
+              parse(/* GraphQL */ `
                 type Member @key(fields: "id") @context(name: "memberCtx") {
                   id: ID!
                   plan: String! @authenticated
@@ -2914,13 +3492,18 @@ testVersions((api, version) => {
                 type Query {
                   member(id: ID!): Member
                 }
-              `,
-          ),
+              `),
+            ),
+          },
         ]);
 
         assertCompositionFailure(result);
         expect(result.errors).toContainEqual(
           expect.objectContaining({
+            message:
+              api.library === "apollo"
+                ? '[identity] Field "Wallet.apply" does not specify necessary @authenticated, @requiresScopes and/or @policy auth requirements to access the transitive field "Member.plan" data from @fromContext selection set.'
+                : '[identity] Field "Wallet.apply" does not specify necessary @authenticated, @requiresScopes and/or @policy auth requirements to access the transitive data in context identity__memberCtx from @fromContext selection set.',
             extensions: expect.objectContaining({
               code: "MISSING_TRANSITIVE_AUTH_REQUIREMENTS",
             }),
@@ -2932,9 +3515,11 @@ testVersions((api, version) => {
     describe("@requiresScopes", () => {
       test("accepts context data if the field has the merged @requiresScopes requirements", () => {
         const result = compose([
-          subgraph(
-            "identity",
-            graphql`
+          {
+            name: "identity",
+            typeDefs: federationSchema(
+              version,
+              parse(/* GraphQL */ `
                 type Member
                   @key(fields: "id")
                   @context(name: "memberCtx")
@@ -2955,13 +3540,15 @@ testVersions((api, version) => {
                 type Query {
                   member(id: ID!): Member
                 }
-              `,
-            ["@requiresScopes"],
-          ),
+              `),
+              ["@requiresScopes"],
+            ),
+          },
         ]);
 
         assertCompositionSuccess(result);
-        expect(result.supergraphSdl).toContainGraphQL(graphql`
+        expect(result.supergraphSdl).toContainGraphQL(
+          parse(/* GraphQL */ `
             type Wallet @join__type(graph: IDENTITY, key: "id") {
               id: ID!
               apply: Int!
@@ -2978,14 +3565,17 @@ testVersions((api, version) => {
                 )
                 @requiresScopes(scopes: [["member:read", "plan:read"]])
             }
-          `);
+          `),
+        );
       });
 
       test("rejects a field that has no scope for context data with @requiresScopes", () => {
         const result = compose([
-          subgraph(
-            "identity",
-            graphql`
+          {
+            name: "identity",
+            typeDefs: federationSchema(
+              version,
+              parse(/* GraphQL */ `
                 type Member
                   @key(fields: "id")
                   @context(name: "memberCtx")
@@ -3005,9 +3595,10 @@ testVersions((api, version) => {
                 type Query {
                   member(id: ID!): Member
                 }
-              `,
-            ["@requiresScopes"],
-          ),
+              `),
+              ["@requiresScopes"],
+            ),
+          },
         ]);
 
         assertCompositionFailure(result);
@@ -3026,9 +3617,11 @@ testVersions((api, version) => {
     describe("@policy", () => {
       test("accepts context data if the field has the merged @policy requirements", () => {
         const result = compose([
-          subgraph(
-            "identity",
-            graphql`
+          {
+            name: "identity",
+            typeDefs: federationSchema(
+              version,
+              parse(/* GraphQL */ `
                 type Member
                   @key(fields: "id")
                   @context(name: "memberCtx")
@@ -3048,13 +3641,15 @@ testVersions((api, version) => {
                 type Query {
                   member(id: ID!): Member
                 }
-              `,
-            ["@policy"],
-          ),
+              `),
+              ["@policy"],
+            ),
+          },
         ]);
 
         assertCompositionSuccess(result);
-        expect(result.supergraphSdl).toContainGraphQL(graphql`
+        expect(result.supergraphSdl).toContainGraphQL(
+          parse(/* GraphQL */ `
             type Wallet @join__type(graph: IDENTITY, key: "id") {
               id: ID!
               apply: Int!
@@ -3071,14 +3666,17 @@ testVersions((api, version) => {
                 )
                 @policy(policies: [["member_policy", "plan_policy"]])
             }
-          `);
+          `),
+        );
       });
 
       test("rejects a field that has no policy for context data with @policy", () => {
         const result = compose([
-          subgraph(
-            "identity",
-            graphql`
+          {
+            name: "identity",
+            typeDefs: federationSchema(
+              version,
+              parse(/* GraphQL */ `
                 type Member
                   @key(fields: "id")
                   @context(name: "memberCtx")
@@ -3098,9 +3696,10 @@ testVersions((api, version) => {
                 type Query {
                   member(id: ID!): Member
                 }
-              `,
-            ["@policy"],
-          ),
+              `),
+              ["@policy"],
+            ),
+          },
         ]);
 
         assertCompositionFailure(result);
@@ -3119,9 +3718,11 @@ testVersions((api, version) => {
     describe("more than one provider", () => {
       test("accepts context data from many providers if the field auth covers every path", () => {
         const result = compose([
-          subgraph(
-            "pricing",
-            graphql`
+          {
+            name: "pricing",
+            typeDefs: federationSchema(
+              version,
+              parse(/* GraphQL */ `
                 union PriceSource =
                   | RetailAccount
                   | WholesaleAccount
@@ -3159,12 +3760,14 @@ testVersions((api, version) => {
                 type Query {
                   source: PriceSource
                 }
-              `,
-          ),
+              `),
+            ),
+          },
         ]);
 
         assertCompositionSuccess(result);
-        expect(result.supergraphSdl).toContainGraphQL(graphql`
+        expect(result.supergraphSdl).toContainGraphQL(
+          parse(/* GraphQL */ `
             type QuoteEngine @join__type(graph: PRICING, key: "id") {
               id: ID!
               calculate: Int!
@@ -3181,14 +3784,17 @@ testVersions((api, version) => {
                 )
                 @authenticated
             }
-          `);
+          `),
+        );
       });
 
       test("rejects a field if only one provider path has an auth requirement", () => {
         const result = compose([
-          subgraph(
-            "pricing",
-            graphql`
+          {
+            name: "pricing",
+            typeDefs: federationSchema(
+              version,
+              parse(/* GraphQL */ `
                 union PriceSource =
                   | RetailAccount
                   | WholesaleAccount
@@ -3225,8 +3831,9 @@ testVersions((api, version) => {
                 type Query {
                   source: PriceSource
                 }
-              `,
-          ),
+              `),
+            ),
+          },
         ]);
 
         assertCompositionFailure(result);
@@ -3243,9 +3850,11 @@ testVersions((api, version) => {
 
       test("rejects a field if a conditional provider branch has an auth requirement", () => {
         const result = compose([
-          subgraph(
-            "pricing",
-            graphql`
+          {
+            name: "pricing",
+            typeDefs: federationSchema(
+              version,
+              parse(/* GraphQL */ `
                 union PriceSource =
                   | RetailAccount
                   | WholesaleAccount
@@ -3284,8 +3893,9 @@ testVersions((api, version) => {
                 type Query {
                   source: PriceSource
                 }
-              `,
-          ),
+              `),
+            ),
+          },
         ]);
 
         assertCompositionFailure(result);
@@ -3299,6 +3909,1003 @@ testVersions((api, version) => {
           }),
         );
       });
+    });
+  });
+  describe("context reachability", () => {
+    const contextNotFound = (
+      graphName: string,
+      typeName: string,
+      fieldName: string,
+    ) =>
+      `- from subgraph "${graphName}": could not find a match for required context for field "${typeName}.${fieldName}".`;
+
+    const unsatisfiable = (queryString: string, ...reasons: string[]) =>
+      expect.objectContaining({
+        message: [
+          "The following supergraph API query:",
+          normalizeErrorMessage(queryString),
+          "cannot be satisfied by the subgraphs because:",
+          ...reasons,
+        ].join("\n"),
+        extensions: expect.objectContaining({
+          code: "SATISFIABILITY_ERROR",
+        }),
+      });
+
+    test("rejects a context set by the parent type of the consuming field", () => {
+      const result = compose([
+        {
+          name: "benefits",
+          typeDefs: federationSchema(
+            version,
+            parse(/* GraphQL */ `
+              type Member @key(fields: "id") @context(name: "memberCtx") {
+                id: ID!
+                plan: String!
+                discount(
+                  plan: String @fromContext(field: "$memberCtx { plan }")
+                ): Int
+              }
+
+              type Query {
+                member: Member
+              }
+            `),
+          ),
+        },
+      ]);
+
+      assertCompositionFailure(result);
+      expect(result.errors).toContainEqual(
+        unsatisfiable(
+          `
+            {
+              member {
+                discount
+              }
+            }
+           `,
+          contextNotFound("benefits", "Member", "discount"),
+        ),
+      );
+    });
+
+    test("rejects a context set by the parent type even if the type can be its own ancestor", () => {
+      const result = compose([
+        {
+          name: "benefits",
+          typeDefs: federationSchema(
+            version,
+            parse(/* GraphQL */ `
+              type Member @key(fields: "id") @context(name: "memberCtx") {
+                id: ID!
+                plan: String!
+                referrer: Member
+                discount(
+                  plan: String @fromContext(field: "$memberCtx { plan }")
+                ): Int
+              }
+
+              type Query {
+                member: Member
+              }
+            `),
+          ),
+        },
+      ]);
+
+      assertCompositionFailure(result);
+      expect(result.errors).toContainEqual(
+        unsatisfiable(
+          `
+            {
+              member {
+                discount
+              }
+            }
+           `,
+          contextNotFound("benefits", "Member", "discount"),
+        ),
+      );
+    });
+
+    test("accepts a context set by an ancestor", () => {
+      const result = compose([
+        {
+          name: "benefits",
+          typeDefs: federationSchema(
+            version,
+            parse(/* GraphQL */ `
+              type Member @key(fields: "id") @context(name: "memberCtx") {
+                id: ID!
+                plan: String!
+                wallet: Wallet
+              }
+
+              type Wallet @key(fields: "id") {
+                id: ID!
+                discount(
+                  plan: String @fromContext(field: "$memberCtx { plan }")
+                ): Int
+              }
+
+              type Query {
+                member: Member
+              }
+            `),
+          ),
+        },
+      ]);
+
+      assertCompositionSuccess(result);
+    });
+
+    test("accepts a context set by a grandparent", () => {
+      const result = compose([
+        {
+          name: "benefits",
+          typeDefs: federationSchema(
+            version,
+            parse(/* GraphQL */ `
+              type Member @key(fields: "id") @context(name: "memberCtx") {
+                id: ID!
+                plan: String!
+                wallet: Wallet
+              }
+
+              type Wallet @key(fields: "id") {
+                id: ID!
+                card: Card
+              }
+
+              type Card @key(fields: "id") {
+                id: ID!
+                discount(
+                  plan: String @fromContext(field: "$memberCtx { plan }")
+                ): Int
+              }
+
+              type Query {
+                member: Member
+              }
+            `),
+          ),
+        },
+      ]);
+
+      assertCompositionSuccess(result);
+    });
+
+    test("rejects a context that is not set on every path to the consuming field", () => {
+      const result = compose([
+        {
+          name: "benefits",
+          typeDefs: federationSchema(
+            version,
+            parse(/* GraphQL */ `
+              type Member @key(fields: "id") @context(name: "memberCtx") {
+                id: ID!
+                plan: String!
+                wallet: Wallet
+              }
+
+              type Wallet @key(fields: "id") {
+                id: ID!
+                discount(
+                  plan: String @fromContext(field: "$memberCtx { plan }")
+                ): Int
+              }
+
+              type Query {
+                member: Member
+                wallet: Wallet
+              }
+            `),
+          ),
+        },
+      ]);
+
+      assertCompositionFailure(result);
+      expect(result.errors).toContainEqual(
+        unsatisfiable(
+          `
+            {
+              wallet {
+                discount
+              }
+            }
+           `,
+          contextNotFound("benefits", "Wallet", "discount"),
+        ),
+      );
+    });
+
+    test("rejects a context whose provider is never on the query path", () => {
+      const result = compose([
+        {
+          name: "benefits",
+          typeDefs: federationSchema(
+            version,
+            parse(/* GraphQL */ `
+              type Member @key(fields: "id") @context(name: "memberCtx") {
+                id: ID!
+                plan: String!
+              }
+
+              type Wallet @key(fields: "id") {
+                id: ID!
+                discount(
+                  plan: String @fromContext(field: "$memberCtx { plan }")
+                ): Int
+              }
+
+              type Query {
+                wallet: Wallet
+              }
+            `),
+          ),
+        },
+      ]);
+
+      assertCompositionFailure(result);
+      expect(result.errors).toContainEqual(
+        unsatisfiable(
+          `
+            {
+              wallet {
+                discount
+              }
+            }
+           `,
+          contextNotFound("benefits", "Wallet", "discount"),
+        ),
+      );
+    });
+
+    test("accepts a consumer that is not reachable from the root types", () => {
+      const result = compose([
+        {
+          name: "benefits",
+          typeDefs: federationSchema(
+            version,
+            parse(/* GraphQL */ `
+              type Member @key(fields: "id") @context(name: "memberCtx") {
+                id: ID!
+                plan: String!
+              }
+
+              type Wallet @key(fields: "id") {
+                id: ID!
+                discount(
+                  plan: String @fromContext(field: "$memberCtx { plan }")
+                ): Int
+              }
+
+              type Query {
+                member: Member
+              }
+            `),
+          ),
+        },
+      ]);
+
+      assertCompositionSuccess(result);
+    });
+
+    test("accepts an ancestor reached through another subgraph", () => {
+      const result = compose([
+        {
+          name: "catalog",
+          typeDefs: federationSchema(
+            version,
+            parse(/* GraphQL */ `
+              type Member @key(fields: "id") {
+                id: ID!
+                wallet: Wallet
+              }
+
+              type Wallet @key(fields: "id") {
+                id: ID!
+              }
+
+              type Query {
+                member: Member
+              }
+            `),
+          ),
+        },
+        {
+          name: "benefits",
+          typeDefs: federationSchema(
+            version,
+            parse(/* GraphQL */ `
+              type Member @key(fields: "id") @context(name: "memberCtx") {
+                id: ID!
+                plan: String!
+              }
+
+              type Wallet @key(fields: "id") {
+                id: ID!
+                discount(
+                  plan: String @fromContext(field: "$memberCtx { plan }")
+                ): Int
+              }
+            `),
+          ),
+        },
+      ]);
+
+      assertCompositionSuccess(result);
+    });
+
+    test("rejects a context of the same name set by another subgraph", () => {
+      const result = compose([
+        {
+          name: "catalog",
+          typeDefs: federationSchema(
+            version,
+            parse(/* GraphQL */ `
+              type Member @key(fields: "id") @context(name: "memberCtx") {
+                id: ID!
+                plan: String!
+                wallet: Wallet
+              }
+
+              type Wallet @key(fields: "id") {
+                id: ID!
+              }
+
+              type Query {
+                member: Member
+              }
+            `),
+          ),
+        },
+        {
+          name: "benefits",
+          typeDefs: federationSchema(
+            version,
+            parse(/* GraphQL */ `
+              type Tier @key(fields: "id") @context(name: "memberCtx") {
+                id: ID!
+                plan: String!
+              }
+
+              type Wallet @key(fields: "id") {
+                id: ID!
+                discount(
+                  plan: String @fromContext(field: "$memberCtx { plan }")
+                ): Int
+              }
+
+              type Query {
+                tier: Tier
+              }
+            `),
+          ),
+        },
+      ]);
+
+      assertCompositionFailure(result);
+      expect(result.errors).toContainEqual(
+        unsatisfiable(
+          `
+            {
+              member {
+                wallet {
+                  discount
+                }
+              }
+            }
+           `,
+          '- from subgraph "catalog": cannot find field "Wallet.discount".',
+          contextNotFound("benefits", "Wallet", "discount"),
+        ),
+      );
+    });
+
+    test("accepts a context set by an interface the ancestor implements", () => {
+      const result = compose([
+        {
+          name: "benefits",
+          typeDefs: federationSchema(
+            version,
+            parse(/* GraphQL */ `
+              interface Account @context(name: "memberCtx") {
+                plan: String!
+                wallet: Wallet
+              }
+
+              type Member implements Account @key(fields: "id") {
+                id: ID!
+                plan: String!
+                wallet: Wallet
+              }
+
+              type Wallet @key(fields: "id") {
+                id: ID!
+                discount(
+                  plan: String @fromContext(field: "$memberCtx { plan }")
+                ): Int
+              }
+
+              type Query {
+                account: Account
+              }
+            `),
+          ),
+        },
+      ]);
+
+      assertCompositionSuccess(result);
+    });
+
+    test("accepts a context set by the implementation of an ancestor interface", () => {
+      const result = compose([
+        {
+          name: "benefits",
+          typeDefs: federationSchema(
+            version,
+            parse(/* GraphQL */ `
+              interface Account {
+                wallet: Wallet
+              }
+
+              type Member implements Account
+                @key(fields: "id")
+                @context(name: "memberCtx") {
+                id: ID!
+                plan: String!
+                wallet: Wallet
+              }
+
+              type Wallet @key(fields: "id") {
+                id: ID!
+                discount(
+                  plan: String @fromContext(field: "$memberCtx { plan }")
+                ): Int
+              }
+
+              type Query {
+                account: Account
+              }
+            `),
+          ),
+        },
+      ]);
+
+      assertCompositionSuccess(result);
+    });
+
+    test("accepts a context set by a union the ancestor is a member of", () => {
+      const result = compose([
+        {
+          name: "benefits",
+          typeDefs: federationSchema(
+            version,
+            parse(/* GraphQL */ `
+              union Account @context(name: "memberCtx") = Member
+
+              type Member @key(fields: "id") {
+                id: ID!
+                plan: String!
+                wallet: Wallet
+              }
+
+              type Wallet @key(fields: "id") {
+                id: ID!
+                discount(
+                  plan: String
+                    @fromContext(field: "$memberCtx { ... on Member { plan } }")
+                ): Int
+              }
+
+              type Query {
+                account: Account
+              }
+            `),
+          ),
+        },
+      ]);
+
+      assertCompositionSuccess(result);
+    });
+
+    test("accepts a context set by a root type", () => {
+      const result = compose([
+        {
+          name: "benefits",
+          typeDefs: federationSchema(
+            version,
+            parse(/* GraphQL */ `
+              type Query @context(name: "memberCtx") {
+                plan: String!
+                wallet: Wallet
+              }
+
+              type Wallet @key(fields: "id") {
+                id: ID!
+                discount(
+                  plan: String @fromContext(field: "$memberCtx { plan }")
+                ): Int
+              }
+            `),
+          ),
+        },
+      ]);
+
+      assertCompositionSuccess(result);
+    });
+
+    test("rejects a field when only one of its contexts is set by an ancestor", () => {
+      const result = compose([
+        {
+          name: "benefits",
+          typeDefs: federationSchema(
+            version,
+            parse(/* GraphQL */ `
+              type Member @key(fields: "id") @context(name: "memberCtx") {
+                id: ID!
+                plan: String!
+                wallet: Wallet
+              }
+
+              type Tier @key(fields: "id") @context(name: "tierCtx") {
+                id: ID!
+                level: String!
+              }
+
+              type Wallet @key(fields: "id") {
+                id: ID!
+                discount(
+                  plan: String @fromContext(field: "$memberCtx { plan }")
+                  level: String @fromContext(field: "$tierCtx { level }")
+                ): Int
+              }
+
+              type Query {
+                member: Member
+              }
+            `),
+          ),
+        },
+      ]);
+
+      assertCompositionFailure(result);
+      expect(result.errors).toContainEqual(
+        unsatisfiable(
+          `
+            {
+              member {
+                wallet {
+                  discount
+                }
+              }
+            }
+           `,
+          contextNotFound("benefits", "Wallet", "discount"),
+        ),
+      );
+    });
+
+    test("prints the query path without the contextual arguments", () => {
+      const result = compose([
+        {
+          name: "benefits",
+          typeDefs: federationSchema(
+            version,
+            parse(/* GraphQL */ `
+              type Member @key(fields: "id") @context(name: "memberCtx") {
+                id: ID!
+                plan: String!
+                discount(
+                  currency: String
+                  plan: String @fromContext(field: "$memberCtx { plan }")
+                ): Int
+              }
+
+              type Query {
+                member: Member
+              }
+            `),
+          ),
+        },
+      ]);
+
+      assertCompositionFailure(result);
+      expect(result.errors).toContainEqual(
+        unsatisfiable(
+          `
+            {
+              member {
+                discount(currency: "A string value")
+              }
+            }
+           `,
+          contextNotFound("benefits", "Member", "discount"),
+        ),
+      );
+    });
+
+    test("rejects an unreachable context no matter the order of the types", () => {
+      const reachableFirst = parse(/* GraphQL */ `
+        type Member @key(fields: "id") @context(name: "memberCtx") {
+          id: ID!
+          plan: String!
+          wallet: Wallet
+        }
+
+        type Wallet @key(fields: "id") {
+          id: ID!
+          discount(plan: String @fromContext(field: "$memberCtx { plan }")): Int
+        }
+
+        type Query {
+          member: Member
+          wallet: Wallet
+        }
+      `);
+      const unreachableFirst = parse(/* GraphQL */ `
+        type Query {
+          wallet: Wallet
+          member: Member
+        }
+
+        type Wallet @key(fields: "id") {
+          id: ID!
+          discount(plan: String @fromContext(field: "$memberCtx { plan }")): Int
+        }
+
+        type Member @key(fields: "id") @context(name: "memberCtx") {
+          id: ID!
+          plan: String!
+          wallet: Wallet
+        }
+      `);
+
+      for (const typeDefs of [reachableFirst, unreachableFirst]) {
+        const result = compose([
+          {
+            name: "benefits",
+            typeDefs: federationSchema(version, typeDefs),
+          },
+        ]);
+
+        assertCompositionFailure(result);
+        expect(result.errors).toContainEqual(
+          unsatisfiable(
+            `
+              {
+                wallet {
+                  discount
+                }
+              }
+             `,
+            contextNotFound("benefits", "Wallet", "discount"),
+          ),
+        );
+      }
+    });
+
+    test("accepts a consumer reached through a @provides", () => {
+      const result = compose([
+        {
+          name: "benefits",
+          typeDefs: federationSchema(
+            version,
+            parse(/* GraphQL */ `
+              type Member @key(fields: "id") @context(name: "memberCtx") {
+                id: ID!
+                plan: String!
+                wallet: Wallet @provides(fields: "label")
+              }
+
+              type Wallet @key(fields: "id") {
+                id: ID!
+                label: String @external
+                discount(
+                  plan: String @fromContext(field: "$memberCtx { plan }")
+                ): Int
+              }
+
+              type Query {
+                member: Member
+              }
+            `),
+            ["@provides"],
+          ),
+        },
+        {
+          name: "wallets",
+          typeDefs: federationSchema(
+            version,
+            parse(/* GraphQL */ `
+              type Wallet @key(fields: "id") {
+                id: ID!
+                label: String @shareable
+              }
+            `),
+          ),
+        },
+      ]);
+
+      assertCompositionSuccess(result);
+    });
+
+    test("rejects a @requires that can only be satisfied by a contextual field", () => {
+      const result = compose([
+        {
+          name: "pricing",
+          typeDefs: federationSchema(
+            version,
+            parse(/* GraphQL */ `
+              type Member @key(fields: "id") @context(name: "memberCtx") {
+                id: ID!
+                plan: String!
+                wallet: Wallet
+              }
+
+              type Wallet @key(fields: "id") {
+                id: ID!
+                price(
+                  plan: String @fromContext(field: "$memberCtx { plan }")
+                ): Int
+              }
+
+              type Query {
+                member: Member
+              }
+            `),
+            ["@requires"],
+          ),
+        },
+        {
+          name: "shipping",
+          typeDefs: federationSchema(
+            version,
+            parse(/* GraphQL */ `
+              type Wallet @key(fields: "id") {
+                id: ID!
+                price(plan: String): Int @external
+                discount: Int @requires(fields: "price")
+              }
+
+              type Query {
+                noop: Int
+              }
+            `),
+            ["@requires"],
+          ),
+        },
+      ]);
+
+      assertCompositionFailure(result);
+      expect(result.errors).toContainEqual(
+        unsatisfiable(
+          `
+            {
+              member {
+                wallet {
+                  discount
+                }
+              }
+            }
+           `,
+          '- from subgraph "pricing": cannot find field "Wallet.discount".',
+          '- from subgraph "shipping": cannot satisfy @require conditions on field "Wallet.discount".',
+        ),
+      );
+    });
+
+    test("accepts a @requires satisfied by a plain field", () => {
+      const result = compose([
+        {
+          name: "pricing",
+          typeDefs: federationSchema(
+            version,
+            parse(/* GraphQL */ `
+              type Member @key(fields: "id") @context(name: "memberCtx") {
+                id: ID!
+                plan: String!
+                wallet: Wallet
+              }
+
+              type Wallet @key(fields: "id") {
+                id: ID!
+                price(plan: String): Int
+              }
+
+              type Query {
+                member: Member
+              }
+            `),
+            ["@requires"],
+          ),
+        },
+        {
+          name: "shipping",
+          typeDefs: federationSchema(
+            version,
+            parse(/* GraphQL */ `
+              type Wallet @key(fields: "id") {
+                id: ID!
+                price(plan: String): Int @external
+                discount: Int @requires(fields: "price")
+              }
+
+              type Query {
+                noop: Int
+              }
+            `),
+            ["@requires"],
+          ),
+        },
+      ]);
+
+      assertCompositionSuccess(result);
+    });
+
+    test("rejects a @requires that needs a context set on the query root", () => {
+      const result = compose([
+        {
+          name: "pricing",
+          typeDefs: federationSchema(
+            version,
+            parse(/* GraphQL */ `
+              type Query @context(name: "queryCtx") {
+                locale: String!
+                wallet: Wallet
+              }
+
+              type Wallet @key(fields: "id") {
+                id: ID!
+                price(
+                  locale: String @fromContext(field: "$queryCtx { locale }")
+                ): Int
+              }
+            `),
+            ["@requires"],
+          ),
+        },
+        {
+          name: "shipping",
+          typeDefs: federationSchema(
+            version,
+            parse(/* GraphQL */ `
+              type Wallet @key(fields: "id") {
+                id: ID!
+                price(locale: String): Int @external
+                discount: Int @requires(fields: "price")
+              }
+
+              type Query {
+                noop: Int
+              }
+            `),
+            ["@requires"],
+          ),
+        },
+      ]);
+
+      assertCompositionFailure(result);
+      expect(result.errors).toContainEqual(
+        unsatisfiable(
+          `
+            {
+              wallet {
+                discount
+              }
+            }
+           `,
+          '- from subgraph "pricing": cannot find field "Wallet.discount".',
+          '- from subgraph "shipping": cannot satisfy @require conditions on field "Wallet.discount".',
+        ),
+      );
+    });
+
+    test("accepts a @requires selection that sets its own context", () => {
+      const result = compose([
+        {
+          name: "pricing",
+          typeDefs: federationSchema(
+            version,
+            parse(/* GraphQL */ `
+              type Member @key(fields: "id") @context(name: "memberCtx") {
+                id: ID!
+                plan: String!
+                wallet: Wallet
+              }
+
+              type Wallet @key(fields: "id") {
+                id: ID!
+                price(
+                  plan: String @fromContext(field: "$memberCtx { plan }")
+                ): Int
+              }
+
+              type Query {
+                member: Member
+              }
+            `),
+            ["@requires"],
+          ),
+        },
+        {
+          name: "shipping",
+          typeDefs: federationSchema(
+            version,
+            parse(/* GraphQL */ `
+              type Member @key(fields: "id") {
+                id: ID!
+                wallet: Wallet @external
+                discount: Int @requires(fields: "wallet { price }")
+              }
+
+              type Wallet @key(fields: "id") {
+                id: ID!
+                price(plan: String): Int @external
+              }
+
+              type Query {
+                noop: Int
+              }
+            `),
+            ["@requires"],
+          ),
+        },
+      ]);
+
+      assertCompositionSuccess(result);
+    });
+
+    test("accepts a field with a contextual argument and a plain @requires", () => {
+      const result = compose([
+        {
+          name: "pricing",
+          typeDefs: federationSchema(
+            version,
+            parse(/* GraphQL */ `
+              type Member @key(fields: "id") @context(name: "memberCtx") {
+                id: ID!
+                plan: String!
+                wallet: Wallet
+              }
+
+              type Wallet @key(fields: "id") {
+                id: ID!
+                points: Int @external
+                reward(
+                  plan: String @fromContext(field: "$memberCtx { plan }")
+                ): Int @requires(fields: "points")
+              }
+
+              type Query {
+                member: Member
+              }
+            `),
+            ["@requires"],
+          ),
+        },
+        {
+          name: "shipping",
+          typeDefs: federationSchema(
+            version,
+            parse(/* GraphQL */ `
+              type Wallet @key(fields: "id") {
+                id: ID!
+                points: Int
+              }
+
+              type Query {
+                noop: Int
+              }
+            `),
+            ["@requires"],
+          ),
+        },
+      ]);
+
+      assertCompositionSuccess(result);
     });
   });
 });

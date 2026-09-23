@@ -14,6 +14,7 @@ import type { ScalarTypeState } from "../../../composition/scalar-type.js";
 import type { UnionTypeState } from "../../../composition/union-type.js";
 import type { SupergraphState } from "../../../state.js";
 import { MERGEDGRAPH_ID, SUPERGRAPH_ID } from "./constants.js";
+import type { Contexts } from "./contexts.js";
 import {
   assertAbstractEdge,
   assertFieldEdge,
@@ -68,6 +69,7 @@ export class Graph {
     private supergraphState: SupergraphState,
     private selectionResolver: SelectionResolver,
     private ignoreInaccessible = false,
+    private contexts: Contexts | null = null,
   ) {
     this.logger = logger.create("Graph");
     if (typeof id === "string") {
@@ -525,6 +527,7 @@ export class Graph {
           edge.move.provides,
           null,
           true,
+          edge.move.requiredContexts,
         ),
         newTail,
       );
@@ -1355,10 +1358,42 @@ export class Graph {
           provides
             ? this.selectionResolver.resolve(outputTypeName, provides)
             : null,
+          null,
+          false,
+          this.requiredContextsOfField(head, field),
         ),
         tail,
       ),
     );
+  }
+
+  /**
+   * Mask of contexts (prefixed with the subgraph name)
+   * that the field's `@fromContext` arguments read from, in the subgraph owning the head Node.
+   */
+  private requiredContextsOfField(
+    head: Node,
+    field: ObjectTypeFieldState | InterfaceTypeFieldState,
+  ): bigint {
+    if (!this.contexts) {
+      return 0n;
+    }
+
+    let requiredContexts = 0n;
+
+    for (const arg of field.args.values()) {
+      const fromContext = arg.byGraph.get(head.graphId)?.fromContext;
+
+      if (!fromContext) {
+        continue;
+      }
+
+      const contextName = `${head.graphName}__${fromContext.context}`;
+
+      requiredContexts |= this.contexts.maskOf(contextName);
+    }
+
+    return requiredContexts;
   }
 
   private createEdgeForObjectTypeField(
@@ -1436,6 +1471,8 @@ export class Graph {
                 fromGraphId: overrideFromGraphId,
               }
             : null,
+          false,
+          this.requiredContextsOfField(head, field),
         ),
         tail,
       ),
@@ -1474,7 +1511,14 @@ export class Graph {
     graphName: string,
   ) {
     const index = this.nodesByTypeIndex.push([]) - 1;
-    const node = new Node(index, typeName, typeState, graphId, graphName);
+    const node = new Node(
+      index,
+      typeName,
+      typeState,
+      graphId,
+      graphName,
+      this.contexts?.byTypeName.get(typeName) ?? 0n,
+    );
     this.nodesByTypeIndex[node.index].push(node);
     this.edgesByHeadTypeIndex.push([]);
     this.edgesByTailTypeIndex.push([]);

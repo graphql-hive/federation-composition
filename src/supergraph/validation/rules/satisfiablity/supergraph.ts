@@ -2,6 +2,7 @@ import { OperationTypeNode } from "graphql";
 import { Logger, LoggerContext } from "../../../../utils/logger.js";
 import type { SupergraphState } from "../../../state.js";
 import { MERGEDGRAPH_ID, SUPERGRAPH_ID } from "./constants.js";
+import { Contexts } from "./contexts.js";
 import { Graph } from "./graph.js";
 import { MoveValidator } from "./move-validator.js";
 import type { Step } from "./operation-path.js";
@@ -17,6 +18,11 @@ export class Supergraph {
 
   constructor(supergraphState: SupergraphState) {
     this.selectionResolver = new SelectionResolver(supergraphState);
+    // Contexts are only ever resolved on the merged graph,
+    // the supergraph graph does not need to know about them.
+    const contexts = supergraphState.specs.context
+      ? new Contexts(supergraphState)
+      : null;
     this.supergraph = new Graph(
       this.logger,
       SUPERGRAPH_ID,
@@ -31,6 +37,8 @@ export class Supergraph {
       "merged",
       supergraphState,
       this.selectionResolver,
+      false,
+      contexts,
     );
     for (const [id, subgraphState] of supergraphState.subgraphs) {
       this.mergedGraph.addSubgraph(
@@ -41,6 +49,7 @@ export class Supergraph {
           supergraphState,
           this.selectionResolver,
           false,
+          contexts,
         )
           .addFromRoots()
           .addFromEntities()

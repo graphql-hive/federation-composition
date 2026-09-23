@@ -127,6 +127,11 @@ test("Inaccessible is not added on built-in Federation and context types", async
 
     type Me @key(fields: "id") @context(name: "me") {
       id: ID!
+      wallet: Wallet
+    }
+
+    type Wallet @key(fields: "id") {
+      id: ID!
       contextualField(value: ID @fromContext(field: "$me { id }")): String
     }
   `;

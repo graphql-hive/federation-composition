@@ -7,7 +7,8 @@ type SatisfiabilityErrorKind =
   | "EXTERNAL" // field "User.name" is not resolvable because marked @external
   | "MISSING_FIELD" // cannot find field "User.name".
   | "NO_KEY" // cannot move to subgraph "X", which has field "User.name", because type "User" has no @key defined in subgraph "Y".
-  | "NO_IMPLEMENTATION"; // no subgraph can be reached to resolve the implementation type of @interfaceObject type "X".
+  | "NO_IMPLEMENTATION" // no subgraph can be reached to resolve the implementation type of @interfaceObject type "X".
+  | "REQUIRED_CONTEXT"; // could not find a match for required context for field "User.name".
 
 export class SatisfiabilityError extends Error {
   static forKey(
@@ -79,6 +80,20 @@ export class SatisfiabilityError extends Error {
       typeName,
       fieldName,
       `cannot move to subgraph "${targetGraphName}", which has field "${typeName}.${fieldName}", because type "${typeName}" has no @key defined in subgraph "${targetGraphName}".`,
+    );
+  }
+
+  static forRequiredContext(
+    sourceGraphName: string,
+    typeName: string,
+    fieldName: string,
+  ): SatisfiabilityError {
+    return new SatisfiabilityError(
+      "REQUIRED_CONTEXT",
+      sourceGraphName,
+      typeName,
+      fieldName,
+      `could not find a match for required context for field "${typeName}.${fieldName}".`,
     );
   }
 

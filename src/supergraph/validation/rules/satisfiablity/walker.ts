@@ -94,6 +94,11 @@ export class WalkTracker {
 type IsEdgeIgnored = (edge: Edge) => boolean;
 const defaultIsEdgeIgnored: IsEdgeIgnored = () => false;
 
+/**
+ * Shortest path to a Node, per set of contexts available on the way to it.
+ */
+type ShortestPaths = Map<Node, Map<bigint, OperationPath>>;
+
 export class Walker {
   private logger: Logger;
   private pathFinder: PathFinder;
@@ -244,11 +249,18 @@ export class Walker {
           // This is because other paths leading to the same Node, lacking a @provided field,
           // will also be incorrectly marked as resolvable.
           // This inaccuracy arises because the Node contains an @external field, making it non-resolvable (non-provided field).
+          // The same reasoning applies to contexts set by the ancestors of the Node.
+          // Two paths can lead to the same Node from the same graphs,
+          // but only one of them may provide a context required by a `@fromContext` argument.
+          // The context key is empty when the supergraph has no `@context`.
+          const contextsKey =
+            p.contexts === 0n ? "" : `#contexts:${p.contexts}`;
+
           if (edge && isFieldEdge(edge) && edge.move.provides) {
-            return `${tailGraphName}#provides`;
+            return `${tailGraphName}#provides${contextsKey}`;
           }
 
-          return tailGraphName;
+          return tailGraphName + contextsKey;
         }),
       ),
     );
@@ -298,7 +310,7 @@ export class Walker {
       }
 
       const nextState = state.move(superEdge);
-      const shortestPathPerTail = new Map<Node, OperationPath>();
+      const shortestPathPerTail: ShortestPaths = new Map();
       const superEdgeIsField = isFieldEdge(superEdge);
       const id = superEdgeIsField
         ? `${superEdge.move.typeName}.${superEdge.move.fieldName}`
@@ -356,8 +368,10 @@ export class Walker {
         );
       }
 
-      for (const shortestPathByTail of shortestPathPerTail.values()) {
-        nextState.addPath(shortestPathByTail);
+      for (const pathsByContexts of shortestPathPerTail.values()) {
+        for (const shortestPath of pathsByContexts.values()) {
+          nextState.addPath(shortestPath);
+        }
       }
       next(nextState, superEdge);
     }
@@ -508,16 +522,28 @@ export class Walker {
   }
 }
 
+/**
+ * Paths reaching the same Node are interchangeable, so we only keep the shortest one.
+ * Unless they differ by the contexts set by their ancestors,
+ * as a `@fromContext` argument may be resolvable from one of them only.
+ */
 function setShortestPath(
-  shortestPathPerTail: Map<Node, OperationPath>,
+  shortestPathPerTail: ShortestPaths,
   paths: OperationPath[],
 ) {
   for (const path of paths) {
     const tail = path.tail() ?? path.rootNode();
-    const shortestByTail = shortestPathPerTail.get(tail);
+    let pathsByContexts = shortestPathPerTail.get(tail);
 
-    if (!shortestByTail || shortestByTail.depth() > path.depth()) {
-      shortestPathPerTail.set(tail, path);
+    if (!pathsByContexts) {
+      pathsByContexts = new Map();
+      shortestPathPerTail.set(tail, pathsByContexts);
+    }
+
+    const shortest = pathsByContexts.get(path.contexts);
+
+    if (!shortest || shortest.depth() > path.depth()) {
+      pathsByContexts.set(path.contexts, path);
     }
   }
 }
