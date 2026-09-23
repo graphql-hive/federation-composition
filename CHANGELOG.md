@@ -1,5 +1,11 @@
 # @theguild/federation-composition
 
+## 0.27.0
+
+### Minor Changes
+
+- [#335](https://github.com/graphql-hive/federation-composition/pull/335) [`faabae5`](https://github.com/graphql-hive/federation-composition/commit/faabae542c66a1d570cdee45e3cd5a77fce333a3) Thanks [@kamilkisiela](https://github.com/kamilkisiela)! - Add satisfiability checking for `@fromContext` arguments
+
 ## 0.26.3
 
 ### Patch Changes
