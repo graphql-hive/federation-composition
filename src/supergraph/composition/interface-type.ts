@@ -268,21 +268,21 @@ export function interfaceTypeBuilder(): TypeBuilder<
       return createInterfaceTypeNode({
         name: interfaceType.name,
         fields: Array.from(interfaceType.fields.values()).map((field) => {
-          let nonEmptyJoinField = false;
           const joinFields: JoinFieldAST[] = [];
+          const hasJoinFieldMetadata = Array.from(field.byGraph.values()).some(
+            (meta) =>
+              meta.type !== field.type ||
+              meta.override ||
+              meta.provides ||
+              meta.requires ||
+              meta.external,
+          );
 
-          if (field.byGraph.size !== interfaceType.byGraph.size) {
+          if (
+            field.byGraph.size !== interfaceType.byGraph.size ||
+            hasJoinFieldMetadata
+          ) {
             for (const [graphId, meta] of field.byGraph.entries()) {
-              if (
-                meta.type !== field.type ||
-                meta.override ||
-                meta.provides ||
-                meta.requires ||
-                meta.external
-              ) {
-                nonEmptyJoinField = true;
-              }
-
               joinFields.push({
                 graph: graphId,
                 type: meta.type === field.type ? undefined : meta.type,

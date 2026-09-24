@@ -1709,7 +1709,11 @@ function objectTypeFactory(
       },
       setProvides(typeName: string, fieldName: string, provides: string) {
         if (isInterfaceObject(typeName)) {
-          return;
+          return interfaceTypeBuilder.field.setProvides(
+            typeName,
+            fieldName,
+            provides,
+          );
         }
 
         getOrCreateObjectField(
@@ -2124,6 +2128,10 @@ function interfaceTypeFactory(state: SubgraphState) {
       setRequires(typeName: string, fieldName: string, requires: string) {
         getOrCreateInterfaceField(state, typeName, fieldName).requires =
           requires;
+      },
+      setProvides(typeName: string, fieldName: string, provides: string) {
+        getOrCreateInterfaceField(state, typeName, fieldName).provides =
+          provides;
       },
       setShareable(typeName: string, fieldName: string) {
         getOrCreateInterfaceField(state, typeName, fieldName).shareable = true;
