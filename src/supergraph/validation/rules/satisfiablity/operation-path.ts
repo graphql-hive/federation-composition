@@ -38,22 +38,59 @@ export class OperationPath {
    * never one set by the field's own parent type.
    */
   private contextsInScope = 0n;
+  /**
+   * For each context in scope, the path to the nearest ancestor that sets it.
+   * The ancestor is the tail of that path (or its root).
+   * A nearer ancestor replaces a farther one, even if the farther one could resolve the selection.
+   */
+  private nearestAncestors: ReadonlyMap<bigint, OperationPath> | null = null;
+  private _contextsKey = lazy(() => {
+    if (!this.nearestAncestors) {
+      return "";
+    }
+
+    let key = "#contexts:";
+    for (const [context, ancestor] of this.nearestAncestors) {
+      key += `${context}@${(ancestor.tail() ?? ancestor.rootNode()).index},`;
+    }
+
+    return key;
+  });
 
   get contexts() {
     return this.contextsInScope;
+  }
+
+  /**
+   * Identifies the contexts in scope and the ancestors that set them.
+   * Empty when no context is in scope.
+   */
+  get contextsKey() {
+    return this._contextsKey.get();
   }
 
   constructor(private _rootNode: Node) {}
 
   move(edge: Edge): OperationPath {
     this._toString.invalidate();
-    this.previousEdges.push(edge);
 
     // Only field moves turn the head into an ancestor.
     // Key and abstract moves stay at the same level and preserve the context scope.
     if (isFieldEdge(edge) && edge.head.contexts !== 0n) {
+      // the path so far ends at the head, the new ancestor
+      const ancestor = this.clone();
+      const nearestAncestors = new Map(this.nearestAncestors);
+
+      for (const context of contextBits(edge.head.contexts)) {
+        nearestAncestors.set(context, ancestor);
+      }
+
+      this.nearestAncestors = nearestAncestors;
       this.contextsInScope |= edge.head.contexts;
+      this._contextsKey.invalidate();
     }
+
+    this.previousEdges.push(edge);
     return this;
   }
 
@@ -62,6 +99,7 @@ export class OperationPath {
 
     newPath.previousEdges = this.previousEdges.slice();
     newPath.contextsInScope = this.contextsInScope;
+    newPath.nearestAncestors = this.nearestAncestors;
 
     return newPath;
   }
@@ -74,12 +112,27 @@ export class OperationPath {
     const newPath = this.clone();
 
     newPath.contextsInScope = 0n;
+    newPath.nearestAncestors = null;
 
     return newPath;
   }
 
   hasContexts(required: bigint) {
     return (this.contextsInScope & required) === required;
+  }
+
+  /**
+   * The path to the nearest ancestor that sets the context.
+   * Check `hasContexts` first.
+   */
+  nearestAncestor(context: bigint): OperationPath {
+    const ancestor = this.nearestAncestors?.get(context);
+
+    if (!ancestor) {
+      throw new Error(`Expected context ${context} to be in scope`);
+    }
+
+    return ancestor;
   }
 
   depth() {
@@ -112,5 +165,14 @@ export class OperationPath {
 
   toString() {
     return this._toString.get();
+  }
+}
+
+/**
+ * Splits a mask into its single bits.
+ */
+function* contextBits(mask: bigint) {
+  for (let rest = mask; rest !== 0n; rest &= rest - 1n) {
+    yield rest & -rest;
   }
 }

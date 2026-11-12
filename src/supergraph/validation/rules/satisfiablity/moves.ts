@@ -1,5 +1,16 @@
 import { lazy } from "./helpers.js";
-import type { Selection } from "./selection.js";
+import type { Node } from "./node.js";
+import type { Selection, SelectionNode } from "./selection.js";
+
+/**
+ * A `@fromContext` argument of a field.
+ */
+export type ContextArgument = {
+  /** The bit of the context the argument reads from. */
+  context: bigint;
+  /** The selection to resolve from the ancestor that sets the context. */
+  selectionFor(ancestor: Node): SelectionNode[];
+};
 
 export interface Move {
   toString(): string;
@@ -54,6 +65,7 @@ export class FieldMove implements Move {
      * for the field's `@fromContext` arguments to be resolvable.
      */
     public requiredContexts: bigint = 0n,
+    public contextArguments: ContextArgument[] = [],
   ) {}
 
   get override(): FieldMoveOverride {
