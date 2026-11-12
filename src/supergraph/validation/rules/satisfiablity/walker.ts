@@ -97,7 +97,7 @@ const defaultIsEdgeIgnored: IsEdgeIgnored = () => false;
 /**
  * Shortest path to a Node, per set of contexts available on the way to it.
  */
-type ShortestPaths = Map<Node, Map<bigint, OperationPath>>;
+type ShortestPaths = Map<Node, Map<string, OperationPath>>;
 
 export class Walker {
   private logger: Logger;
@@ -253,8 +253,7 @@ export class Walker {
           // Two paths can lead to the same Node from the same graphs,
           // but only one of them may provide a context required by a `@fromContext` argument.
           // The context key is empty when the supergraph has no `@context`.
-          const contextsKey =
-            p.contexts === 0n ? "" : `#contexts:${p.contexts}`;
+          const contextsKey = p.contextsKey;
 
           if (edge && isFieldEdge(edge) && edge.move.provides) {
             return `${tailGraphName}#provides${contextsKey}`;
@@ -540,10 +539,10 @@ function setShortestPath(
       shortestPathPerTail.set(tail, pathsByContexts);
     }
 
-    const shortest = pathsByContexts.get(path.contexts);
+    const shortest = pathsByContexts.get(path.contextsKey);
 
     if (!shortest || shortest.depth() > path.depth()) {
-      pathsByContexts.set(path.contexts, path);
+      pathsByContexts.set(path.contextsKey, path);
     }
   }
 }
