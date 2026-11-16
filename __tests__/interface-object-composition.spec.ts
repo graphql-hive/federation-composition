@@ -198,6 +198,293 @@ testImplementations((api) => {
       `);
     });
 
+    test.each([
+      {
+        description: "a field with arguments",
+        priceField: "price(currency: String!): Int!",
+        requires: 'price(currency: "EUR")',
+      },
+      {
+        description: "a field without arguments",
+        priceField: "price: Int!",
+        requires: "price",
+      },
+    ])(
+      "preserves @external on an @interfaceObject field ($description)",
+      ({ priceField, requires }) => {
+        const result = api.composeServices([
+          {
+            name: "shop",
+            typeDefs: parse(/* GraphQL */ `
+              extend schema
+                @link(
+                  url: "https://specs.apollo.dev/federation/v2.3"
+                  import: ["@key", "@shareable"]
+                )
+
+              type Query {
+                things: [Node!]!
+              }
+
+              interface Node @key(fields: "id") {
+                id: ID!
+                ${priceField}
+              }
+
+              type Cat implements Node @key(fields: "id") {
+                id: ID!
+                ${priceField} @shareable
+                meow: String!
+              }
+
+              type Dog implements Node @key(fields: "id") {
+                id: ID!
+                ${priceField} @shareable
+                bark: String!
+              }
+            `),
+          },
+          {
+            name: "pricing",
+            typeDefs: parse(/* GraphQL */ `
+              extend schema
+                @link(
+                  url: "https://specs.apollo.dev/federation/v2.3"
+                  import: ["@key", "@external", "@requires", "@interfaceObject"]
+                )
+
+              type Node @key(fields: "id") @interfaceObject {
+                id: ID!
+                ${priceField} @external
+                eur: Int! @requires(fields: ${JSON.stringify(requires)})
+              }
+            `),
+          },
+        ]);
+
+        assertCompositionSuccess(result);
+
+        expect(result.supergraphSdl).toContainGraphQL(/* GraphQL */ `
+          interface Node
+            @join__type(graph: PRICING, key: "id", isInterfaceObject: true)
+            @join__type(graph: SHOP, key: "id") {
+            id: ID!
+            ${priceField}
+              @join__field(graph: PRICING, external: true)
+              @join__field(graph: SHOP)
+            eur: Int!
+              @join__field(graph: PRICING, requires: ${JSON.stringify(requires)})
+          }
+        `);
+      },
+    );
+
+    test("preserves @requires on a shared @interfaceObject field", () => {
+      const result = api.composeServices([
+        {
+          name: "shop",
+          typeDefs: parse(/* GraphQL */ `
+            extend schema
+              @link(
+                url: "https://specs.apollo.dev/federation/v2.3"
+                import: ["@key", "@shareable"]
+              )
+
+            type Query {
+              things: [Node!]!
+            }
+
+            interface Node @key(fields: "id") {
+              id: ID!
+              factor: Int!
+              price: Int!
+            }
+
+            type Cat implements Node @key(fields: "id") {
+              id: ID!
+              factor: Int!
+              price: Int! @shareable
+              meow: String!
+            }
+          `),
+        },
+        {
+          name: "pricing",
+          typeDefs: parse(/* GraphQL */ `
+            extend schema
+              @link(
+                url: "https://specs.apollo.dev/federation/v2.3"
+                import: [
+                  "@key"
+                  "@external"
+                  "@requires"
+                  "@interfaceObject"
+                  "@shareable"
+                ]
+              )
+
+            type Node @key(fields: "id") @interfaceObject {
+              id: ID!
+              factor: Int! @external
+              price: Int! @shareable @requires(fields: "factor")
+            }
+          `),
+        },
+      ]);
+
+      assertCompositionSuccess(result);
+
+      expect(result.supergraphSdl).toContainGraphQL(/* GraphQL */ `
+        interface Node
+          @join__type(graph: PRICING, key: "id", isInterfaceObject: true)
+          @join__type(graph: SHOP, key: "id") {
+          id: ID!
+          factor: Int!
+            @join__field(graph: PRICING, external: true)
+            @join__field(graph: SHOP)
+          price: Int!
+            @join__field(graph: PRICING, requires: "factor")
+            @join__field(graph: SHOP)
+        }
+      `);
+    });
+
+    test("preserves @provides on an @interfaceObject field", () => {
+      const result = api.composeServices([
+        {
+          name: "shop",
+          typeDefs: parse(/* GraphQL */ `
+            extend schema
+              @link(
+                url: "https://specs.apollo.dev/federation/v2.3"
+                import: ["@key"]
+              )
+
+            type Query {
+              things: [Node!]!
+            }
+
+            interface Node @key(fields: "id") {
+              id: ID!
+            }
+
+            type Cat implements Node @key(fields: "id") {
+              id: ID!
+            }
+          `),
+        },
+        {
+          name: "pricing",
+          typeDefs: parse(/* GraphQL */ `
+            extend schema
+              @link(
+                url: "https://specs.apollo.dev/federation/v2.3"
+                import: [
+                  "@key"
+                  "@interfaceObject"
+                  "@provides"
+                  "@external"
+                ]
+              )
+
+            type Node @key(fields: "id") @interfaceObject {
+              id: ID!
+              review: Review! @provides(fields: "score")
+            }
+
+            type Review {
+              score: Int! @external
+            }
+          `),
+        },
+        {
+          name: "reviews",
+          typeDefs: parse(/* GraphQL */ `
+            extend schema
+              @link(
+                url: "https://specs.apollo.dev/federation/v2.3"
+                import: ["@shareable"]
+              )
+
+            type Query {
+              review: Review
+            }
+
+            type Review {
+              score: Int! @shareable
+            }
+          `),
+        },
+      ]);
+
+      assertCompositionSuccess(result);
+
+      expect(result.supergraphSdl).toContainGraphQL(/* GraphQL */ `
+        interface Node
+          @join__type(graph: PRICING, key: "id", isInterfaceObject: true)
+          @join__type(graph: SHOP, key: "id") {
+          id: ID!
+          review: Review! @join__field(graph: PRICING, provides: "score")
+        }
+      `);
+    });
+
+    test("preserves @external on a concrete entity field", () => {
+      const priceRequirement = JSON.stringify('price(currency: "EUR")');
+      const result = api.composeServices([
+        {
+          name: "shop",
+          typeDefs: parse(/* GraphQL */ `
+            extend schema
+              @link(
+                url: "https://specs.apollo.dev/federation/v2.3"
+                import: ["@key"]
+              )
+
+            type Query {
+              cat: Cat
+            }
+
+            type Cat @key(fields: "id") {
+              id: ID!
+              price(currency: String!): Int!
+            }
+          `),
+        },
+        {
+          name: "pricing",
+          typeDefs: parse(/* GraphQL */ `
+            extend schema
+              @link(
+                url: "https://specs.apollo.dev/federation/v2.3"
+                import: ["@key", "@external", "@requires"]
+              )
+
+            type Cat @key(fields: "id") {
+              id: ID!
+              price(currency: String!): Int! @external
+              eur: Int! @requires(fields: ${priceRequirement})
+            }
+          `),
+        },
+      ]);
+
+      assertCompositionSuccess(result);
+
+      expect(result.supergraphSdl).toContainGraphQL(/* GraphQL */ `
+        type Cat
+          @join__type(graph: PRICING, key: "id")
+          @join__type(graph: SHOP, key: "id") {
+          id: ID!
+          price(currency: String!): Int!
+            @join__field(graph: PRICING, external: true)
+            @join__field(graph: SHOP)
+          eur: Int!
+            @join__field(graph: PRICING, requires: ${priceRequirement})
+        }
+      `);
+    });
+
     test("link directive does not have to import @interfaceObject in all subgraphs", () => {
       const result = api.composeServices([
         {
