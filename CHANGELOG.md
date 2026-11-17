@@ -1,5 +1,11 @@
 # @theguild/federation-composition
 
+## 0.27.1
+
+### Patch Changes
+
+- [#340](https://github.com/graphql-hive/federation-composition/pull/340) [`5916ae7`](https://github.com/graphql-hive/federation-composition/commit/5916ae78ac0c1c7b666a60403f1e3834a2d58243) Thanks [@kamilkisiela](https://github.com/kamilkisiela)! - Preserve `@external`, `@requires`, and `@provides` metadata when composing fields contributed by `@interfaceObject` subgraphs.
+
 ## 0.27.0
 
 ### Minor Changes
