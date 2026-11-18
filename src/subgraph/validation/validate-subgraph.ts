@@ -2,6 +2,7 @@ import {
   concatAST,
   ConstDirectiveNode,
   DefinitionNode,
+  DirectiveDefinitionNode,
   DocumentNode,
   FieldDefinitionNode,
   GraphQLError,
@@ -12,6 +13,9 @@ import {
   parse,
   SchemaDefinitionNode,
   SchemaExtensionNode,
+  TypeDefinitionNode,
+  TypeNode,
+  ValueNode,
   visit,
   visitInParallel,
 } from "graphql";
@@ -151,6 +155,11 @@ export function validateSubgraph(
     federation,
     typeNodeInfo,
     stateBuilder,
+  );
+
+  subgraph.typeDefs = coerceEnumValuesOfStringArguments(
+    subgraph.typeDefs,
+    validationContext.getAvailableFederationTypeAndDirectiveDefinitions(),
   );
 
   const federationRules = [
@@ -626,4 +635,73 @@ function cleanSubgraphTypeDefsFromSubgraphSpec(typeDefs: DocumentNode) {
   }
 
   return typeDefs;
+}
+
+/**
+ * Apollo accepts an unquoted, enum-like value where a directive argument is
+ * declared as `String` (`@tag(name: Foo)` instead of `@tag(name: "Foo")`) and
+ * treats it as the equivalent string.
+ * Rewriting it here, before the subgraph state is built, keeps the rest of the
+ * pipeline (validation and the supergraph SDL) seeing a regular string value.
+ */
+function coerceEnumValuesOfStringArguments(
+  typeDefs: DocumentNode,
+  specDefinitions: ReadonlyArray<TypeDefinitionNode | DirectiveDefinitionNode>,
+): DocumentNode {
+  const directiveDefinitions = new Map<string, DirectiveDefinitionNode>();
+
+  for (const def of (specDefinitions as ReadonlyArray<DefinitionNode>).concat(
+    typeDefs.definitions,
+  )) {
+    if (def.kind === Kind.DIRECTIVE_DEFINITION) {
+      directiveDefinitions.set(def.name.value, def);
+    }
+  }
+
+  return visit(typeDefs, {
+    Directive(node) {
+      const definition = directiveDefinitions.get(node.name.value);
+
+      if (!definition?.arguments?.length || !node.arguments?.length) {
+        return;
+      }
+
+      return {
+        ...node,
+        arguments: node.arguments.map((arg) => {
+          const argDefinition = definition.arguments!.find(
+            (a) => a.name.value === arg.name.value,
+          );
+
+          if (!argDefinition) {
+            return arg;
+          }
+
+          const value = enumValueToString(argDefinition.type, arg.value);
+
+          return value === arg.value ? arg : { ...arg, value };
+        }),
+      };
+    },
+  });
+}
+
+function enumValueToString(type: TypeNode, value: ValueNode): ValueNode {
+  switch (type.kind) {
+    case Kind.NON_NULL_TYPE:
+      return enumValueToString(type.type, value);
+    case Kind.LIST_TYPE:
+      return value.kind === Kind.LIST
+        ? {
+            ...value,
+            values: value.values.map((item) =>
+              enumValueToString(type.type, item),
+            ),
+          }
+        : enumValueToString(type.type, value);
+    case Kind.NAMED_TYPE:
+      return type.name.value === "String" && value.kind === Kind.ENUM
+        ? { kind: Kind.STRING, value: value.value, loc: value.loc }
+        : value;
+  }
 }

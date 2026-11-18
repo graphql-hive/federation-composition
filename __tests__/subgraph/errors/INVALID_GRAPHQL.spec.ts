@@ -543,3 +543,35 @@ testVersions((api, version) => {
     );
   });
 });
+
+testVersions((api, version) => {
+  test("INVALID_GRAPHQL - unquoted value for a String argument is treated as a string", () => {
+    const result = api.composeServices([
+      {
+        name: "users",
+        typeDefs: graphql`
+            extend schema
+              @link(
+                url: "https://specs.apollo.dev/federation/${version}"
+                import: ["@key", "@tag"]
+              )
+
+            directive @relationship(kind: String, kinds: [String]) on FIELD_DEFINITION
+
+            type User @key(fields: "id") {
+              id: ID!
+              name: String @tag(name: Public)
+            }
+
+            type Query {
+              users: [User!]! @relationship(kind: UserLink, kinds: [UserLink, "other"])
+            }
+          `,
+      },
+    ]);
+
+    assertCompositionSuccess(result);
+
+    expect(result.supergraphSdl).toContain(`@tag(name: "Public")`);
+  });
+});
