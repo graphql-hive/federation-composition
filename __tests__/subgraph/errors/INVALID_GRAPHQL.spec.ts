@@ -3,6 +3,7 @@ import {
   assertCompositionFailure,
   assertCompositionSuccess,
   graphql,
+  satisfiesVersionRange,
   testVersions,
 } from "../../shared/testkit.js";
 
@@ -573,5 +574,91 @@ testVersions((api, version) => {
     assertCompositionSuccess(result);
 
     expect(result.supergraphSdl).toContain(`@tag(name: "Public")`);
+  });
+});
+
+testVersions((api, version) => {
+  test("INVALID_GRAPHQL - quoted value for an enum argument is treated as an enum value", () => {
+    if (satisfiesVersionRange("< v2.1", version)) {
+      // @composeDirective is only available since v2.1
+      return;
+    }
+
+    const result = api.composeServices([
+      {
+        name: "users",
+        typeDefs: graphql`
+            extend schema
+              @link(
+                url: "https://specs.apollo.dev/federation/${version}"
+                import: ["@key", "@composeDirective"]
+              )
+              @link(url: "https://myspecs.dev/rel/v1.0", import: ["@relationship"])
+              @composeDirective(name: "@relationship")
+
+            directive @relationship(level: Level, levels: [Level]) on FIELD_DEFINITION
+
+            enum Level {
+              HIGH
+              LOW
+            }
+
+            type User @key(fields: "id") {
+              id: ID!
+            }
+
+            type Query {
+              users: [User!]! @relationship(level: "HIGH", levels: ["HIGH", LOW])
+            }
+          `,
+      },
+    ]);
+
+    assertCompositionSuccess(result);
+
+    expect(result.supergraphSdl).toContain(
+      `@relationship(level: HIGH, levels: [HIGH, LOW])`,
+    );
+  });
+
+  test("INVALID_GRAPHQL - quoted value that is not a value of the enum argument is rejected", () => {
+    const result = api.composeServices([
+      {
+        name: "users",
+        typeDefs: graphql`
+            extend schema
+              @link(
+                url: "https://specs.apollo.dev/federation/${version}"
+                import: ["@key"]
+              )
+
+            directive @relationship(level: Level) on FIELD_DEFINITION
+
+            enum Level {
+              HIGH
+              LOW
+            }
+
+            type User @key(fields: "id") {
+              id: ID!
+            }
+
+            type Query {
+              users: [User!]! @relationship(level: "NOPE")
+            }
+          `,
+      },
+    ]);
+
+    assertCompositionFailure(result);
+
+    expect(result.errors).toContainEqual(
+      expect.objectContaining({
+        message: `[users] Invalid value for "@relationship(level:)" of type "Level" in application of "@relationship" to "Query.users".`,
+        extensions: expect.objectContaining({
+          code: "INVALID_GRAPHQL",
+        }),
+      }),
+    );
   });
 });
