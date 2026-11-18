@@ -23,6 +23,150 @@ expect.addSnapshotSerializer({
 testImplementations((api) => {
   const composeServices = api.composeServices;
 
+  test("directive sharing a name with a type", () => {
+    // Directives and types live in separate namespaces in GraphQL,
+    // so a directive may share its name with a type.
+    const result = composeServices([
+      {
+        name: "a",
+        typeDefs: parse(/* GraphQL */ `
+          extend schema
+            @link(
+              url: "https://specs.apollo.dev/federation/v2.0"
+              import: ["@key"]
+            )
+
+          directive @TaskStatus(value: String!) on ENUM_VALUE
+
+          enum TaskStatus {
+            CREATED @TaskStatus(value: "created")
+            DONE @TaskStatus(value: "done")
+          }
+
+          type Task @key(fields: "id") {
+            id: ID!
+            status: TaskStatus
+          }
+
+          type Query {
+            task: Task
+          }
+        `),
+      },
+    ]);
+
+    assertCompositionSuccess(result);
+  });
+
+  test("composed directive sharing a name with a type", () => {
+    const result = composeServices([
+      {
+        name: "a",
+        typeDefs: parse(/* GraphQL */ `
+          extend schema
+            @link(
+              url: "https://specs.apollo.dev/federation/v2.3"
+              import: ["@key", "@composeDirective"]
+            )
+            @link(
+              url: "https://myspecs.dev/tasks/v1.0"
+              import: ["@TaskStatus"]
+            )
+            @composeDirective(name: "@TaskStatus")
+
+          directive @TaskStatus(value: String!) on ENUM_VALUE | FIELD_DEFINITION
+
+          enum TaskStatus {
+            CREATED @TaskStatus(value: "created")
+            DONE @TaskStatus(value: "done")
+          }
+
+          type Task @key(fields: "id") {
+            id: ID!
+            status: TaskStatus @TaskStatus(value: "field")
+          }
+
+          type Query {
+            task: Task
+          }
+        `),
+      },
+      {
+        name: "b",
+        typeDefs: parse(/* GraphQL */ `
+          extend schema
+            @link(
+              url: "https://specs.apollo.dev/federation/v2.3"
+              import: ["@key"]
+            )
+
+          type Task @key(fields: "id") {
+            id: ID!
+            label: String
+          }
+        `),
+      },
+    ]);
+
+    assertCompositionSuccess(result);
+
+    // the directive definition and the enum both survive into the supergraph
+    expect(result.supergraphSdl).toContain(
+      "directive @TaskStatus(value: String!) on ENUM_VALUE | FIELD_DEFINITION",
+    );
+    expect(result.supergraphSdl).toMatch(/enum TaskStatus/);
+    expect(result.supergraphSdl).toContain('@TaskStatus(value: "created")');
+    expect(result.supergraphSdl).toContain('@TaskStatus(value: "field")');
+  });
+
+  test("directive and a type of the same name across subgraphs", () => {
+    const result = composeServices([
+      {
+        name: "a",
+        typeDefs: parse(/* GraphQL */ `
+          extend schema
+            @link(
+              url: "https://specs.apollo.dev/federation/v2.3"
+              import: ["@key"]
+            )
+
+          directive @TaskStatus(value: String!) on FIELD_DEFINITION
+
+          type Task @key(fields: "id") {
+            id: ID!
+            label: String @TaskStatus(value: "field")
+          }
+
+          type Query {
+            task: Task
+          }
+        `),
+      },
+      {
+        name: "b",
+        typeDefs: parse(/* GraphQL */ `
+          extend schema
+            @link(
+              url: "https://specs.apollo.dev/federation/v2.3"
+              import: ["@key"]
+            )
+
+          enum TaskStatus {
+            CREATED
+            DONE
+          }
+
+          type Task @key(fields: "id") {
+            id: ID!
+            status: TaskStatus
+          }
+        `),
+      },
+    ]);
+
+    assertCompositionSuccess(result);
+  });
+
   test("enum value as string as default value", () => {
     const result = composeServices([
       {

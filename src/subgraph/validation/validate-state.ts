@@ -18,7 +18,6 @@ import {
 } from "../../utils/state.js";
 import {
   Argument,
-  Directive,
   EnumType,
   InputField,
   InputObjectType,
@@ -121,45 +120,43 @@ function validateDirectives(
   reportError: ReportErrorFn,
   context: SubgraphValidationContext,
 ): void {
-  for (const directive of state.types.values()) {
-    if (isDirective(directive)) {
-      if (context.isLinkSpecDirective(directive.name)) {
+  for (const directive of state.directives.values()) {
+    if (context.isLinkSpecDirective(directive.name)) {
+      continue;
+    }
+
+    // Ensure they are named correctly.
+    validateName(reportError, directive.name);
+
+    // Ensure the arguments are valid.
+    for (const [argName, arg] of directive.args) {
+      // Ensure they are named correctly.
+      validateName(reportError, argName);
+
+      // Ensure the type is an input type.
+      const argInputTypeName = stripTypeModifiers(arg.type);
+
+      if (context.isLinkSpecType(argInputTypeName)) {
         continue;
       }
 
-      // Ensure they are named correctly.
-      validateName(reportError, directive.name);
+      const isInput = isInputType(state, argInputTypeName);
 
-      // Ensure the arguments are valid.
-      for (const [argName, arg] of directive.args) {
-        // Ensure they are named correctly.
-        validateName(reportError, argName);
+      if (isInput === SKIP) {
+        continue;
+      }
 
-        // Ensure the type is an input type.
-        const argInputTypeName = stripTypeModifiers(arg.type);
+      if (!isInput) {
+        reportError(
+          `The type of @${directive.name}(${arg.name}:) must be Input Type ` +
+            `but got: ${arg.type}.`,
+        );
+      }
 
-        if (context.isLinkSpecType(argInputTypeName)) {
-          continue;
-        }
-
-        const isInput = isInputType(state, argInputTypeName);
-
-        if (isInput === SKIP) {
-          continue;
-        }
-
-        if (!isInput) {
-          reportError(
-            `The type of @${directive.name}(${arg.name}:) must be Input Type ` +
-              `but got: ${arg.type}.`,
-          );
-        }
-
-        if (isRequiredArgument(arg) && arg.deprecated?.deprecated === true) {
-          reportError(
-            `Required argument @${directive.name}(${arg.name}:) cannot be deprecated.`,
-          );
-        }
+      if (isRequiredArgument(arg) && arg.deprecated?.deprecated === true) {
+        reportError(
+          `Required argument @${directive.name}(${arg.name}:) cannot be deprecated.`,
+        );
       }
     }
   }
@@ -933,8 +930,4 @@ export function isInterfaceType(type: SubgraphType): type is InterfaceType {
 
 export function isUnionType(type: SubgraphType): type is UnionType {
   return type.kind === TypeKind.UNION;
-}
-
-export function isDirective(type: SubgraphType): type is Directive {
-  return type.kind === TypeKind.DIRECTIVE;
 }

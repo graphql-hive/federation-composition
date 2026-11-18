@@ -221,7 +221,10 @@ export function createSupergraphStateBuilder() {
         subgraphState.federation.imports.map((i) => i.alias ?? i.name),
       );
 
-      for (const [typeName, type] of subgraphState.types) {
+      for (const [typeName, type] of [
+        ...subgraphState.types,
+        ...subgraphState.directives,
+      ]) {
         // Federation Types that are imported, but also declared within th subgraph (most-likely for IDE support)
         // should not be added to the supergraph.
         if (allFederationImports.has(typeName)) {

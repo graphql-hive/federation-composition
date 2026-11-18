@@ -220,7 +220,12 @@ export function validateSubgraph(
   // Include only link spec definitions that are not already defined in the subgraph
   const linkSpecDefinitionsToInclude = linkSpecDefinitions.filter((def) => {
     if ("name" in def && typeof def.name?.value === "string") {
-      return !stateBuilder.state.types.has(def.name.value);
+      const defined =
+        def.kind === Kind.DIRECTIVE_DEFINITION
+          ? stateBuilder.state.directives
+          : stateBuilder.state.types;
+
+      return !defined.has(def.name.value);
     }
 
     return true;
