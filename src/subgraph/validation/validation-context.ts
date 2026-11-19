@@ -761,7 +761,10 @@ function coerceValue(
         : { ...value, values };
     }
     case Kind.NAMED_TYPE:
-      if (value.kind === Kind.ENUM && type.name.value === "String") {
+      if (
+        value.kind === Kind.ENUM &&
+        (type.name.value === "String" || type.name.value === "ID")
+      ) {
         return { kind: Kind.STRING, value: value.value, loc: value.loc };
       }
 

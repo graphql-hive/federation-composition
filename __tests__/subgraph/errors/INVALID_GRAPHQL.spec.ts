@@ -691,6 +691,143 @@ testVersions((api, version) => {
     expect(result.supergraphSdl).toContain(`(name: "Public")`);
   });
 
+  test("INVALID_GRAPHQL - ID accepts string and int literals", () => {
+    const result = api.composeServices([
+      {
+        name: "users",
+        typeDefs: graphql`
+            extend schema
+              @link(
+                url: "https://specs.apollo.dev/federation/${version}"
+                import: ["@key"]
+              )
+
+            directive @ref(id: ID, ids: [ID]) on FIELD_DEFINITION
+
+            type User @key(fields: "id") {
+              id: ID!
+              a: String @ref(id: "abc")
+              b: String @ref(id: 1)
+              c: String @ref(ids: ["abc", 1])
+            }
+
+            type Query {
+              users: [User!]!
+            }
+          `,
+      },
+    ]);
+
+    assertCompositionSuccess(result);
+  });
+
+  test("INVALID_GRAPHQL - null is accepted for a nullable argument", () => {
+    const result = api.composeServices([
+      {
+        name: "users",
+        typeDefs: graphql`
+            extend schema
+              @link(
+                url: "https://specs.apollo.dev/federation/${version}"
+                import: ["@key"]
+              )
+
+            directive @opt(
+              s: String
+              i: Int
+              list: [String]
+            ) on FIELD_DEFINITION
+
+            type User @key(fields: "id") {
+              id: ID!
+              a: String @opt(s: null, i: null, list: null)
+              b: String @opt(list: [null])
+            }
+
+            type Query {
+              users: [User!]!
+            }
+          `,
+      },
+    ]);
+
+    assertCompositionSuccess(result);
+  });
+
+  test("INVALID_GRAPHQL - a list value is rejected for a non-list argument", () => {
+    const result = api.composeServices([
+      {
+        name: "users",
+        typeDefs: graphql`
+            extend schema
+              @link(
+                url: "https://specs.apollo.dev/federation/${version}"
+                import: ["@key"]
+              )
+
+            directive @one(s: String) on FIELD_DEFINITION
+
+            type User @key(fields: "id") {
+              id: ID!
+              a: String @one(s: ["txt"])
+            }
+
+            type Query {
+              users: [User!]!
+            }
+          `,
+      },
+    ]);
+
+    assertCompositionFailure(result);
+
+    expect(result.errors).toContainEqual(
+      expect.objectContaining({
+        message: `[users] Invalid value for "@one(s:)" of type "String" in application of "@one" to "User.a".`,
+        extensions: expect.objectContaining({
+          code: "INVALID_GRAPHQL",
+        }),
+      }),
+    );
+  });
+
+  test("INVALID_GRAPHQL - null is rejected as an item of a non-null list item type", () => {
+    const result = api.composeServices([
+      {
+        name: "users",
+        typeDefs: graphql`
+            extend schema
+              @link(
+                url: "https://specs.apollo.dev/federation/${version}"
+                import: ["@key"]
+              )
+
+            directive @many(list: [String!]) on FIELD_DEFINITION
+
+            type User @key(fields: "id") {
+              id: ID!
+              a: String @many(list: [null])
+            }
+
+            type Query {
+              users: [User!]!
+            }
+          `,
+      },
+    ]);
+
+    assertCompositionFailure(result);
+
+    expect(result.errors).toContainEqual(
+      expect.objectContaining({
+        message: `[users] Invalid value for "@many(list:)" of type "[String!]" in application of "@many" to "User.a".`,
+        extensions: expect.objectContaining({
+          code: "INVALID_GRAPHQL",
+        }),
+      }),
+    );
+  });
+
   test("INVALID_GRAPHQL - quoted value for @link(for:) is treated as a purpose", () => {
     const result = api.composeServices([
       {

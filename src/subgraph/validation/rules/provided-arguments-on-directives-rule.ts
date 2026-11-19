@@ -35,11 +35,9 @@ export function ProvidedArgumentsOnDirectivesRule(
             );
 
             if (argDefinition && arg.value) {
-              if (
-                argDefinition.type.kind === Kind.NON_NULL_TYPE &&
-                arg.value.kind === Kind.NULL
-              ) {
-                // Let RequiredArgumentsOnDirectivesRule handle this
+              if (arg.value.kind === Kind.NULL) {
+                // `null` is a valid value for a nullable type,
+                // and RequiredArgumentsOnDirectivesRule handles a non-null one
                 continue;
               }
 
@@ -50,41 +48,46 @@ export function ProvidedArgumentsOnDirectivesRule(
                 continue; // Let KnownTypesRule handle this
               }
 
-              if (printedType !== "Any" && printedType !== printedValue) {
-                // received empty list
-                if (printedValue === "[]") {
-                  // An empty list can be a valid value for a list type
-                  // or a non-null list type
-                  if (
-                    argDefinition.type.kind === Kind.LIST_TYPE ||
-                    (argDefinition.type.kind === Kind.NON_NULL_TYPE &&
-                      argDefinition.type.type.kind === Kind.LIST_TYPE)
-                  ) {
-                    continue;
-                  }
-                }
-
+              if (printedType !== "Any") {
+                const isListType =
+                  argDefinition.type.kind === Kind.LIST_TYPE ||
+                  (argDefinition.type.kind === Kind.NON_NULL_TYPE &&
+                    argDefinition.type.type.kind === Kind.LIST_TYPE);
                 const namedType = namedTypeFromTypeNode(argDefinition.type);
                 const typeName = namedType.name.value;
 
-                // Float accepts Int, but not the other way around
-                if (printedValue === "Int" && typeName === "Float") {
-                  continue;
-                }
+                const isValid =
+                  arg.value.kind === Kind.LIST
+                    ? // A list value fits a list type only. The other way around is
+                      // fine: a single value is coerced to a list of one.
+                      isListType &&
+                      // an empty list fits any list type
+                      arg.value.values.every((item) =>
+                        item.kind === Kind.NULL
+                          ? allowsNullItems(argDefinition.type)
+                          : isAssignable(
+                              printValueNode(item),
+                              typeName,
+                              printedType,
+                            ),
+                      )
+                    : isAssignable(printedValue, typeName, printedType);
 
-                context.reportError(
-                  new GraphQLError(
-                    `Invalid value for "@${directiveName}(${arg.name.value}:)" of type "${print(
-                      argDefinition.type,
-                    )}" in application of "@${directiveName}" to "${coordinate}".`,
-                    {
-                      nodes: arg,
-                      extensions: {
-                        code: "INVALID_GRAPHQL",
+                if (!isValid) {
+                  context.reportError(
+                    new GraphQLError(
+                      `Invalid value for "@${directiveName}(${arg.name.value}:)" of type "${print(
+                        argDefinition.type,
+                      )}" in application of "@${directiveName}" to "${coordinate}".`,
+                      {
+                        nodes: arg,
+                        extensions: {
+                          code: "INVALID_GRAPHQL",
+                        },
                       },
-                    },
-                  ),
-                );
+                    ),
+                  );
+                }
               }
             }
           }
@@ -92,6 +95,48 @@ export function ProvidedArgumentsOnDirectivesRule(
       },
     },
   };
+}
+
+/**
+ * Whether `null` is a valid item of a list of `typeNode`.
+ */
+function allowsNullItems(typeNode: TypeNode): boolean {
+  const listType =
+    typeNode.kind === Kind.NON_NULL_TYPE ? typeNode.type : typeNode;
+
+  return (
+    listType.kind === Kind.LIST_TYPE &&
+    listType.type.kind !== Kind.NON_NULL_TYPE
+  );
+}
+
+/**
+ * Whether a value of kind `printedValue` can be used where `printedType` is
+ * expected, ignoring list and non-null wrappers (`typeName` is the named type).
+ */
+function isAssignable(
+  printedValue: string,
+  typeName: string,
+  printedType: string,
+): boolean {
+  if (printedValue === printedType) {
+    return true;
+  }
+
+  // Float accepts Int, but not the other way around
+  if (printedValue === "Int" && typeName === "Float") {
+    return true;
+  }
+
+  // ID accepts both string and int literals
+  if (
+    typeName === "ID" &&
+    (printedValue === "String" || printedValue === "Int")
+  ) {
+    return true;
+  }
+
+  return false;
 }
 
 function printValueNode(valueNode: ValueNode): string {
