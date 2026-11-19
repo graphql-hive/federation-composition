@@ -1,5 +1,33 @@
 # @theguild/federation-composition
 
+## 0.27.2
+
+### Patch Changes
+
+- [#344](https://github.com/graphql-hive/federation-composition/pull/344) [`a77815f`](https://github.com/graphql-hive/federation-composition/commit/a77815fc994516dcf1db0d9b2c627abfc88f936e) Thanks [@kamilkisiela](https://github.com/kamilkisiela)! - Fix a crash when a directive shares its name with a type. Directives and types live in separate namespaces in GraphQL, but subgraph state kept both in a single map, so `directive @TaskStatus` next to `enum TaskStatus` threw `Expected TaskStatus to be an enum type` instead of composing.
+
+- [#345](https://github.com/graphql-hive/federation-composition/pull/345) [`8bd2873`](https://github.com/graphql-hive/federation-composition/commit/8bd28736af9a559eb07f2cbe8b0f84a0bb75fcd6) Thanks [@n1ru4l](https://github.com/n1ru4l)! - Keep untagged arguments of included fields in schema contracts.
+
+  Previously, when a contract used an include filter, arguments of an included field were marked `@inaccessible` unless they were tagged themselves. Optional arguments silently disappeared from the contract schema, and required arguments failed composition with `REQUIRED_INACCESSIBLE`.
+
+  An argument without its own `@tag` now inherits the tags of its field, matching the behavior of Apollo contracts. Arguments with their own `@tag` are still filtered by their own tags.
+
+  ```graphql
+  type Query {
+    user(id: ID!): User @tag(name: "public")
+    users(first: Int): [User] @tag(name: "public")
+  }
+  ```
+
+  With `include: ["public"]`, the contract schema now composes and contains:
+
+  ```graphql
+  type Query {
+    user(id: ID!): User
+    users(first: Int): [User]
+  }
+  ```
+
 ## 0.27.1
 
 ### Patch Changes
