@@ -1,5 +1,4 @@
 import {
-  EnumValueNode,
   type ConstDirectiveNode,
   type DirectiveNode,
   type DocumentNode,
@@ -19,7 +18,6 @@ import {
   type ScalarTypeDefinitionNode,
   type UnionTypeDefinitionNode,
   visit,
-  StringValueNode,
 } from "graphql";
 import { extractLinkImplementations } from "../utils/link/index.js";
 
@@ -692,17 +690,14 @@ export function createTagDirectiveNameExtractionStrategy(
   directiveName: string,
 ): TagExtractionStrategy {
   return (directiveNode: DirectiveNode) => {
+    const value = directiveNode.arguments?.[0]?.value;
     if (
       directiveNode.name.value === directiveName &&
       directiveNode.arguments?.[0].name.value === "name" &&
       // an unquoted tag name is accepted by composition, so it is accepted here
-      (directiveNode.arguments?.[0]?.value.kind === Kind.STRING ||
-        directiveNode.arguments?.[0]?.value.kind === Kind.ENUM)
+      (value?.kind === Kind.STRING || value?.kind === Kind.ENUM)
     ) {
-      return (
-        (directiveNode.arguments[0].value as StringValueNode | EnumValueNode)
-          .value ?? null
-      );
+      return value.value ?? null;
     }
     return null;
   };

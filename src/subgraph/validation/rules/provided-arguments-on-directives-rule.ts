@@ -103,21 +103,14 @@ function isValidValue(
   }
 
   const printedValue = printValueNode(value);
-
-  if (printedValue === printedType) {
-    return true;
-  }
-
   const typeName = type.name.value;
 
-  // Float accepts Int, but not the other way around
-  if (printedValue === "Int" && typeName === "Float") {
-    return true;
-  }
-
-  // ID accepts both string and int literals
   return (
-    typeName === "ID" && (printedValue === "String" || printedValue === "Int")
+    printedValue === printedType ||
+    // Float accepts Int, but not the other way around
+    (printedValue === "Int" && typeName === "Float") ||
+    // ID accepts both string and int literals
+    (typeName === "ID" && (printedValue === "String" || printedValue === "Int"))
   );
 }
 

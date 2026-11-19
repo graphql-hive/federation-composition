@@ -1,6 +1,5 @@
 import {
   ASTNode,
-  DefinitionNode,
   DirectiveDefinitionNode,
   DocumentNode,
   GraphQLError,
@@ -12,8 +11,6 @@ import {
   ObjectTypeExtensionNode,
   parse,
   specifiedScalarTypes,
-  EnumTypeDefinitionNode,
-  EnumTypeExtensionNode,
   TypeDefinitionNode,
   TypeExtensionNode,
   TypeNode,
@@ -144,7 +141,7 @@ export function createSubgraphValidationContext(
   // not be rewritten after this point.
   subgraph.typeDefs = coerceDirectiveArgumentValues(
     subgraph.typeDefs,
-    availableSpec,
+    availableSpec.directives,
     imports,
   );
   // Object and interface types defined in a subgraph
@@ -634,115 +631,96 @@ export function createSubgraphValidationContext(
 
 /**
  * Apollo is lenient about the shape of directive argument values: it accepts an
- * unquoted, enum-like value where the argument is declared as `String`
+ * unquoted, enum-like value where the argument is declared as `String` or `ID`
  * (`@tag(name: Public)`) and a quoted string where the argument is declared as
  * an enum (`@link(for: "EXECUTION")`, as long as the enum has that value).
  * Rewriting those up front keeps the rest of the pipeline (validation and the
  * supergraph SDL) seeing the expected value.
  */
+// Directives only sit on definitions and on the fields, arguments and enum
+// values within them, so the coercion walks just those, not names or types.
+const directiveHolderKeys = Object.fromEntries(
+  Object.values(Kind).map((kind) => [
+    kind,
+    kind === Kind.DOCUMENT
+      ? ["definitions"]
+      : ["directives", "fields", "arguments", "values"],
+  ]),
+) as Parameters<typeof visit>[2];
+
 function coerceDirectiveArgumentValues(
   typeDefs: DocumentNode,
-  availableSpec: {
-    directives: ReadonlyArray<DirectiveDefinitionNode>;
-    types: ReadonlyArray<TypeDefinitionNode>;
-  },
+  specDirectives: ReadonlyArray<DirectiveDefinitionNode>,
   imports: readonly LinkImport[],
 ): DocumentNode {
+  // `@link(import: [{ name: "@tag", as: "@mytag" }])` renames a spec directive.
+  // The alias is applied as a key here, not to the (shared) spec nodes.
+  const aliases = new Map<string, string>();
+  for (const i of imports) {
+    if (i.alias) {
+      aliases.set(i.name.replace(/^@/, ""), i.alias.replace(/^@/, ""));
+    }
+  }
+
   const directiveDefinitions = new Map<string, DirectiveDefinitionNode>();
+  for (const def of specDirectives) {
+    directiveDefinitions.set(
+      aliases.get(def.name.value) ?? def.name.value,
+      def,
+    );
+  }
+
+  // The federation spec has no enums, so they come from the link spec and the
+  // subgraph, whose own definitions take precedence over the spec's.
   const enumValues = new Map<string, Set<string>>();
-
-  function rememberEnumValues(
-    name: string,
-    def: EnumTypeDefinitionNode | EnumTypeExtensionNode,
-  ) {
-    let values = enumValues.get(name);
-
-    if (!values) {
-      values = new Set();
-      enumValues.set(name, values);
-    }
-
-    for (const value of def.values ?? []) {
-      values.add(value.name.value);
-    }
-  }
-
-  // Spec elements are keyed by the name the subgraph uses for them, which
-  // `@link(import: [{ name: "@tag", as: "@mytag" }])` can rename. The alias is
-  // applied as a key here instead of to the (shared) spec nodes themselves.
-  for (const def of availableSpec.directives) {
-    const alias = imports
-      .find((i) => i.name.replace(/^@/, "") === def.name.value)
-      ?.alias?.replace(/^@/, "");
-
-    directiveDefinitions.set(alias ?? def.name.value, def);
-  }
-
-  for (const def of availableSpec.types) {
-    if (def.kind !== Kind.ENUM_TYPE_DEFINITION) {
-      continue;
-    }
-
-    const alias = imports.find((i) => i.name === def.name.value)?.alias;
-
-    rememberEnumValues(alias ?? def.name.value, def);
-  }
-
-  // The subgraph's own definitions take precedence over the spec's.
-  for (const def of (
-    linkSpec.definitions as ReadonlyArray<DefinitionNode>
-  ).concat(typeDefs.definitions)) {
+  for (const def of linkSpec.definitions.concat(typeDefs.definitions)) {
     if (def.kind === Kind.DIRECTIVE_DEFINITION) {
       directiveDefinitions.set(def.name.value, def);
     } else if (
       def.kind === Kind.ENUM_TYPE_DEFINITION ||
       def.kind === Kind.ENUM_TYPE_EXTENSION
     ) {
-      rememberEnumValues(def.name.value, def);
+      const values = enumValues.get(def.name.value) ?? new Set<string>();
+      enumValues.set(def.name.value, values);
+      for (const value of def.values ?? []) {
+        values.add(value.name.value);
+      }
     }
   }
 
-  return visit(typeDefs, {
-    Directive(node) {
-      const definition = directiveDefinitions.get(node.name.value);
+  return visit(
+    typeDefs,
+    {
+      Directive(node) {
+        const definition = directiveDefinitions.get(node.name.value);
+        const args = node.arguments?.map((arg) => {
+          const argDefinition = definition?.arguments?.find(
+            (a) => a.name.value === arg.name.value,
+          );
 
-      if (!definition?.arguments?.length || !node.arguments?.length) {
-        return;
-      }
+          if (
+            !argDefinition ||
+            // `@link(url:)` and `@link(as:)` are read before this runs, to work
+            // out which spec the subgraph uses, so they have to stay strict.
+            (node.name.value === "link" &&
+              (arg.name.value === "url" || arg.name.value === "as"))
+          ) {
+            return arg;
+          }
 
-      let changed = false;
+          const value = coerceValue(argDefinition.type, arg.value, enumValues);
+          return value === arg.value ? arg : { ...arg, value };
+        });
 
-      const args = node.arguments.map((arg) => {
-        const argDefinition = definition.arguments!.find(
-          (a) => a.name.value === arg.name.value,
-        );
-
-        if (
-          !argDefinition ||
-          // `@link(url:)` and `@link(as:)` are read before this runs, to work
-          // out which spec the subgraph uses, so they have to stay strict.
-          (node.name.value === "link" &&
-            (arg.name.value === "url" || arg.name.value === "as"))
-        ) {
-          return arg;
-        }
-
-        const value = coerceValue(argDefinition.type, arg.value, enumValues);
-
-        if (value === arg.value) {
-          return arg;
-        }
-
-        changed = true;
-
-        return { ...arg, value };
-      });
-
-      // Keep the original node when nothing was coerced, so `visit` does not
-      // rebuild the whole document for the schemas that do not need this.
-      return changed ? { ...node, arguments: args } : undefined;
+        // Keep the node when nothing changed, so the document is not rebuilt, and
+        // skip its arguments either way, since they cannot hold a directive.
+        return args?.some((arg, i) => arg !== node.arguments![i])
+          ? { ...node, arguments: args }
+          : false;
+      },
     },
-  });
+    directiveHolderKeys,
+  );
 }
 
 function coerceValue(
@@ -762,9 +740,9 @@ function coerceValue(
         coerceValue(type.type, item, enumValues),
       );
 
-      return values.every((item, i) => item === value.values[i])
-        ? value
-        : { ...value, values };
+      return values.some((item, i) => item !== value.values[i])
+        ? { ...value, values }
+        : value;
     }
     case Kind.NAMED_TYPE:
       if (
