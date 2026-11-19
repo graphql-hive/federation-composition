@@ -833,4 +833,164 @@ describe("composeSchemaContract", () => {
       `scalar Brr @join__type(graph: FOO_GRAPHQL) @join__type(graph: FOO2_GRAPHQL)`,
     );
   });
+  test("contract: required arguments of an included field are included", () => {
+    const result = composeSchemaContract(
+      [
+        {
+          name: "a",
+          typeDefs: parse(/* GraphQL */ `
+            extend schema
+              @link(
+                url: "https://specs.apollo.dev/federation/v2.3"
+                import: ["@tag"]
+              )
+
+            type Query {
+              user(id: ID!): String @tag(name: "public")
+            }
+          `),
+        },
+      ],
+      {
+        include: new Set(["public"]),
+        exclude: new Set(),
+      },
+    );
+
+    expect(result.errors).toEqual(undefined);
+    expect((result as CompositionSuccess).publicSdl).toMatchInlineSnapshot(`
+      "type Query {
+        user(id: ID!): String
+      }"
+    `);
+  });
+
+  test("contract: optional arguments of an included field are included", () => {
+    const result = composeSchemaContract(
+      [
+        {
+          name: "a",
+          typeDefs: parse(/* GraphQL */ `
+            extend schema
+              @link(
+                url: "https://specs.apollo.dev/federation/v2.3"
+                import: ["@tag"]
+              )
+
+            type Query {
+              users(first: Int): [String] @tag(name: "public")
+            }
+          `),
+        },
+      ],
+      {
+        include: new Set(["public"]),
+        exclude: new Set(),
+      },
+    );
+
+    expect(result.errors).toEqual(undefined);
+    expect((result as CompositionSuccess).publicSdl).toMatchInlineSnapshot(`
+      "type Query {
+        users(first: Int): [String]
+      }"
+    `);
+  });
+
+  test("contract: optional argument with its own tag that is not included is hidden", () => {
+    const result = composeSchemaContract(
+      [
+        {
+          name: "a",
+          typeDefs: parse(/* GraphQL */ `
+            extend schema
+              @link(
+                url: "https://specs.apollo.dev/federation/v2.3"
+                import: ["@tag"]
+              )
+
+            type Query {
+              users(first: Int @tag(name: "internal"), after: String): [String]
+                @tag(name: "public")
+            }
+          `),
+        },
+      ],
+      {
+        include: new Set(["public"]),
+        exclude: new Set(),
+      },
+    );
+
+    expect(result.errors).toEqual(undefined);
+    expect((result as CompositionSuccess).publicSdl).toMatchInlineSnapshot(`
+      "type Query {
+        users(after: String): [String]
+      }"
+    `);
+  });
+
+  test("contract: untagged argument inherits excluded tag of its field", () => {
+    const result = composeSchemaContract(
+      [
+        {
+          name: "a",
+          typeDefs: parse(/* GraphQL */ `
+            extend schema
+              @link(
+                url: "https://specs.apollo.dev/federation/v2.3"
+                import: ["@tag"]
+              )
+
+            type Query {
+              users(first: Int): [String] @tag(name: "internal")
+              other: String
+            }
+          `),
+        },
+      ],
+      {
+        include: new Set(),
+        exclude: new Set(["internal"]),
+      },
+    );
+
+    expect(result.errors).toEqual(undefined);
+    expect((result as CompositionSuccess).publicSdl).toMatchInlineSnapshot(`
+      "type Query {
+        other: String
+      }"
+    `);
+  });
+
+  test("contract: required argument with a tag that differs from the field tag fails composition", () => {
+    const result = composeSchemaContract(
+      [
+        {
+          name: "a",
+          typeDefs: parse(/* GraphQL */ `
+            extend schema
+              @link(
+                url: "https://specs.apollo.dev/federation/v2.3"
+                import: ["@tag"]
+              )
+
+            type Query {
+              user(id: ID! @tag(name: "internal")): String @tag(name: "public")
+            }
+          `),
+        },
+      ],
+      {
+        include: new Set(["public"]),
+        exclude: new Set(),
+      },
+    );
+
+    expect(result.errors).toMatchInlineSnapshot(`
+      [
+        [GraphQLError: Argument "Query.user(id:)" is @inaccessible but is a required argument of its field.],
+      ]
+    `);
+  });
 });

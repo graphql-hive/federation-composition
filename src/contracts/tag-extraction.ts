@@ -383,8 +383,21 @@ export function applyTagFilterToInaccessibleTransformOnSubgraphSchema(
       `${objectLikeNode.name.value}.${fieldLikeNode.name.value}(${node.name.value}:)`,
     );
 
+    // For the include filter, an argument without its own `@tag` (in any subgraph)
+    // inherits the tags of its field. Otherwise, including a field would hide all of its
+    // untagged arguments (failing composition with REQUIRED_INACCESSIBLE for required ones).
+    // This matches the behavior of Apollo contracts.
+    // For the exclude filter no inheritance is needed, as an excluded field is already hidden.
+    const tagsForInclude =
+      tagsOnNode.size > 0
+        ? tagsOnNode
+        : getTagsForSchemaCoordinate(
+            `${objectLikeNode.name.value}.${fieldLikeNode.name.value}`,
+          );
+
     if (
-      (filter.include.size && !hasIntersection(tagsOnNode, filter.include)) ||
+      (filter.include.size &&
+        !hasIntersection(tagsForInclude, filter.include)) ||
       (filter.exclude.size && hasIntersection(tagsOnNode, filter.exclude))
     ) {
       return {
