@@ -661,4 +661,59 @@ testVersions((api, version) => {
       }),
     );
   });
+
+  test("INVALID_GRAPHQL - unquoted value is accepted for an aliased directive", () => {
+    const result = api.composeServices([
+      {
+        name: "users",
+        typeDefs: graphql`
+            extend schema
+              @link(
+                url: "https://specs.apollo.dev/federation/${version}"
+                import: ["@key", { name: "@tag", as: "@mytag" }]
+              )
+
+            type User @key(fields: "id") {
+              id: ID!
+              name: String @mytag(name: Public)
+            }
+
+            type Query {
+              users: [User!]!
+            }
+          `,
+      },
+    ]);
+
+    assertCompositionSuccess(result);
+
+    // the directive keeps its alias in the supergraph, the value is coerced
+    expect(result.supergraphSdl).toContain(`(name: "Public")`);
+  });
+
+  test("INVALID_GRAPHQL - quoted value for @link(for:) is treated as a purpose", () => {
+    const result = api.composeServices([
+      {
+        name: "users",
+        typeDefs: graphql`
+            extend schema
+              @link(
+                url: "https://specs.apollo.dev/federation/${version}"
+                import: ["@key"]
+                for: "EXECUTION"
+              )
+
+            type User @key(fields: "id") {
+              id: ID!
+            }
+
+            type Query {
+              users: [User!]!
+            }
+          `,
+      },
+    ]);
+
+    assertCompositionSuccess(result);
+  });
 });
