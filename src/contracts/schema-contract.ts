@@ -2,6 +2,8 @@ import {
   applyTagFilterOnSubgraphs,
   type SchemaContractFilter,
 } from "./tag-extraction.js";
+import { type DefinitionNode, type DocumentNode } from "graphql";
+import { print } from "../graphql/printer.js";
 import { type ServiceDefinition } from "../types.js";
 import {
   type CompositionResult,
@@ -107,6 +109,9 @@ export function composeServicesWithContracts(
     services,
     supergraphState,
   );
+  const shareDefinitions = createDefinitionSharing(
+    supergraph.supergraphDocumentNode,
+  );
 
   return {
     supergraph,
@@ -129,11 +134,13 @@ export function composeServicesWithContracts(
         }
 
         const compositionResult = createCompositionSuccessReadCacheContainer(
-          createSupergraphDocumentNode({
-            ...result,
-            supergraph: result.supergraphStateBuilder.build(),
-            specs: supergraphState.specs,
-          }),
+          shareDefinitions(
+            createSupergraphDocumentNode({
+              ...result,
+              supergraph: result.supergraphStateBuilder.build(),
+              specs: supergraphState.specs,
+            }),
+          ),
         );
 
         if (contract.removeUnreachableTypes === false) {
@@ -153,4 +160,46 @@ export function composeServicesWithContracts(
       }
     }),
   };
+}
+
+/**
+ * A contract changes only a few definitions of the supergraph,
+ * so its document reuses the definitions of the supergraph's document that print the same,
+ * instead of keeping a copy of each of them for every contract.
+ */
+function createDefinitionSharing(supergraphDocument: DocumentNode) {
+  let printedDefinitions: Map<
+    string,
+    { node: DefinitionNode; printed: string }
+  > | null = null;
+
+  return function shareDefinitions(document: DocumentNode): DocumentNode {
+    if (!printedDefinitions) {
+      printedDefinitions = new Map();
+      for (const node of supergraphDocument.definitions) {
+        printedDefinitions.set(definitionKey(node), {
+          node,
+          printed: print(node),
+        });
+      }
+    }
+
+    const definitions = printedDefinitions;
+
+    return {
+      ...document,
+      definitions: document.definitions.map((node) => {
+        const existing = definitions.get(definitionKey(node));
+        return existing && existing.printed === print(node)
+          ? existing.node
+          : node;
+      }),
+    };
+  };
+}
+
+function definitionKey(node: DefinitionNode) {
+  return "name" in node && node.name
+    ? `${node.kind}:${node.name.value}`
+    : node.kind;
 }

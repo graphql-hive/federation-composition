@@ -127,6 +127,43 @@ describe("composeServicesWithContracts", () => {
     ]);
   });
 
+  test("a contract reuses the definitions it does not change", () => {
+    const services = [
+      {
+        name: "a",
+        typeDefs: parse(/* GraphQL */ `
+          ${fed2(["@key", "@tag"])}
+          type Query {
+            user: User
+            internal: String @tag(name: "internal")
+          }
+          type User @key(fields: "id") {
+            id: ID!
+            name: String
+          }
+        `),
+      },
+    ];
+
+    const result = expectSameAsComposingEachContract(services, [
+      exclude("internal"),
+    ]);
+
+    function definition(result: CompositionResult, name: string) {
+      return result.supergraphDocumentNode!.definitions.find(
+        (node) => "name" in node && node.name?.value === name,
+      );
+    }
+
+    expect(definition(result.contracts[0], "User")).toBeDefined();
+    expect(definition(result.contracts[0], "User")).toBe(
+      definition(result.supergraph, "User"),
+    );
+    expect(definition(result.contracts[0], "Query")).not.toBe(
+      definition(result.supergraph, "Query"),
+    );
+  });
+
   test("subgraphs fail to compose", () => {
     const services = [
       {
