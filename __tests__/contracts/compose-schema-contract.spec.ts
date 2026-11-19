@@ -865,7 +865,7 @@ describe("composeSchemaContract", () => {
     `);
   });
 
-  test("contract: optional arguments of an included field are hidden", () => {
+  test("contract: optional arguments of an included field are included", () => {
     const result = composeSchemaContract(
       [
         {
@@ -892,7 +892,73 @@ describe("composeSchemaContract", () => {
     expect(result.errors).toEqual(undefined);
     expect((result as CompositionSuccess).publicSdl).toMatchInlineSnapshot(`
       "type Query {
-        users: [String]
+        users(first: Int): [String]
+      }"
+    `);
+  });
+
+  test("contract: optional argument with its own tag that is not included is hidden", () => {
+    const result = composeSchemaContract(
+      [
+        {
+          name: "a",
+          typeDefs: parse(/* GraphQL */ `
+            extend schema
+              @link(
+                url: "https://specs.apollo.dev/federation/v2.3"
+                import: ["@tag"]
+              )
+
+            type Query {
+              users(first: Int @tag(name: "internal"), after: String): [String]
+                @tag(name: "public")
+            }
+          `),
+        },
+      ],
+      {
+        include: new Set(["public"]),
+        exclude: new Set(),
+      },
+    );
+
+    expect(result.errors).toEqual(undefined);
+    expect((result as CompositionSuccess).publicSdl).toMatchInlineSnapshot(`
+      "type Query {
+        users(after: String): [String]
+      }"
+    `);
+  });
+
+  test("contract: untagged argument inherits excluded tag of its field", () => {
+    const result = composeSchemaContract(
+      [
+        {
+          name: "a",
+          typeDefs: parse(/* GraphQL */ `
+            extend schema
+              @link(
+                url: "https://specs.apollo.dev/federation/v2.3"
+                import: ["@tag"]
+              )
+
+            type Query {
+              users(first: Int): [String] @tag(name: "internal")
+              other: String
+            }
+          `),
+        },
+      ],
+      {
+        include: new Set(),
+        exclude: new Set(["internal"]),
+      },
+    );
+
+    expect(result.errors).toEqual(undefined);
+    expect((result as CompositionSuccess).publicSdl).toMatchInlineSnapshot(`
+      "type Query {
+        other: String
       }"
     `);
   });

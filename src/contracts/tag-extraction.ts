@@ -383,25 +383,21 @@ export function applyTagFilterToInaccessibleTransformOnSubgraphSchema(
       `${objectLikeNode.name.value}.${fieldLikeNode.name.value}(${node.name.value}:)`,
     );
 
-    // A required argument without its own `@tag` inherits the inclusion of its field.
-    // Otherwise, including a field would hide its untagged required arguments,
-    // which fails composition (REQUIRED_INACCESSIBLE).
-    // Untagged optional arguments stay hidden unless tagged with an included tag.
-    const hasOwnTag =
-      node.directives?.some((d) => d.name.value === tagDirectiveName) ?? false;
-    const isRequired =
-      node.type.kind === Kind.NON_NULL_TYPE && node.defaultValue === undefined;
-    const tagsOnField =
-      hasOwnTag || !isRequired
-        ? new Set<string>()
+    // For the include filter, an argument without its own `@tag` (in any subgraph)
+    // inherits the tags of its field. Otherwise, including a field would hide all of its
+    // untagged arguments (failing composition with REQUIRED_INACCESSIBLE for required ones).
+    // This matches the behavior of Apollo contracts.
+    // For the exclude filter no inheritance is needed, as an excluded field is already hidden.
+    const tagsForInclude =
+      tagsOnNode.size > 0
+        ? tagsOnNode
         : getTagsForSchemaCoordinate(
             `${objectLikeNode.name.value}.${fieldLikeNode.name.value}`,
           );
 
     if (
       (filter.include.size &&
-        !hasIntersection(tagsOnNode, filter.include) &&
-        !hasIntersection(tagsOnField, filter.include)) ||
+        !hasIntersection(tagsForInclude, filter.include)) ||
       (filter.exclude.size && hasIntersection(tagsOnNode, filter.exclude))
     ) {
       return {

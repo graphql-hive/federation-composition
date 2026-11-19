@@ -1408,7 +1408,7 @@ describe("applyTagFilterToInaccessibleTransformOnSubgraphSchema", () => {
         }
 
         type Query {
-          field1(arg1: String!, arg2: String @federation__inaccessible): String!
+          field1(arg1: String!, arg2: String): String!
         }"
       `);
     });
