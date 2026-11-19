@@ -34,61 +34,27 @@ export function ProvidedArgumentsOnDirectivesRule(
               (a) => a.name.value === arg.name.value,
             );
 
-            if (argDefinition && arg.value) {
-              if (arg.value.kind === Kind.NULL) {
-                // `null` is a valid value for a nullable type,
-                // and RequiredArgumentsOnDirectivesRule handles a non-null one
-                continue;
-              }
-
-              const printedType = printTypeNode(argDefinition.type, context);
-              const printedValue = printValueNode(arg.value);
-
-              if (!printedType) {
-                continue; // Let KnownTypesRule handle this
-              }
-
-              if (printedType !== "Any") {
-                const isListType =
-                  argDefinition.type.kind === Kind.LIST_TYPE ||
-                  (argDefinition.type.kind === Kind.NON_NULL_TYPE &&
-                    argDefinition.type.type.kind === Kind.LIST_TYPE);
-                const namedType = namedTypeFromTypeNode(argDefinition.type);
-                const typeName = namedType.name.value;
-
-                const isValid =
-                  arg.value.kind === Kind.LIST
-                    ? // A list value fits a list type only. The other way around is
-                      // fine: a single value is coerced to a list of one.
-                      isListType &&
-                      // an empty list fits any list type
-                      arg.value.values.every((item) =>
-                        item.kind === Kind.NULL
-                          ? allowsNullItems(argDefinition.type)
-                          : isAssignable(
-                              printValueNode(item),
-                              typeName,
-                              printedType,
-                            ),
-                      )
-                    : isAssignable(printedValue, typeName, printedType);
-
-                if (!isValid) {
-                  context.reportError(
-                    new GraphQLError(
-                      `Invalid value for "@${directiveName}(${arg.name.value}:)" of type "${print(
-                        argDefinition.type,
-                      )}" in application of "@${directiveName}" to "${coordinate}".`,
-                      {
-                        nodes: arg,
-                        extensions: {
-                          code: "INVALID_GRAPHQL",
-                        },
-                      },
-                    ),
-                  );
-                }
-              }
+            if (
+              argDefinition &&
+              arg.value &&
+              // `null` for a non-null argument is reported by
+              // RequiredArgumentsOnDirectivesRule, not here
+              arg.value.kind !== Kind.NULL &&
+              !isValidValue(argDefinition.type, arg.value, context)
+            ) {
+              context.reportError(
+                new GraphQLError(
+                  `Invalid value for "@${directiveName}(${arg.name.value}:)" of type "${print(
+                    argDefinition.type,
+                  )}" in application of "@${directiveName}" to "${coordinate}".`,
+                  {
+                    nodes: arg,
+                    extensions: {
+                      code: "INVALID_GRAPHQL",
+                    },
+                  },
+                ),
+              );
             }
           }
         }
@@ -98,30 +64,51 @@ export function ProvidedArgumentsOnDirectivesRule(
 }
 
 /**
- * Whether `null` is a valid item of a list of `typeNode`.
+ * Whether `value` can be used where `type` is expected, checked at every level
+ * of the type so nested lists are matched against the type they are declared
+ * with rather than against the innermost named type.
  */
-function allowsNullItems(typeNode: TypeNode): boolean {
-  const listType =
-    typeNode.kind === Kind.NON_NULL_TYPE ? typeNode.type : typeNode;
-
-  return (
-    listType.kind === Kind.LIST_TYPE &&
-    listType.type.kind !== Kind.NON_NULL_TYPE
-  );
-}
-
-/**
- * Whether a value of kind `printedValue` can be used where `printedType` is
- * expected, ignoring list and non-null wrappers (`typeName` is the named type).
- */
-function isAssignable(
-  printedValue: string,
-  typeName: string,
-  printedType: string,
+function isValidValue(
+  type: TypeNode,
+  value: ValueNode,
+  context: SimpleValidationContext,
 ): boolean {
+  if (type.kind === Kind.NON_NULL_TYPE) {
+    // a null item of a non-null item type is invalid; a null argument is
+    // RequiredArgumentsOnDirectivesRule's business and never reaches this
+    return value.kind !== Kind.NULL && isValidValue(type.type, value, context);
+  }
+
+  if (value.kind === Kind.NULL) {
+    return true;
+  }
+
+  if (type.kind === Kind.LIST_TYPE) {
+    // A single value is coerced to a list of one, so only a list value has to
+    // be unwrapped here.
+    return value.kind === Kind.LIST
+      ? value.values.every((item) => isValidValue(type.type, item, context))
+      : isValidValue(type.type, value, context);
+  }
+
+  const printedType = printTypeNode(type, context);
+
+  if (!printedType || printedType === "Any") {
+    // unknown types are KnownTypesRule's business, custom scalars accept anything
+    return true;
+  }
+
+  if (value.kind === Kind.LIST) {
+    return false; // a list value never fits a non-list type
+  }
+
+  const printedValue = printValueNode(value);
+
   if (printedValue === printedType) {
     return true;
   }
+
+  const typeName = type.name.value;
 
   // Float accepts Int, but not the other way around
   if (printedValue === "Int" && typeName === "Float") {
@@ -129,23 +116,13 @@ function isAssignable(
   }
 
   // ID accepts both string and int literals
-  if (
-    typeName === "ID" &&
-    (printedValue === "String" || printedValue === "Int")
-  ) {
-    return true;
-  }
-
-  return false;
+  return (
+    typeName === "ID" && (printedValue === "String" || printedValue === "Int")
+  );
 }
 
 function printValueNode(valueNode: ValueNode): string {
   switch (valueNode.kind) {
-    case Kind.LIST:
-      if (!valueNode.values.length) {
-        return "[]";
-      }
-      return printValueNode(valueNode.values[0]);
     case Kind.ENUM:
       return "Enum";
     case Kind.NULL:

@@ -828,6 +828,111 @@ testVersions((api, version) => {
     );
   });
 
+  test("INVALID_GRAPHQL - nested lists are checked at every level", () => {
+    const result = api.composeServices([
+      {
+        name: "users",
+        typeDefs: graphql`
+            extend schema
+              @link(
+                url: "https://specs.apollo.dev/federation/${version}"
+                import: ["@key"]
+              )
+
+            directive @nested(v: [[String!]!]!) on FIELD_DEFINITION
+
+            type User @key(fields: "id") {
+              id: ID!
+              a: String @nested(v: [[], ["ok"]])
+            }
+
+            type Query {
+              users: [User!]!
+            }
+          `,
+      },
+    ]);
+
+    assertCompositionSuccess(result);
+  });
+
+  test("INVALID_GRAPHQL - a bad item of a nested list is rejected", () => {
+    const result = api.composeServices([
+      {
+        name: "users",
+        typeDefs: graphql`
+            extend schema
+              @link(
+                url: "https://specs.apollo.dev/federation/${version}"
+                import: ["@key"]
+              )
+
+            directive @nested(v: [[String!]!]!) on FIELD_DEFINITION
+
+            type User @key(fields: "id") {
+              id: ID!
+              a: String @nested(v: [["ok", 42]])
+            }
+
+            type Query {
+              users: [User!]!
+            }
+          `,
+      },
+    ]);
+
+    assertCompositionFailure(result);
+
+    expect(result.errors).toContainEqual(
+      expect.objectContaining({
+        message: `[users] Invalid value for "@nested(v:)" of type "[[String!]!]!" in application of "@nested" to "User.a".`,
+        extensions: expect.objectContaining({
+          code: "INVALID_GRAPHQL",
+        }),
+      }),
+    );
+  });
+
+  test("INVALID_GRAPHQL - an unquoted @link url stays invalid", () => {
+    if (api.library === "apollo") {
+      // Apollo throws `TypeError: Invalid URL` instead of reporting it
+      return;
+    }
+
+    const result = api.composeServices([
+      {
+        name: "users",
+        typeDefs: graphql`
+            extend schema
+              @link(
+                url: "https://specs.apollo.dev/federation/${version}"
+                import: ["@key"]
+              )
+              @link(url: notAUrl)
+
+            type User @key(fields: "id") {
+              id: ID!
+            }
+
+            type Query {
+              users: [User!]!
+            }
+          `,
+      },
+    ]);
+
+    assertCompositionFailure(result);
+
+    expect(result.errors).toContainEqual(
+      expect.objectContaining({
+        message: `[users] Invalid value for "@link(url:)" of type "String" in application of "@link" to "schema".`,
+        extensions: expect.objectContaining({
+          code: "INVALID_GRAPHQL",
+        }),
+      }),
+    );
+  });
+
   test("INVALID_GRAPHQL - quoted value for @link(for:) is treated as a purpose", () => {
     const result = api.composeServices([
       {

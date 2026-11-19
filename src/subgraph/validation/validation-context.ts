@@ -717,7 +717,13 @@ function coerceDirectiveArgumentValues(
           (a) => a.name.value === arg.name.value,
         );
 
-        if (!argDefinition) {
+        if (
+          !argDefinition ||
+          // `@link(url:)` and `@link(as:)` are read before this runs, to work
+          // out which spec the subgraph uses, so they have to stay strict.
+          (node.name.value === "link" &&
+            (arg.name.value === "url" || arg.name.value === "as"))
+        ) {
           return arg;
         }
 
