@@ -290,6 +290,13 @@ export interface SubgraphState {
    */
   types: Map<string, SubgraphType>;
   /**
+   * [directiveName, Directive]
+   *
+   * Directives live in a namespace of their own in GraphQL,
+   * so a directive and a type may share a name.
+   */
+  directives: Map<string, Directive>;
+  /**
    * If an operation types is defined, it means that the subgraph provides a that type.
    * It's helpful to detect if Query, Mutation or Subscription are provided by the subgraph.
    */
@@ -355,6 +362,7 @@ export function createSubgraphStateBuilder(
       version,
     },
     types: new Map<string, SubgraphType>(),
+    directives: new Map<string, Directive>(),
     schema: {},
     links: linksWithDirective,
     specs: {
@@ -1289,8 +1297,7 @@ export function cleanSubgraphStateFromLinkSpec(
 ): SubgraphState {
   state.types.delete("link__Import");
   state.types.delete("link__Purpose");
-  state.types.delete("link__Import");
-  state.types.delete("link");
+  state.directives.delete("link");
 
   return state;
 }
@@ -2329,13 +2336,12 @@ function inputObjectTypeFactory(state: SubgraphState) {
       getOrCreateInputObjectType(state, typeName).tags.add(tag);
     },
     setOneOf(typeName: string) {
-      const existingOneOf = state.types.get("oneOf");
+      const existingOneOf = state.directives.get("oneOf");
 
       // if definition matches the built-in, flag the type as isOneOf
       // and ensure the directive is composed
       if (
         existingOneOf &&
-        existingOneOf.kind === TypeKind.DIRECTIVE &&
         existingOneOf.locations.size === 1 &&
         existingOneOf.locations.has(DirectiveLocation.INPUT_OBJECT) &&
         !existingOneOf.repeatable &&
@@ -2540,13 +2546,9 @@ function getOrCreateDirective(
   state: SubgraphState,
   directiveName: string,
 ): Directive {
-  const existing = state.types.get(directiveName);
+  const existing = state.directives.get(directiveName);
 
   if (existing) {
-    if (existing.kind !== TypeKind.DIRECTIVE) {
-      throw new Error(`Expected ${directiveName} to be a directive`);
-    }
-
     return existing;
   }
 
@@ -2564,7 +2566,7 @@ function getOrCreateDirective(
     args: new Map(),
   };
 
-  state.types.set(directiveName, directive);
+  state.directives.set(directiveName, directive);
 
   return directive;
 }
