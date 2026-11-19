@@ -15,6 +15,9 @@ import { extractLinkImplementations } from "../utils/link/index.js";
 import {
   buildSchemaCoordinateTagRegister,
   createTagDirectiveNameExtractionStrategy,
+  isArgumentExcludedByFilter,
+  isExcludedByExcludeFilter,
+  isExcludedByFilter,
   type SchemaContractFilter,
 } from "./tag-extraction.js";
 
@@ -37,8 +40,13 @@ type TypeMissingInSupergraph = {
   name: string;
   /** Scalars and unions are excluded by `include` too */
   isLeaf: boolean;
-  /** Schema coordinates of fields, arguments and enum values */
-  children: Array<{ coordinate: string; external: boolean }>;
+  /** Fields, arguments and enum values */
+  children: Array<{
+    name: string;
+    /** For an argument, the schema coordinate of its field */
+    argumentOf?: string;
+    external: boolean;
+  }>;
 };
 
 /** Where `@tag` is left as it is by the filter */
@@ -157,16 +165,19 @@ export function createSupergraphStateContractFilter(
     }
 
     function isExcluded(tags: Set<string>) {
-      if (filter.include.size && !hasIntersection(filter.include, tags)) {
-        return true;
-      }
-
-      return filter.exclude.size > 0 && hasIntersection(filter.exclude, tags);
+      return isExcludedByFilter(tags, filter);
     }
 
-    /** Object, interface, input object and enum types are excluded only by `exclude`, never by a missing `include` */
     function isExcludedByExclude(tags: Set<string>) {
-      return filter.exclude.size > 0 && hasIntersection(filter.exclude, tags);
+      return isExcludedByExcludeFilter(tags, filter);
+    }
+
+    function isArgumentExcluded(fieldCoordinate: string, argName: string) {
+      return isArgumentExcludedByFilter(
+        tagsOf(`${fieldCoordinate}(${argName}:)`),
+        () => tagsOf(fieldCoordinate),
+        filter,
+      );
     }
 
     /**
@@ -214,16 +225,11 @@ export function createSupergraphStateContractFilter(
       for (const field of objectType.fields.values()) {
         for (const arg of field.args.values()) {
           for (const graphId of arg.byGraph.keys()) {
-            const fieldCoordinate = `${localTypeName(graphId, objectType.name)}.${field.name}`;
-            const argTags = tagsOf(`${fieldCoordinate}(${arg.name}:)`);
-            // For `include`, an argument without its own `@tag` inherits the tags of its field.
-            const argTagsForInclude =
-              argTags.size > 0 ? argTags : tagsOf(fieldCoordinate);
-
             if (
-              (filter.include.size &&
-                !hasIntersection(filter.include, argTagsForInclude)) ||
-              isExcludedByExclude(argTags)
+              isArgumentExcluded(
+                `${localTypeName(graphId, objectType.name)}.${field.name}`,
+                arg.name,
+              )
             ) {
               markInaccessible(arg);
             }
@@ -398,7 +404,10 @@ export function createSupergraphStateContractFilter(
               : isExcludedByExclude(tagsOf(type.name))) ||
             type.children.some(
               (child) =>
-                !child.external && isExcluded(tagsOf(child.coordinate)),
+                !child.external &&
+                (child.argumentOf
+                  ? isArgumentExcluded(child.argumentOf, child.name)
+                  : isExcluded(tagsOf(`${type.name}.${child.name}`))),
             )
           ) {
             appliedInaccessible = true;
@@ -584,14 +593,15 @@ function describeGraph(
 
         for (const field of fields) {
           children.push({
-            coordinate: `${typeName}.${field.name.value}`,
+            name: field.name.value,
             external: isExternalType || isExternal(field),
           });
 
           if ("arguments" in field) {
             for (const arg of field.arguments ?? []) {
               children.push({
-                coordinate: `${typeName}.${field.name.value}(${arg.name.value}:)`,
+                name: arg.name.value,
+                argumentOf: `${typeName}.${field.name.value}`,
                 external: isExternal(arg),
               });
             }
@@ -601,7 +611,7 @@ function describeGraph(
         if ("values" in definition) {
           for (const value of definition.values ?? []) {
             children.push({
-              coordinate: `${typeName}.${value.name.value}`,
+              name: value.name.value,
               external: false,
             });
           }
@@ -631,15 +641,6 @@ function describeGraph(
   };
 }
 
-function hasIntersection(filterTags: Set<string>, tags: Set<string>) {
-  for (const tag of filterTags) {
-    if (tags.has(tag)) {
-      return true;
-    }
-  }
-
-  return false;
-}
 
 function hasInaccessibleFlag(
   element: object,

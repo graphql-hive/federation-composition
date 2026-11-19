@@ -14,6 +14,7 @@ import {
 } from "../../src/contracts/schema-contract.js";
 import { extractLinkImplementations } from "../../src/utils/link/index.js";
 import { getSubgraphs as getDGS } from "../fixtures/dgs/index.js";
+import { createStarsStuff } from "../fixtures/stars-stuff.js";
 
 type Service = { name: string; typeDefs: DocumentNode };
 
@@ -51,6 +52,60 @@ function expectSameAsComposingEachContract(
   });
 
   return result;
+}
+
+/**
+ * Like `expectSameAsComposingEachContract`, but a contract may also throw
+ * (`addInaccessibleToUnreachableTypes` does on some schemas), and it must throw the same way in both.
+ */
+function expectSameAsComposingEachContractOrThrow(
+  services: Service[],
+  contracts: SchemaContract[],
+) {
+  try {
+    expectSameAsComposingEachContract(services, contracts);
+    return;
+  } catch (error) {
+    if (!contracts.some((contract) => throwsOnItsOwn(services, contract))) {
+      throw error;
+    }
+  }
+
+  // One of the contracts throws, which stops the others, so compare them one by one.
+  for (const contract of contracts) {
+    expect(
+      settle(
+        () => composeServicesWithContracts(services, [contract]).contracts[0],
+      ),
+    ).toEqual(
+      settle(() =>
+        composeSchemaContract(
+          services,
+          contract.filter,
+          contract.removeUnreachableTypes ?? true,
+        ),
+      ),
+    );
+  }
+}
+
+function throwsOnItsOwn(services: Service[], contract: SchemaContract) {
+  return "thrown" in
+    settle(() =>
+      composeSchemaContract(
+        services,
+        contract.filter,
+        contract.removeUnreachableTypes ?? true,
+      ),
+    );
+}
+
+function settle(compose: () => CompositionResult) {
+  try {
+    return describeResult(compose());
+  } catch (error) {
+    return { thrown: String(error) };
+  }
 }
 
 function include(...tags: string[]): SchemaContract {
@@ -433,26 +488,42 @@ describe("composeServicesWithContracts", () => {
     });
   });
 
-  test("random tags on a real-world schema", async () => {
-    const services = await getDGS();
+  // A guard against the two implementations of the tag filter drifting apart:
+  // the subgraph transform (composeSchemaContract) and the supergraph state filter.
+  // Sparse tags exercise `include` (most elements untagged, arguments inheriting field tags),
+  // dense tags exercise types with all children excluded and the spec links.
+  test.each([
+    ["dgs", () => getDGS()],
+    ["stars-stuff", async () => Object.values(createStarsStuff())],
+  ])(
+    "random tags on a real-world schema (%s)",
+    async (_, getServices) => {
+      const services: Service[] = await getServices();
 
-    for (const seed of [1, 2, 3]) {
-      const random = createRandom(seed);
-      const tagged = services.map((service) => ({
-        ...service,
-        typeDefs: addRandomTags(service.typeDefs, random),
-      }));
+      for (const density of [0.1, 0.33, 0.8]) {
+        for (const seed of [1, 2, 3]) {
+          const random = createRandom(seed);
+          const tagged = services.map((service) => ({
+            ...service,
+            typeDefs: addRandomTags(service.typeDefs, random, density),
+          }));
 
-      expectSameAsComposingEachContract(tagged, [
-        include("a"),
-        exclude("b"),
-        {
-          filter: { include: new Set(["a", "c"]), exclude: new Set(["b"]) },
-          removeUnreachableTypes: false,
-        },
-      ]);
-    }
-  }, 60_000);
+          expectSameAsComposingEachContractOrThrow(tagged, [
+            include("a"),
+            exclude("b"),
+            {
+              filter: {
+                include: new Set(["a", "c"]),
+                exclude: new Set(["b"]),
+              },
+              removeUnreachableTypes: false,
+            },
+          ]);
+        }
+      }
+    },
+    120_000,
+  );
 });
 
 function createRandom(seed: number) {
@@ -462,10 +533,11 @@ function createRandom(seed: number) {
   };
 }
 
-/** Adds `@tag(name: "a" | "b" | "c")` to a third of types, fields, arguments and enum values. */
+/** Adds `@tag(name: "a" | "b" | "c")` to a share (`density`) of types, fields, arguments and enum values. */
 function addRandomTags(
   typeDefs: DocumentNode,
   random: () => number,
+  density: number,
 ): DocumentNode {
   const tagDirectiveName = extractLinkImplementations(
     typeDefs,
@@ -485,7 +557,7 @@ function addRandomTags(
 
   return visit(typeDefs, {
     enter(node) {
-      if (!taggable.has(node.kind) || random() > 0.33) {
+      if (!taggable.has(node.kind) || random() > density) {
         return;
       }
 
