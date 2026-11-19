@@ -409,6 +409,28 @@ describe("composeServicesWithContracts", () => {
         [exclude("internal")],
       );
     });
+
+    test("untagged arguments of an included field inherit its tags", () => {
+      expectSameAsComposingEachContract(
+        [
+          {
+            name: "a",
+            typeDefs: parse(/* GraphQL */ `
+              ${fed2(["@key", "@tag"])}
+              type Query {
+                user(id: ID!): User @tag(name: "public")
+                users(first: Int, debug: Boolean @tag(name: "internal")): [User]
+                  @tag(name: "public")
+              }
+              type User @key(fields: "id") @tag(name: "public") {
+                id: ID!
+              }
+            `),
+          },
+        ],
+        [include("public"), include("public", "internal")],
+      );
+    });
   });
 
   test("random tags on a real-world schema", async () => {

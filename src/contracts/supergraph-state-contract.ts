@@ -214,12 +214,16 @@ export function createSupergraphStateContractFilter(
       for (const field of objectType.fields.values()) {
         for (const arg of field.args.values()) {
           for (const graphId of arg.byGraph.keys()) {
+            const fieldCoordinate = `${localTypeName(graphId, objectType.name)}.${field.name}`;
+            const argTags = tagsOf(`${fieldCoordinate}(${arg.name}:)`);
+            // For `include`, an argument without its own `@tag` inherits the tags of its field.
+            const argTagsForInclude =
+              argTags.size > 0 ? argTags : tagsOf(fieldCoordinate);
+
             if (
-              isExcluded(
-                tagsOf(
-                  `${localTypeName(graphId, objectType.name)}.${field.name}(${arg.name}:)`,
-                ),
-              )
+              (filter.include.size &&
+                !hasIntersection(filter.include, argTagsForInclude)) ||
+              isExcludedByExclude(argTags)
             ) {
               markInaccessible(arg);
             }
