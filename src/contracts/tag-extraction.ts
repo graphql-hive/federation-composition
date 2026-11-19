@@ -383,8 +383,25 @@ export function applyTagFilterToInaccessibleTransformOnSubgraphSchema(
       `${objectLikeNode.name.value}.${fieldLikeNode.name.value}(${node.name.value}:)`,
     );
 
+    // A required argument without its own `@tag` inherits the inclusion of its field.
+    // Otherwise, including a field would hide its untagged required arguments,
+    // which fails composition (REQUIRED_INACCESSIBLE).
+    // Untagged optional arguments stay hidden unless tagged with an included tag.
+    const hasOwnTag =
+      node.directives?.some((d) => d.name.value === tagDirectiveName) ?? false;
+    const isRequired =
+      node.type.kind === Kind.NON_NULL_TYPE && node.defaultValue === undefined;
+    const tagsOnField =
+      hasOwnTag || !isRequired
+        ? new Set<string>()
+        : getTagsForSchemaCoordinate(
+            `${objectLikeNode.name.value}.${fieldLikeNode.name.value}`,
+          );
+
     if (
-      (filter.include.size && !hasIntersection(tagsOnNode, filter.include)) ||
+      (filter.include.size &&
+        !hasIntersection(tagsOnNode, filter.include) &&
+        !hasIntersection(tagsOnField, filter.include)) ||
       (filter.exclude.size && hasIntersection(tagsOnNode, filter.exclude))
     ) {
       return {
