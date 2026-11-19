@@ -15,9 +15,25 @@ export function composeSchemaContract(
   tagFilter: SchemaContractFilter,
   /** Whether types that are not referenced by the schema contracts public schema should be annotated with `@inaccessible`. */
   removeUnreachableTypes = true,
+  options?: {
+    /**
+     * Skip the satisfiability check, the most expensive part of composition.
+     *
+     * Only set it when the same services already composed successfully without a contract.
+     * A contract only adds `@inaccessible`, and satisfiability ignores inaccessible fields
+     * in the paths it requires while still using them to resolve those paths,
+     * so a contract of a satisfiable graph is satisfiable too.
+     */
+    skipSatisfiability?: boolean;
+  },
 ) {
   const filteredSubgraphs = applyTagFilterOnSubgraphs(services, tagFilter);
-  const compositionResult = composeServices(filteredSubgraphs);
+  const compositionResult = composeServices(
+    filteredSubgraphs,
+    options?.skipSatisfiability
+      ? { disableValidationRules: ["SatisfiabilityRule"] }
+      : undefined,
+  );
 
   if (
     !compositionResult.errors &&
