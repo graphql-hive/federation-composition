@@ -217,7 +217,7 @@ function collectTagsBySchemaCoordinateFromSubgraph(
   });
 }
 
-type SchemaCoordinateToTagsRegistry = Map<
+export type SchemaCoordinateToTagsRegistry = Map<
   /* schema coordinate */ string,
   /* tag list */ Set<string>
 >;

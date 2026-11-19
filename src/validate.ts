@@ -183,6 +183,31 @@ export function validate(
     disableValidationRules?: string[];
   },
 ) {
+  const result = validateAndKeepState(subgraphs, __internal);
+
+  if (!result.success) {
+    return result;
+  }
+
+  const { supergraphStateBuilder, subgraphStates, ...rest } = result;
+
+  return rest;
+}
+
+/**
+ * Same as `validate`, but also returns the internal state of the supergraph,
+ * so it can be reused (for example to derive schema contracts without composing again).
+ */
+export function validateAndKeepState(
+  subgraphs: ReadonlyArray<{
+    name: string;
+    url?: string;
+    typeDefs: DocumentNode;
+  }>,
+  __internal?: {
+    disableValidationRules?: string[];
+  },
+) {
   const graphList = buildGraphList(subgraphs);
 
   if (!graphList.success) {
@@ -249,15 +274,16 @@ export function validate(
   // We build the state of the supergraph as we validate the supergraph.
   // We do it for better performance (less iterations and shit like that).
   const state = createSupergraphStateBuilder();
+  const subgraphStates = new Map(
+    Array.from(subgraphStateBuilders.entries()).map(([id, builder]) => [
+      id,
+      cleanSubgraphStateFromFederationSpec(
+        cleanSubgraphStateFromLinkSpec(builder.state),
+      ),
+    ]),
+  );
   const supergraphErrors = validateSupergraph(
-    new Map(
-      Array.from(subgraphStateBuilders.entries()).map(([id, builder]) => [
-        id,
-        cleanSubgraphStateFromFederationSpec(
-          cleanSubgraphStateFromLinkSpec(builder.state),
-        ),
-      ]),
-    ),
+    subgraphStates,
     state,
     __internal,
   );
@@ -287,6 +313,8 @@ export function validate(
     links: state.links(),
     specs: state.getSupergraphState().specs,
     federationVersion: maxFederationVersion,
+    supergraphStateBuilder: state,
+    subgraphStates,
   } as const;
 }
 
