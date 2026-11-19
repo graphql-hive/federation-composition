@@ -217,9 +217,22 @@ export function createSupergraphStateBuilder() {
         }
       }
 
-      const allFederationImports = new Set<string>(
-        subgraphState.federation.imports.map((i) => i.alias ?? i.name),
-      );
+      // Directives and types have separate namespaces,
+      // so an imported directive must not shadow a type of the same name (or the other way around).
+      const federationImports = {
+        directive: new Set<string>(),
+        type: new Set<string>(),
+      };
+
+      for (const imported of subgraphState.federation.imports) {
+        const importedName = imported.alias ?? imported.name;
+
+        federationImports[imported.kind].add(
+          imported.kind === "directive"
+            ? importedName.replace(/^@/, "")
+            : importedName,
+        );
+      }
 
       for (const [typeName, type] of [
         ...subgraphState.types,
@@ -227,7 +240,12 @@ export function createSupergraphStateBuilder() {
       ]) {
         // Federation Types that are imported, but also declared within th subgraph (most-likely for IDE support)
         // should not be added to the supergraph.
-        if (allFederationImports.has(typeName)) {
+        if (
+          (type.kind === "DIRECTIVE"
+            ? federationImports.directive
+            : federationImports.type
+          ).has(typeName)
+        ) {
           continue;
         }
 

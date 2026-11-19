@@ -119,6 +119,42 @@ testImplementations((api) => {
     expect(result.supergraphSdl).toContain('@TaskStatus(value: "field")');
   });
 
+  test("composed directive sharing a name with an imported federation type", () => {
+    const result = composeServices([
+      {
+        name: "a",
+        typeDefs: parse(/* GraphQL */ `
+          extend schema
+            @link(
+              url: "https://specs.apollo.dev/federation/v2.3"
+              import: ["@key", "FieldSet", "@composeDirective"]
+            )
+            @link(url: "https://myspecs.dev/tasks/v1.0", import: ["@FieldSet"])
+            @composeDirective(name: "@FieldSet")
+
+          directive @FieldSet(value: String!) on FIELD_DEFINITION
+
+          type Order @key(fields: "id") {
+            id: ID!
+            label: String @FieldSet(value: "label")
+          }
+
+          type Query {
+            order: Order
+          }
+        `),
+      },
+    ]);
+
+    assertCompositionSuccess(result);
+
+    // importing the `FieldSet` type must not drop the directive of the same name
+    expect(result.supergraphSdl).toContain(
+      "directive @FieldSet(value: String!) on FIELD_DEFINITION",
+    );
+    expect(result.supergraphSdl).toContain('@FieldSet(value: "label")');
+  });
+
   test("directive and a type of the same name across subgraphs", () => {
     const result = composeServices([
       {
