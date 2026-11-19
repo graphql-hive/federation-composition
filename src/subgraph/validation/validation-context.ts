@@ -629,16 +629,8 @@ export function createSubgraphValidationContext(
   };
 }
 
-/**
- * Apollo is lenient about the shape of directive argument values: it accepts an
- * unquoted, enum-like value where the argument is declared as `String` or `ID`
- * (`@tag(name: Public)`) and a quoted string where the argument is declared as
- * an enum (`@link(for: "EXECUTION")`, as long as the enum has that value).
- * Rewriting those up front keeps the rest of the pipeline (validation and the
- * supergraph SDL) seeing the expected value.
- */
 // Directives only sit on definitions and on the fields, arguments and enum
-// values within them, so the coercion walks just those, not names or types.
+// values within them, so only those are walked, not names or types.
 const directiveHolderKeys = Object.fromEntries(
   Object.values(Kind).map((kind) => [
     kind,
@@ -648,6 +640,17 @@ const directiveHolderKeys = Object.fromEntries(
   ]),
 ) as Parameters<typeof visit>[2];
 
+/**
+ * Apollo accepts two ways of writing directive argument values that GraphQL
+ * itself does not allow:
+ * - an unquoted value where the argument is a `String` or `ID`,
+ *   like `@tag(name: Public)` for `@tag(name: "Public")`
+ * - a quoted value where the argument is an enum, if the enum has that value,
+ *   like `@link(for: "EXECUTION")` for `@link(for: EXECUTION)`
+ * We accept them too, and turn each into the value that was meant before
+ * anything else reads the document, so validation and the supergraph SDL
+ * only ever see the usual form.
+ */
 function coerceDirectiveArgumentValues(
   typeDefs: DocumentNode,
   specDirectives: ReadonlyArray<DirectiveDefinitionNode>,
