@@ -5,6 +5,7 @@ import { AuthOnRequiresRule } from "./rules/auth-on-requires-rule.js";
 import { AuthOnContextRule } from "./rules/auth-on-context-rule.js";
 import { ContextualArgumentRule } from "./rules/contextual-argument-rule.js";
 import { DefaultValueUsesInaccessibleRule } from "./rules/default-value-uses-inaccessible-rule.js";
+import { DeprecatedInterfaceFieldImplementationRule } from "./rules/deprecated-interface-field-implementation-rule.js";
 import { DirectiveCompositionRule } from "./rules/directive-composition-rule.js";
 import { EnumValuesRule } from "./rules/enum-values-rule.js";
 import { ExtensionWithBaseRule } from "./rules/extension-with-base.js";
@@ -95,6 +96,7 @@ export function validateSupergraph(
     SubgraphNameRule,
     RequiredArgumentOrFieldIsNotInaccessibleRule,
     InterfaceSubtypeRule,
+    DeprecatedInterfaceFieldImplementationRule,
     NoInaccessibleOnImplementedInterfaceFieldsRule,
     ListSizeSlicingArgumentsRule,
     ContextualArgumentRule,
