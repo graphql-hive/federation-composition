@@ -179,10 +179,10 @@ type large7aa {
 
 interface sharpca8 {
   midst81a: ID!
-  worst202: String!
-  until355: String!
-  untilb9e: faintf2b!
-  until756: [moneydec!]!
+  worst202: String! @deprecated
+  until355: String! @deprecated
+  untilb9e: faintf2b! @deprecated
+  until756: [moneydec!]! @deprecated
   below721: String! @deprecated
   pupil0ee: knock6dd
 }
