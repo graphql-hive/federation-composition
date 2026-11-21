@@ -4907,5 +4907,166 @@ testVersions((api, version) => {
 
       assertCompositionSuccess(result);
     });
+
+    describe("the nearest ancestor", () => {
+      // `Guest` sets the same context as `Member`, but it can't resolve `plan`:
+      // the field is external in "benefits",
+      // and "plans" has no resolvable key for `Guest` (and hides `plan` from the API).
+      const nearestAncestorSubgraphs = (guestFields: string, query: string) => [
+        {
+          name: "benefits",
+          typeDefs: federationSchema(
+            version,
+            parse(/* GraphQL */ `
+              type Member @key(fields: "id") @context(name: "memberCtx") {
+                id: ID!
+                plan: String!
+                wallet: Wallet
+                guest: Guest
+              }
+
+              type Guest @key(fields: "id") @context(name: "memberCtx") {
+                id: ID!
+                plan: String! @external
+                ${guestFields}
+              }
+
+              type Wallet @key(fields: "id") {
+                id: ID!
+                discount(
+                  plan: String @fromContext(field: "$memberCtx { plan }")
+                ): Int
+              }
+
+              type Query {
+                ${query}
+              }
+            `),
+          ),
+        },
+        {
+          name: "plans",
+          typeDefs: federationSchema(
+            version,
+            parse(/* GraphQL */ `
+              type Guest @key(fields: "id", resolvable: false) {
+                id: ID!
+                plan: String! @inaccessible
+              }
+
+              type Query {
+                noop: Int
+              }
+            `),
+            ["@inaccessible"],
+          ),
+        },
+      ];
+
+      const discountNotResolvable = (queryString: string) =>
+        unsatisfiable(
+          queryString,
+          api.library === "apollo"
+            ? '- from subgraph "benefits": cannot satisfy @require conditions on field "Wallet.discount".'
+            : contextNotFound("benefits", "Wallet", "discount"),
+        );
+
+      test("rejects a nearest ancestor that can't resolve the context selection", () => {
+        const result = compose(
+          nearestAncestorSubgraphs("wallet: Wallet", "guest: Guest"),
+        );
+
+        assertCompositionFailure(result);
+        expect(result.errors).toContainEqual(
+          discountNotResolvable(`
+            {
+              guest {
+                wallet {
+                  discount
+                }
+              }
+            }
+          `),
+        );
+      });
+
+      test("does not fall back to a farther ancestor", () => {
+        // `Member` could resolve `plan`, but `Guest` is nearer.
+        const result = compose(
+          nearestAncestorSubgraphs("wallet: Wallet", "member: Member"),
+        );
+
+        assertCompositionFailure(result);
+        expect(result.errors).toContainEqual(
+          discountNotResolvable(`
+            {
+              member {
+                guest {
+                  wallet {
+                    discount
+                  }
+                }
+              }
+            }
+          `),
+        );
+      });
+
+      test("ignores a farther ancestor shadowed by a nearer one", () => {
+        // `Guest` can't resolve `plan`, but `Member` is nearer.
+        const result = compose(
+          nearestAncestorSubgraphs("member: Member", "guest: Guest"),
+        );
+
+        assertCompositionSuccess(result);
+      });
+
+      test("accepts a nearest ancestor that resolves the selection through another subgraph", () => {
+        const result = compose([
+          {
+            name: "benefits",
+            typeDefs: federationSchema(
+              version,
+              parse(/* GraphQL */ `
+                type Member @key(fields: "id") @context(name: "memberCtx") {
+                  id: ID!
+                  plan: String! @external
+                  wallet: Wallet
+                }
+
+                type Wallet @key(fields: "id") {
+                  id: ID!
+                  discount(
+                    plan: String @fromContext(field: "$memberCtx { plan }")
+                  ): Int
+                }
+
+                type Query {
+                  member: Member
+                }
+              `),
+            ),
+          },
+          {
+            name: "plans",
+            typeDefs: federationSchema(
+              version,
+              parse(/* GraphQL */ `
+                type Member @key(fields: "id") {
+                  id: ID!
+                  plan: String!
+                }
+
+                type Query {
+                  noop: Int
+                }
+              `),
+            ),
+          },
+        ]);
+
+        assertCompositionSuccess(result);
+      });
+    });
   });
 });

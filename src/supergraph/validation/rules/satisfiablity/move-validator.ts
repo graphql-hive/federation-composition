@@ -507,6 +507,45 @@ export class MoveValidator {
           ),
         };
       }
+
+      // The nearest ancestor that sets the context has to resolve the selection.
+      // There's no fallback to a farther one.
+      for (const contextArgument of edge.move.contextArguments) {
+        const ancestor = path.nearestAncestor(contextArgument.context);
+        const ancestorNode = ancestor.tail() ?? ancestor.rootNode();
+        const selectionSet = contextArgument.selectionFor(ancestorNode);
+
+        if (
+          selectionSet.length > 0 &&
+          !this.canResolveSelectionSet(
+            selectionSet,
+            // A context selection is resolved with no contexts in scope,
+            // like a `@requires` selection.
+            ancestor.withoutContexts(),
+            visitedEdges.concat(edge),
+            [ancestorNode.graphName],
+            visitedFields,
+            labelValues,
+          ).success
+        ) {
+          this.logger.groupEnd(
+            () =>
+              "Cannot move to " +
+              edge +
+              " because the nearest ancestor can't resolve the context selection",
+          );
+          return {
+            success: false,
+            error: lazy(() =>
+              SatisfiabilityError.forRequiredContext(
+                edge.head.graphName,
+                edge.move.typeName,
+                edge.move.fieldName,
+              ),
+            ),
+          };
+        }
+      }
     }
 
     const resolvability = edge.getResolvability(

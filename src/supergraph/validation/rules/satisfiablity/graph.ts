@@ -24,7 +24,13 @@ import {
   isFieldEdge,
 } from "./edge.js";
 import { scoreKeyFields } from "./helpers.js";
-import { AbstractMove, EntityMove, FieldMove, Move } from "./moves.js";
+import {
+  AbstractMove,
+  EntityMove,
+  FieldMove,
+  Move,
+  type ContextArgument,
+} from "./moves.js";
 import { Node } from "./node.js";
 import type { SelectionNode, SelectionResolver } from "./selection.js";
 
@@ -1360,7 +1366,7 @@ export class Graph {
             : null,
           null,
           false,
-          this.requiredContextsOfField(head, field),
+          ...this.contextArgumentsOfField(head, field),
         ),
         tail,
       ),
@@ -1369,17 +1375,19 @@ export class Graph {
 
   /**
    * Mask of contexts (prefixed with the subgraph name)
-   * that the field's `@fromContext` arguments read from, in the subgraph owning the head Node.
+   * that the field's `@fromContext` arguments read from, in the subgraph owning the head Node,
+   * and the arguments themselves.
    */
-  private requiredContextsOfField(
+  private contextArgumentsOfField(
     head: Node,
     field: ObjectTypeFieldState | InterfaceTypeFieldState,
-  ): bigint {
+  ): [bigint, ContextArgument[]] {
     if (!this.contexts) {
-      return 0n;
+      return [0n, []];
     }
 
     let requiredContexts = 0n;
+    const contextArguments: ContextArgument[] = [];
 
     for (const arg of field.args.values()) {
       const fromContext = arg.byGraph.get(head.graphId)?.fromContext;
@@ -1388,12 +1396,42 @@ export class Graph {
         continue;
       }
 
-      const contextName = `${head.graphName}__${fromContext.context}`;
-
-      requiredContexts |= this.contexts.maskOf(contextName);
+      const context = this.contexts.maskOf(
+        `${head.graphName}__${fromContext.context}`,
+      );
+      requiredContexts |= context;
+      contextArguments.push({
+        context,
+        selectionFor: (ancestor) =>
+          this.contextSelectionFor(ancestor.typeName, fromContext.selection),
+      });
     }
 
-    return requiredContexts;
+    return [requiredContexts, contextArguments];
+  }
+
+  /**
+   * The context selection as seen from an ancestor of the given type.
+   * Type conditions that the ancestor can't match are dropped,
+   * the same way they're skipped when the value is read at runtime.
+   */
+  private contextSelectionFor(typeName: string, selection: string) {
+    const isSubtype = (subtype: string, supertype: string) =>
+      this.supergraphState.objectTypes
+        .get(subtype)
+        ?.interfaces.has(supertype) === true;
+
+    return this.selectionResolver
+      .resolve(typeName, selection)
+      .selectionSet.filter(
+        (node) =>
+          node.kind === "field" ||
+          node.typeName === typeName ||
+          // an interface ancestor can be any of its implementations
+          isSubtype(node.typeName, typeName) ||
+          // an object ancestor matches the interfaces it implements
+          isSubtype(typeName, node.typeName),
+      );
   }
 
   private createEdgeForObjectTypeField(
@@ -1472,7 +1510,7 @@ export class Graph {
               }
             : null,
           false,
-          this.requiredContextsOfField(head, field),
+          ...this.contextArgumentsOfField(head, field),
         ),
         tail,
       ),
