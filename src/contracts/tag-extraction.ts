@@ -217,7 +217,7 @@ function collectTagsBySchemaCoordinateFromSubgraph(
   });
 }
 
-type SchemaCoordinateToTagsRegistry = Map<
+export type SchemaCoordinateToTagsRegistry = Map<
   /* schema coordinate */ string,
   /* tag list */ Set<string>
 >;
@@ -296,6 +296,50 @@ function hasIntersection<T>(a: Set<T>, b: Set<T>): boolean {
     }
   }
   return false;
+}
+
+// The decisions of a contract filter, shared by every implementation of it
+// (the subgraph transform below and the supergraph state filter), so they cannot drift apart.
+
+/** Fields, enum values, scalars and unions: excluded by `exclude`, or by a missing `include`. */
+export function isExcludedByFilter(
+  tags: Set<string>,
+  filter: SchemaContractFilter,
+): boolean {
+  return (
+    (filter.include.size > 0 && !hasIntersection(tags, filter.include)) ||
+    isExcludedByExcludeFilter(tags, filter)
+  );
+}
+
+/** Object, interface, input object and enum types: excluded only by `exclude`, never by a missing `include`. */
+export function isExcludedByExcludeFilter(
+  tags: Set<string>,
+  filter: SchemaContractFilter,
+): boolean {
+  return filter.exclude.size > 0 && hasIntersection(tags, filter.exclude);
+}
+
+/**
+ * Field arguments: for `include`, an argument without its own `@tag` (in any subgraph)
+ * inherits the tags of its field. Otherwise, including a field would hide all of its
+ * untagged arguments (failing composition with REQUIRED_INACCESSIBLE for required ones).
+ * This matches the behavior of Apollo contracts.
+ * For `exclude` no inheritance is needed, as an excluded field is already hidden.
+ */
+export function isArgumentExcludedByFilter(
+  argumentTags: Set<string>,
+  getFieldTags: () => Set<string>,
+  filter: SchemaContractFilter,
+): boolean {
+  return (
+    (filter.include.size > 0 &&
+      !hasIntersection(
+        argumentTags.size > 0 ? argumentTags : getFieldTags(),
+        filter.include,
+      )) ||
+    isExcludedByExcludeFilter(argumentTags, filter)
+  );
 }
 
 function difference<$Type>(set1: Set<$Type>, set2: Set<$Type>): Set<$Type> {
@@ -383,22 +427,15 @@ export function applyTagFilterToInaccessibleTransformOnSubgraphSchema(
       `${objectLikeNode.name.value}.${fieldLikeNode.name.value}(${node.name.value}:)`,
     );
 
-    // For the include filter, an argument without its own `@tag` (in any subgraph)
-    // inherits the tags of its field. Otherwise, including a field would hide all of its
-    // untagged arguments (failing composition with REQUIRED_INACCESSIBLE for required ones).
-    // This matches the behavior of Apollo contracts.
-    // For the exclude filter no inheritance is needed, as an excluded field is already hidden.
-    const tagsForInclude =
-      tagsOnNode.size > 0
-        ? tagsOnNode
-        : getTagsForSchemaCoordinate(
-            `${objectLikeNode.name.value}.${fieldLikeNode.name.value}`,
-          );
-
     if (
-      (filter.include.size &&
-        !hasIntersection(tagsForInclude, filter.include)) ||
-      (filter.exclude.size && hasIntersection(tagsOnNode, filter.exclude))
+      isArgumentExcludedByFilter(
+        tagsOnNode,
+        () =>
+          getTagsForSchemaCoordinate(
+            `${objectLikeNode.name.value}.${fieldLikeNode.name.value}`,
+          ),
+        filter,
+      )
     ) {
       return {
         ...node,
@@ -477,11 +514,7 @@ export function applyTagFilterToInaccessibleTransformOnSubgraphSchema(
             return fieldNode;
           }
 
-          if (
-            (filter.include.size &&
-              !hasIntersection(tagsOnNode, filter.include)) ||
-            (filter.exclude.size && hasIntersection(tagsOnNode, filter.exclude))
-          ) {
+          if (isExcludedByFilter(tagsOnNode, filter)) {
             return {
               ...fieldNode,
               directives: transformTagDirectives(fieldNode, true),
@@ -497,7 +530,7 @@ export function applyTagFilterToInaccessibleTransformOnSubgraphSchema(
         }),
       } as ObjectLikeNode;
 
-      if (filter.exclude.size && hasIntersection(tagsOnNode, filter.exclude)) {
+      if (isExcludedByExcludeFilter(tagsOnNode, filter)) {
         newNode = {
           ...newNode,
           directives: transformTagDirectives(
@@ -547,11 +580,7 @@ export function applyTagFilterToInaccessibleTransformOnSubgraphSchema(
           `${node.name.value}.${valueNode.name.value}`,
         );
 
-        if (
-          (filter.include.size &&
-            !hasIntersection(tagsOnNode, filter.include)) ||
-          (filter.exclude.size && hasIntersection(tagsOnNode, filter.exclude))
-        ) {
+        if (isExcludedByFilter(tagsOnNode, filter)) {
           return {
             ...valueNode,
             directives: transformTagDirectives(valueNode, true),
@@ -567,7 +596,7 @@ export function applyTagFilterToInaccessibleTransformOnSubgraphSchema(
       }),
     };
 
-    if (filter.exclude.size && hasIntersection(tagsOnNode, filter.exclude)) {
+    if (isExcludedByExcludeFilter(tagsOnNode, filter)) {
       return {
         ...newNode,
         directives: transformTagDirectives(node, true),
@@ -591,10 +620,7 @@ export function applyTagFilterToInaccessibleTransformOnSubgraphSchema(
   ) {
     const tagsOnNode = getTagsForSchemaCoordinate(node.name.value);
 
-    if (
-      (filter.include.size && !hasIntersection(tagsOnNode, filter.include)) ||
-      (filter.exclude.size && hasIntersection(tagsOnNode, filter.exclude))
-    ) {
+    if (isExcludedByFilter(tagsOnNode, filter)) {
       return {
         ...node,
         directives: transformTagDirectives(node, true),

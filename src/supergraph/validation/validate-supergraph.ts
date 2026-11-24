@@ -1,6 +1,6 @@
 import type { SubgraphState } from "../../subgraph/state.js";
 import { visitSupergraphState } from "../composition/visitor.js";
-import type { SupergraphStateBuilder } from "../state.js";
+import type { SupergraphState, SupergraphStateBuilder } from "../state.js";
 import { AuthOnRequiresRule } from "./rules/auth-on-requires-rule.js";
 import { AuthOnContextRule } from "./rules/auth-on-context-rule.js";
 import { ContextualArgumentRule } from "./rules/contextual-argument-rule.js";
@@ -137,6 +137,39 @@ export function validateSupergraph(
   }
 
   runRules(selectionDependentRules);
+
+  return context.collectReportedErrors();
+}
+
+/**
+ * The rules whose outcome depends on `@inaccessible`.
+ *
+ * Every other rule reads nothing a schema contract changes,
+ * so it passes for a contract whenever it passed for the graph the contract is made of.
+ */
+const inaccessibleRules = [
+  EnumValuesRule,
+  DefaultValueUsesInaccessibleRule,
+  OnlyInaccessibleChildrenRule,
+  ReferencedInaccessibleRule,
+  RequiredArgumentOrFieldIsNotInaccessibleRule,
+  NoInaccessibleOnImplementedInterfaceFieldsRule,
+];
+
+/**
+ * Runs only the rules whose outcome depends on `@inaccessible`,
+ * on a supergraph state that already passed the full validation and then got more `@inaccessible` applied.
+ */
+export function validateInaccessibleUsage(
+  subgraphStates: Map<string, SubgraphState>,
+  supergraph: SupergraphState,
+) {
+  const context = createSupergraphValidationContext(subgraphStates);
+
+  visitSupergraphState(
+    supergraph,
+    inaccessibleRules.map((rule) => rule(context, supergraph)),
+  );
 
   return context.collectReportedErrors();
 }

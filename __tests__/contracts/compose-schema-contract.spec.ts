@@ -994,3 +994,138 @@ describe("composeSchemaContract", () => {
     `);
   });
 });
+
+describe("composeSchemaContract: errors introduced by the contract", () => {
+  const link = /* GraphQL */ `
+    extend schema
+      @link(
+        url: "https://specs.apollo.dev/federation/v2.3"
+        import: ["@key", "@tag"]
+      )
+  `;
+  const excludeInternal = {
+    include: new Set<string>(),
+    exclude: new Set(["internal"]),
+  };
+
+  // These compose as a base graph but fail as a contract. They come from the
+  // @inaccessible rules, which must keep running when satisfiability is skipped.
+  const cases = [
+    {
+      title: "excluded type is still referenced by an included field",
+      code: "REFERENCED_INACCESSIBLE",
+      sdl: /* GraphQL */ `
+        type Query {
+          a: A @tag(name: "public")
+        }
+        type A @tag(name: "internal") {
+          id: ID!
+        }
+      `,
+    },
+    {
+      title: "required argument is excluded",
+      code: "REQUIRED_INACCESSIBLE",
+      sdl: /* GraphQL */ `
+        type Query {
+          a(id: ID! @tag(name: "internal")): String @tag(name: "public")
+        }
+      `,
+    },
+    {
+      title: "every Query field is excluded",
+      code: "ONLY_INACCESSIBLE_CHILDREN",
+      sdl: /* GraphQL */ `
+        type Query {
+          a: String @tag(name: "internal")
+        }
+      `,
+    },
+  ];
+
+  for (const { title, code, sdl } of cases) {
+    for (const skipSatisfiability of [false, true]) {
+      test(`${title} (skipSatisfiability: ${skipSatisfiability})`, () => {
+        const result = composeSchemaContract(
+          [{ name: "a", typeDefs: parse(link + sdl) }],
+          excludeInternal,
+          true,
+          { skipSatisfiability },
+        );
+
+        expect(result.errors).toContainEqual(
+          expect.objectContaining({
+            extensions: expect.objectContaining({ code }),
+          }),
+        );
+      });
+    }
+  }
+});
+
+describe("composeSchemaContract: skipSatisfiability", () => {
+  // An unsatisfiable graph: "feed" requires User.name, but cannot reach "users"
+  // because the key includes a field "feed" only has as @external.
+  const services = [
+    {
+      name: "users",
+      typeDefs: parse(/* GraphQL */ `
+        extend schema
+          @link(
+            url: "https://specs.apollo.dev/federation/v2.3"
+            import: ["@key"]
+          )
+
+        type Query {
+          users: [User]
+        }
+
+        type User @key(fields: "id name") {
+          id: ID!
+          name: String!
+        }
+      `),
+    },
+    {
+      name: "feed",
+      typeDefs: parse(/* GraphQL */ `
+        extend schema
+          @link(
+            url: "https://specs.apollo.dev/federation/v2.3"
+            import: ["@key", "@external", "@requires"]
+          )
+
+        type Query {
+          usersByIds(ids: [ID!]!): [User!]!
+        }
+
+        extend type User @key(fields: "id") {
+          id: ID @external
+          name: String! @external
+          comments: [String] @requires(fields: "name")
+        }
+      `),
+    },
+  ];
+  const filter = { include: new Set<string>(), exclude: new Set<string>() };
+
+  test("runs satisfiability by default", () => {
+    const result = composeSchemaContract(services, filter);
+
+    expect(result.errors).toContainEqual(
+      expect.objectContaining({
+        extensions: expect.objectContaining({ code: "SATISFIABILITY_ERROR" }),
+      }),
+    );
+  });
+
+  test("skips satisfiability when asked", () => {
+    // Only safe when the base graph already passed composition.
+    // This graph does not, which is how the test can see the check was skipped.
+    const result = composeSchemaContract(services, filter, true, {
+      skipSatisfiability: true,
+    });
+
+    expect(result.errors).toBeUndefined();
+  });
+});

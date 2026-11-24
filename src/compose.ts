@@ -1,4 +1,11 @@
-import { DocumentNode, GraphQLError, Kind, parse } from "graphql";
+import {
+  DirectiveDefinitionNode,
+  DocumentNode,
+  GraphQLError,
+  Kind,
+  parse,
+  TypeDefinitionNode,
+} from "graphql";
 import { print } from "./graphql/printer.js";
 import { transformSupergraphToPublicSchema } from "./graphql/transform-supergraph-to-public-schema.js";
 import { sdl as authenticatedSDL } from "./specifications/authenticated.js";
@@ -7,10 +14,11 @@ import { sdl as costSDL } from "./specifications/cost.js";
 import { FederationVersion } from "./specifications/federation.js";
 import { sdl as inaccessibleSDL } from "./specifications/inaccessible.js";
 import { sdl as joinSDL } from "./specifications/join.js";
-import { sdl as linkSDL, printLink } from "./specifications/link.js";
+import { Link, sdl as linkSDL, printLink } from "./specifications/link.js";
 import { sdl as policySDL } from "./specifications/policy.js";
 import { sdl as requiresScopesSDL } from "./specifications/requires-scopes.js";
 import { sdl as tagSDL } from "./specifications/tag.js";
+import type { SupergraphState } from "./supergraph/state.js";
 import { ServiceDefinition } from "./types.js";
 import { validate } from "./validate.js";
 
@@ -33,6 +41,21 @@ export function composeServices(
     };
   }
 
+  return createCompositionSuccessReadCacheContainer(
+    createSupergraphDocumentNode(validationResult),
+  );
+}
+
+/**
+ * Wraps the composed types and directives with the schema definition,
+ * and the definitions of the specs (link, join, tag...) the supergraph uses.
+ */
+export function createSupergraphDocumentNode(validationResult: {
+  supergraph: ReadonlyArray<TypeDefinitionNode | DirectiveDefinitionNode>;
+  links: ReadonlyArray<Link>;
+  specs: SupergraphState["specs"];
+  federationVersion: FederationVersion;
+}): DocumentNode {
   const rootTypes = {
     query: false,
     mutation: false,
@@ -153,12 +176,10 @@ export function composeServices(
   ${usedAuthenticatedSpec ? authenticatedSDL : ""}
   `);
 
-  const supergraphDocument: DocumentNode = {
+  return {
     kind: Kind.DOCUMENT,
     definitions: [...core.definitions, ...validationResult.supergraph],
   };
-
-  return createCompositionSuccessReadCacheContainer(supergraphDocument);
 }
 
 function createLinkImportValue(name: string, alias: string | null) {

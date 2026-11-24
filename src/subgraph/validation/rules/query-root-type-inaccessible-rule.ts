@@ -1,4 +1,9 @@
-import { ASTVisitor, GraphQLError, OperationTypeNode } from "graphql";
+import {
+  ASTVisitor,
+  GraphQLError,
+  ObjectTypeDefinitionNode,
+  OperationTypeNode,
+} from "graphql";
 import type { SubgraphValidationContext } from "../validation-context.js";
 
 export function QueryRootTypeInaccessibleRule(
@@ -41,16 +46,20 @@ export function QueryRootTypeInaccessibleRule(
           context.isAvailableFederationDirective("inaccessible", directive),
         )
       ) {
-        context.reportError(
-          new GraphQLError(
-            `Type "Query" is @inaccessible but is the root query type, which must be in the API schema.`,
-            {
-              nodes: node,
-              extensions: { code: "QUERY_ROOT_TYPE_INACCESSIBLE" },
-            },
-          ),
-        );
+        context.reportError(createQueryRootTypeInaccessibleError(node));
       }
     },
   };
+}
+
+export function createQueryRootTypeInaccessibleError(
+  node: ObjectTypeDefinitionNode,
+) {
+  return new GraphQLError(
+    `Type "Query" is @inaccessible but is the root query type, which must be in the API schema.`,
+    {
+      nodes: node,
+      extensions: { code: "QUERY_ROOT_TYPE_INACCESSIBLE" },
+    },
+  );
 }

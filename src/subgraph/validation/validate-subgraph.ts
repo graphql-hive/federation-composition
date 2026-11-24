@@ -315,7 +315,7 @@ export function validateSubgraph(
     .map((error) => enrichErrorWithSubgraphName(error, subgraph.name));
 }
 
-function enrichErrorWithSubgraphName(
+export function enrichErrorWithSubgraphName(
   error: GraphQLError,
   subgraphName: string,
 ) {
