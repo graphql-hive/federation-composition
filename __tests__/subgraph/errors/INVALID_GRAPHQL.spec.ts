@@ -3,6 +3,7 @@ import {
   assertCompositionFailure,
   assertCompositionSuccess,
   graphql,
+  satisfiesVersionRange,
   testVersions,
 } from "../../shared/testkit.js";
 
@@ -538,6 +539,164 @@ testVersions((api, version) => {
       expect.objectContaining({
         message:
           "[a] Interface field Node.id expects type ID! but Admin.id of type ID is not a proper subtype.",
+        extensions: expect.objectContaining({ code: "INVALID_GRAPHQL" }),
+      }),
+    );
+  });
+});
+
+testVersions((api, version) => {
+  // `schema` goes after the federation `@link`, `link` inside it
+  const compose = (c: {
+    imports?: string;
+    link?: string;
+    schema?: string;
+    sdl: string;
+  }) =>
+    api.composeServices([
+      {
+        name: "users",
+        typeDefs: graphql`
+          extend schema
+            @link(
+              url: "https://specs.apollo.dev/federation/${version}"
+              import: ["@key"${c.imports ?? ""}]
+              ${c.link ?? ""}
+            )
+            ${c.schema ?? ""}
+
+          ${c.sdl}
+
+          type Query {
+            users: [User!]!
+          }
+        `,
+      },
+    ]);
+
+  const relationship = `
+    @link(url: "https://myspecs.dev/rel/v1.0", import: ["@rel"])
+    @composeDirective(name: "@rel")
+  `;
+
+  test.each([
+    {
+      name: "an unquoted value for a String argument, as a string",
+      imports: `, "@tag"`,
+      sdl: `directive @rel(kind: String, kinds: [String]) on FIELD_DEFINITION
+        type User @key(fields: "id") {
+          id: ID!
+          a: String @rel(kind: UserLink, kinds: [UserLink, "other"]) @tag(name: Public)
+        }`,
+      contains: `@tag(name: "Public")`,
+    },
+    {
+      name: "a quoted value for an enum argument, as an enum value",
+      imports: `, "@composeDirective"`,
+      schema: relationship,
+      sdl: `directive @rel(level: Level, levels: [Level]) on FIELD_DEFINITION
+        enum Level { HIGH LOW }
+        type User @key(fields: "id") {
+          id: ID!
+          a: String @rel(level: "HIGH", levels: ["HIGH", LOW])
+        }`,
+      contains: `@rel(level: HIGH, levels: [HIGH, LOW])`,
+      since: "v2.1" as const, // @composeDirective
+    },
+    {
+      name: "an unquoted value for an aliased directive",
+      imports: `, { name: "@tag", as: "@mytag" }`,
+      sdl: `type User @key(fields: "id") { id: ID! a: String @mytag(name: Public) }`,
+      contains: `(name: "Public")`, // the directive keeps its alias
+    },
+    {
+      name: "string and int literals for ID",
+      sdl: `directive @ref(id: ID, ids: [ID]) on FIELD_DEFINITION
+        type User @key(fields: "id") {
+          id: ID!
+          a: String @ref(id: "abc")
+          b: String @ref(id: 1)
+          c: String @ref(ids: ["abc", 1])
+        }`,
+    },
+    {
+      name: "null for a nullable argument",
+      sdl: `directive @opt(s: String, i: Int, list: [String]) on FIELD_DEFINITION
+        type User @key(fields: "id") {
+          id: ID!
+          a: String @opt(s: null, i: null, list: null)
+          b: String @opt(list: [null])
+        }`,
+    },
+    {
+      name: "a nested list checked at every level",
+      sdl: `directive @nested(v: [[String!]!]!) on FIELD_DEFINITION
+        type User @key(fields: "id") { id: ID! a: String @nested(v: [[], ["ok"]]) }`,
+    },
+    {
+      name: "a quoted value for @link(for:)",
+      link: `for: "EXECUTION"`,
+      sdl: `type User @key(fields: "id") { id: ID! }`,
+    },
+  ])("INVALID_GRAPHQL - accepts $name", ({ contains, since, ...c }) => {
+    if (since && satisfiesVersionRange(`< ${since}`, version)) {
+      return;
+    }
+
+    const result = compose(c);
+
+    assertCompositionSuccess(result);
+
+    if (contains) {
+      expect(result.supergraphSdl).toContain(contains);
+    }
+  });
+
+  test.each([
+    {
+      name: "a quoted value that is not a value of the enum",
+      sdl: `directive @rel(level: Level) on FIELD_DEFINITION
+        enum Level { HIGH LOW }
+        type User @key(fields: "id") { id: ID! a: String @rel(level: "NOPE") }`,
+      error: `"@rel(level:)" of type "Level" in application of "@rel" to "User.a"`,
+    },
+    {
+      name: "a list value for a non-list argument",
+      sdl: `directive @one(s: String) on FIELD_DEFINITION
+        type User @key(fields: "id") { id: ID! a: String @one(s: ["txt"]) }`,
+      error: `"@one(s:)" of type "String" in application of "@one" to "User.a"`,
+    },
+    {
+      name: "null as an item of a non-null item type",
+      sdl: `directive @many(list: [String!]) on FIELD_DEFINITION
+        type User @key(fields: "id") { id: ID! a: String @many(list: [null]) }`,
+      error: `"@many(list:)" of type "[String!]" in application of "@many" to "User.a"`,
+    },
+    {
+      name: "a bad item of a nested list",
+      sdl: `directive @nested(v: [[String!]!]!) on FIELD_DEFINITION
+        type User @key(fields: "id") { id: ID! a: String @nested(v: [["ok", 42]]) }`,
+      error: `"@nested(v:)" of type "[[String!]!]!" in application of "@nested" to "User.a"`,
+    },
+    {
+      name: "an unquoted @link url",
+      schema: `@link(url: notAUrl)`,
+      sdl: `type User @key(fields: "id") { id: ID! }`,
+      error: `"@link(url:)" of type "String" in application of "@link" to "schema"`,
+      // Apollo throws `TypeError: Invalid URL` instead of reporting it
+      skipApollo: true,
+    },
+  ])("INVALID_GRAPHQL - rejects $name", ({ error, skipApollo, ...c }) => {
+    if (skipApollo && api.library === "apollo") {
+      return;
+    }
+
+    const result = compose(c);
+
+    assertCompositionFailure(result);
+    expect(result.errors).toContainEqual(
+      expect.objectContaining({
+        message: `[users] Invalid value for ${error}.`,
         extensions: expect.objectContaining({ code: "INVALID_GRAPHQL" }),
       }),
     );

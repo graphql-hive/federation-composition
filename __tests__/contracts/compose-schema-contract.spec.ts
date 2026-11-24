@@ -99,6 +99,43 @@ describe("composeSchemaContract", () => {
     `);
   });
 
+  test("excludes an unquoted tag name, as composition accepts it", () => {
+    const result = composeSchemaContract(
+      [
+        {
+          name: "products",
+          url: "https://products.example.com/graphql",
+          typeDefs: parse(/* GraphQL */ `
+            extend schema
+              @link(
+                url: "https://specs.apollo.dev/federation/v2.5"
+                import: ["@key", "@tag"]
+              )
+
+            type Product @key(fields: "id") {
+              id: ID!
+              name: String
+              secret: String @tag(name: internal)
+            }
+
+            type Query {
+              product: Product
+            }
+          `),
+        },
+      ],
+      {
+        include: new Set(),
+        exclude: new Set(["internal"]),
+      },
+      true,
+    );
+
+    expect(result.errors).toEqual(undefined);
+    expect((result as CompositionSuccess).publicSdl).toContain("name: String");
+    expect((result as CompositionSuccess).publicSdl).not.toContain("secret");
+  });
+
   test("keeps types referenced by composed directives when removing unreachable types", () => {
     const result = composeSchemaContract(
       [

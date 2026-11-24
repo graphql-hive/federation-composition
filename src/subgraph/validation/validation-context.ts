@@ -13,8 +13,11 @@ import {
   specifiedScalarTypes,
   TypeDefinitionNode,
   TypeExtensionNode,
+  TypeNode,
   UnionTypeDefinitionNode,
   UnionTypeExtensionNode,
+  ValueNode,
+  visit,
 } from "graphql";
 import { TypeNodeInfo } from "../../graphql/type-node-info.js";
 import {
@@ -133,6 +136,14 @@ export function createSubgraphValidationContext(
   const availableSpec = createSpecSchema(version, imports);
   // Directives and types available in the spec (some parts may not be available to a subgraph)
   const knownSpec = createSpecSchema(version);
+  // Normalize directive argument values before anything below reads the document:
+  // the maps built here hold references to its nodes, so `subgraph.typeDefs` must
+  // not be rewritten after this point.
+  subgraph.typeDefs = coerceDirectiveArgumentValues(
+    subgraph.typeDefs,
+    availableSpec.directives,
+    imports,
+  );
   // Object and interface types defined in a subgraph
   const knownObjectAndInterfaceSubgraphEntities = new Map<
     string,
@@ -616,4 +627,141 @@ export function createSubgraphValidationContext(
       return errors;
     },
   };
+}
+
+// Directives only sit on definitions and on the fields, arguments and enum
+// values within them, so only those are walked, not names or types.
+const directiveHolderKeys = Object.fromEntries(
+  Object.values(Kind).map((kind) => [
+    kind,
+    kind === Kind.DOCUMENT
+      ? ["definitions"]
+      : ["directives", "fields", "arguments", "values"],
+  ]),
+) as Parameters<typeof visit>[2];
+
+/**
+ * Apollo accepts two ways of writing directive argument values that GraphQL
+ * itself does not allow:
+ * - an unquoted value where the argument is a `String` or `ID`,
+ *   like `@tag(name: Public)` for `@tag(name: "Public")`
+ * - a quoted value where the argument is an enum, if the enum has that value,
+ *   like `@link(for: "EXECUTION")` for `@link(for: EXECUTION)`
+ * We accept them too, and turn each into the value that was meant before
+ * anything else reads the document, so validation and the supergraph SDL
+ * only ever see the usual form.
+ */
+function coerceDirectiveArgumentValues(
+  typeDefs: DocumentNode,
+  specDirectives: ReadonlyArray<DirectiveDefinitionNode>,
+  imports: readonly LinkImport[],
+): DocumentNode {
+  // `@link(import: [{ name: "@tag", as: "@mytag" }])` renames a spec directive.
+  // The alias is applied as a key here, not to the (shared) spec nodes.
+  const aliases = new Map<string, string>();
+  for (const i of imports) {
+    if (i.alias) {
+      aliases.set(i.name.replace(/^@/, ""), i.alias.replace(/^@/, ""));
+    }
+  }
+
+  const directiveDefinitions = new Map<string, DirectiveDefinitionNode>();
+  for (const def of specDirectives) {
+    directiveDefinitions.set(
+      aliases.get(def.name.value) ?? def.name.value,
+      def,
+    );
+  }
+
+  // The federation spec has no enums, so they come from the link spec and the
+  // subgraph, whose own definitions take precedence over the spec's.
+  const enumValues = new Map<string, Set<string>>();
+  for (const def of linkSpec.definitions.concat(typeDefs.definitions)) {
+    if (def.kind === Kind.DIRECTIVE_DEFINITION) {
+      directiveDefinitions.set(def.name.value, def);
+    } else if (
+      def.kind === Kind.ENUM_TYPE_DEFINITION ||
+      def.kind === Kind.ENUM_TYPE_EXTENSION
+    ) {
+      const values = enumValues.get(def.name.value) ?? new Set<string>();
+      enumValues.set(def.name.value, values);
+      for (const value of def.values ?? []) {
+        values.add(value.name.value);
+      }
+    }
+  }
+
+  return visit(
+    typeDefs,
+    {
+      Directive(node) {
+        const definition = directiveDefinitions.get(node.name.value);
+        const args = node.arguments?.map((arg) => {
+          const argDefinition = definition?.arguments?.find(
+            (a) => a.name.value === arg.name.value,
+          );
+
+          if (
+            !argDefinition ||
+            // `@link(url:)` and `@link(as:)` are read before this runs, to work
+            // out which spec the subgraph uses, so they have to stay strict.
+            (node.name.value === "link" &&
+              (arg.name.value === "url" || arg.name.value === "as"))
+          ) {
+            return arg;
+          }
+
+          const value = coerceValue(argDefinition.type, arg.value, enumValues);
+          return value === arg.value ? arg : { ...arg, value };
+        });
+
+        // Keep the node when nothing changed, so the document is not rebuilt, and
+        // skip its arguments either way, since they cannot hold a directive.
+        return args?.some((arg, i) => arg !== node.arguments![i])
+          ? { ...node, arguments: args }
+          : false;
+      },
+    },
+    directiveHolderKeys,
+  );
+}
+
+function coerceValue(
+  type: TypeNode,
+  value: ValueNode,
+  enumValues: Map<string, Set<string>>,
+): ValueNode {
+  switch (type.kind) {
+    case Kind.NON_NULL_TYPE:
+      return coerceValue(type.type, value, enumValues);
+    case Kind.LIST_TYPE: {
+      if (value.kind !== Kind.LIST) {
+        return coerceValue(type.type, value, enumValues);
+      }
+
+      const values = value.values.map((item) =>
+        coerceValue(type.type, item, enumValues),
+      );
+
+      return values.some((item, i) => item !== value.values[i])
+        ? { ...value, values }
+        : value;
+    }
+    case Kind.NAMED_TYPE:
+      if (
+        value.kind === Kind.ENUM &&
+        (type.name.value === "String" || type.name.value === "ID")
+      ) {
+        return { kind: Kind.STRING, value: value.value, loc: value.loc };
+      }
+
+      if (
+        value.kind === Kind.STRING &&
+        enumValues.get(type.name.value)?.has(value.value)
+      ) {
+        return { kind: Kind.ENUM, value: value.value, loc: value.loc };
+      }
+
+      return value;
+  }
 }

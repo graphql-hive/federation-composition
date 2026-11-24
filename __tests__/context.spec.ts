@@ -124,6 +124,37 @@ testVersions((api, version) => {
     return;
   }
 
+  test("accepts an unquoted context name", () => {
+    const result = compose([
+      {
+        name: "accounts",
+        typeDefs: federationSchema(
+          version,
+          parse(/* GraphQL */ `
+            type Customer @key(fields: "id") @context(name: customerCtx) {
+              id: ID!
+              segment: String!
+              order: Order!
+            }
+
+            type Order @key(fields: "id") {
+              id: ID!
+              discount(
+                segment: String @fromContext(field: "$customerCtx { segment }")
+              ): Int
+            }
+
+            type Query {
+              customer(id: ID!): Customer
+            }
+          `),
+        ),
+      },
+    ]);
+
+    assertCompositionSuccess(result);
+  });
+
   describe("@context and @fromContext location", () => {
     describe("the context name", () => {
       test("rejects an empty context name", () => {
